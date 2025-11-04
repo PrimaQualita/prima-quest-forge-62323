@@ -84,7 +84,7 @@ export const generateSupplierPDF = async (
 
   yPos += 5;
 
-  // Status e Pontuação
+  // Status e Score
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Avaliação', 20, yPos);
@@ -102,7 +102,7 @@ export const generateSupplierPDF = async (
   doc.setTextColor(0, 0, 0);
   yPos += 6;
 
-  doc.text(`Pontuação Total: ${supplier.total_score} pontos`, 20, yPos);
+  doc.text(`Score Total: ${supplier.total_score} pontos`, 20, yPos);
   yPos += 6;
 
   if (supplier.reviewed_at) {

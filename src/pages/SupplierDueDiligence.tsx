@@ -416,7 +416,7 @@ const SupplierDueDiligence = () => {
                   <TableHead>Empresa</TableHead>
                   <TableHead>CNPJ</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Pontuação</TableHead>
+                  <TableHead>Score</TableHead>
                   <TableHead>Data Cadastro</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -511,7 +511,7 @@ const SupplierDueDiligence = () => {
                     </div>
                   )}
                   <div>
-                    <p className="text-muted-foreground">Pontuação Total</p>
+                    <p className="text-muted-foreground">Score Total</p>
                     <Badge variant={selectedSupplier.total_score >= 200 ? "destructive" : "default"} className="text-base">
                       {selectedSupplier.total_score} pontos
                     </Badge>
