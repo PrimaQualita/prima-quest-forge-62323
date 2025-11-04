@@ -1,24 +1,20 @@
 import { useEffect, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Download, Calendar, AlertCircle, CheckCircle, Clock, LogOut, Upload } from "lucide-react";
+import { Download, Calendar, AlertCircle, CheckCircle, Clock, LogOut, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { generateSupplierPDF } from "@/utils/generateSupplierPDF";
 
 const SupplierPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
-  const [certificateFile, setCertificateFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     // Verificar autenticação
@@ -63,54 +59,18 @@ const SupplierPortal = () => {
     enabled: !!userId,
   });
 
-  const uploadCertificateMutation = useMutation({
-    mutationFn: async (file: File) => {
-      if (!userId || !supplierData) throw new Error("Dados não disponíveis");
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${supplierData.id}/certificate-${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('supplier-documents')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('supplier-documents')
-        .getPublicUrl(fileName);
-      
-      const { error: updateError } = await supabase
-        .from('supplier_due_diligence')
-        .update({ certificate_file_path: publicUrl })
-        .eq('id', supplierData.id);
-
-      if (updateError) throw updateError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['supplier_data'] });
-      toast({ title: "Certificado enviado com sucesso!" });
-      setCertificateFile(null);
-      setIsUploading(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao enviar certificado",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsUploading(false);
+  const { data: questions } = useQuery({
+    queryKey: ['due_diligence_questions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('due_diligence_questions')
+        .select('*')
+        .eq('is_active', true)
+        .order('question_order', { ascending: true });
+      if (error) throw error;
+      return data;
     },
   });
-
-  const handleCertificateUpload = async () => {
-    if (!certificateFile) return;
-    setIsUploading(true);
-    uploadCertificateMutation.mutate(certificateFile);
-  };
 
   if (isLoading) {
     return (
@@ -212,8 +172,8 @@ const SupplierPortal = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Certificado de Fornecedor</CardTitle>
-                  <CardDescription>Validade e download do certificado</CardDescription>
+                  <CardTitle>Status do Cadastro</CardTitle>
+                  <CardDescription>Informações sobre validade</CardDescription>
                 </div>
                 <Calendar className="w-6 h-6 text-muted-foreground" />
               </div>
@@ -231,77 +191,6 @@ const SupplierPortal = () => {
                     </p>
                   )}
                 </div>
-                {supplierData.certificate_url && (
-                  <Button asChild>
-                    <a href={supplierData.certificate_url} download>
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar Certificado
-                    </a>
-                  </Button>
-                )}
-              </div>
-
-              {supplierData.certificate_file_path && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">Seu Certificado Enviado</p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.open(supplierData.certificate_file_path, '_blank')}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Baixar Certificado Enviado
-                  </Button>
-                </div>
-              )}
-
-              <div className="space-y-3 p-4 border rounded-lg">
-                <Label htmlFor="certificate-upload" className="text-base font-semibold">
-                  {supplierData.certificate_file_path ? 'Atualizar Certificado' : 'Enviar Certificado em PDF'}
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Faça upload do seu certificado para manter seus dados atualizados
-                </p>
-                <Input
-                  id="certificate-upload"
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file && file.size > 10 * 1024 * 1024) {
-                      toast({
-                        title: "Arquivo muito grande",
-                        description: "O arquivo deve ter no máximo 10MB",
-                        variant: "destructive"
-                      });
-                      e.target.value = '';
-                      return;
-                    }
-                    setCertificateFile(file || null);
-                  }}
-                  disabled={isUploading}
-                />
-                {certificateFile && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">
-                      {certificateFile.name} ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                    <Button 
-                      onClick={handleCertificateUpload}
-                      disabled={isUploading}
-                      size="sm"
-                    >
-                      {isUploading ? (
-                        <>Enviando...</>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Enviar
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
               </div>
 
               {needsRenewal && (
@@ -318,6 +207,45 @@ const SupplierPortal = () => {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Documentos e Relatórios</CardTitle>
+            <CardDescription>Baixe seus documentos de due diligence</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => supplierData && generateSupplierPDF(supplierData, questions || [])}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Relatório de Due Diligence (PDF)
+            </Button>
+
+            {supplierData.certificate_file_path && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => window.open(supplierData.certificate_file_path, '_blank')}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Certificado do Fornecedor
+              </Button>
+            )}
+
+            {supplierData.kpmg_report_file_path && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => window.open(supplierData.kpmg_report_file_path, '_blank')}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Relatório KPMG
+              </Button>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

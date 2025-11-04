@@ -26,6 +26,7 @@ const SupplierDueDiligence = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [kpmgReportFile, setKpmgReportFile] = useState<File | null>(null);
   const [certificateExpiry, setCertificateExpiry] = useState<string>(
     format(addYears(new Date(), 1), "yyyy-MM-dd")
@@ -104,17 +105,41 @@ const SupplierDueDiligence = () => {
       status, 
       rejection_reason, 
       certificate_expires_at,
+      certificate_file,
       kpmg_report_file
     }: { 
       id: string; 
       status: 'approved' | 'rejected'; 
       rejection_reason?: string;
       certificate_expires_at?: string;
+      certificate_file?: File | null;
       kpmg_report_file?: File | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      let certificatePath = null;
       let kpmgReportPath = null;
+
+      // Upload do certificado se fornecido
+      if (certificate_file) {
+        const fileExt = certificate_file.name.split('.').pop();
+        const fileName = `${id}/certificate-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('supplier-documents')
+          .upload(fileName, certificate_file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('supplier-documents')
+          .getPublicUrl(fileName);
+        
+        certificatePath = publicUrl;
+      }
 
       // Upload do relatório KPMG se fornecido
       if (kpmg_report_file) {
@@ -145,6 +170,10 @@ const SupplierDueDiligence = () => {
         certificate_expires_at: certificate_expires_at || null,
       };
 
+      if (certificatePath) {
+        updateData.certificate_file_path = certificatePath;
+      }
+
       if (kpmgReportPath) {
         updateData.kpmg_report_file_path = kpmgReportPath;
       }
@@ -162,6 +191,7 @@ const SupplierDueDiligence = () => {
       setIsReviewDialogOpen(false);
       setSelectedSupplier(null);
       setRejectionReason("");
+      setCertificateFile(null);
       setKpmgReportFile(null);
     },
   });
@@ -172,6 +202,7 @@ const SupplierDueDiligence = () => {
         id: selectedSupplier.id,
         status: 'approved',
         certificate_expires_at: certificateExpiry,
+        certificate_file: certificateFile,
         kpmg_report_file: kpmgReportFile,
       });
     }
@@ -542,6 +573,33 @@ const SupplierDueDiligence = () => {
                       value={certificateExpiry}
                       onChange={(e) => setCertificateExpiry(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="certificate-upload">Certificado do Fornecedor (PDF - Opcional)</Label>
+                    <Input
+                      id="certificate-upload"
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.size > 10 * 1024 * 1024) {
+                          toast({
+                            title: "Arquivo muito grande",
+                            description: "O arquivo deve ter no máximo 10MB",
+                            variant: "destructive"
+                          });
+                          e.target.value = '';
+                          return;
+                        }
+                        setCertificateFile(file || null);
+                      }}
+                    />
+                    {certificateFile && (
+                      <p className="text-sm text-muted-foreground">
+                        Arquivo selecionado: {certificateFile.name} ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
