@@ -600,6 +600,7 @@ export type Database = {
           duration_hours: number | null
           id: string
           is_trail: boolean | null
+          passing_score: number
           title: string
           updated_at: string | null
         }
@@ -610,6 +611,7 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           is_trail?: boolean | null
+          passing_score?: number
           title: string
           updated_at?: string | null
         }
@@ -620,6 +622,7 @@ export type Database = {
           duration_hours?: number | null
           id?: string
           is_trail?: boolean | null
+          passing_score?: number
           title?: string
           updated_at?: string | null
         }
