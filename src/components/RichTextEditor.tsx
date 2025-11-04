@@ -42,6 +42,26 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     editorRef.current?.focus();
   };
 
+  const applyLineHeight = (lineHeight: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const span = document.createElement('span');
+      span.style.lineHeight = lineHeight;
+      
+      try {
+        range.surroundContents(span);
+      } catch {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+      }
+      
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    editorRef.current?.focus();
+  };
+
   const fonts = [
     { name: "Arial", value: "Arial, sans-serif" },
     { name: "Times New Roman", value: "Times New Roman, serif" },
@@ -51,6 +71,15 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     { name: "Helvetica", value: "Helvetica, sans-serif" },
     { name: "Comic Sans", value: "Comic Sans MS, cursive" },
     { name: "Impact", value: "Impact, fantasy" },
+  ];
+
+  const lineHeights = [
+    { name: "Simples", value: "1" },
+    { name: "1.15", value: "1.15" },
+    { name: "1.5", value: "1.5" },
+    { name: "Duplo", value: "2" },
+    { name: "2.5", value: "2.5" },
+    { name: "3", value: "3" },
   ];
 
   const colors = [
@@ -75,6 +104,19 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
             {fonts.map((font) => (
               <SelectItem key={font.value} value={font.value}>
                 <span style={{ fontFamily: font.value }}>{font.name}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="w-px bg-border mx-1" />
+        <Select onValueChange={applyLineHeight}>
+          <SelectTrigger className="h-8 w-[120px]">
+            <SelectValue placeholder="Espaçamento" />
+          </SelectTrigger>
+          <SelectContent>
+            {lineHeights.map((height) => (
+              <SelectItem key={height.value} value={height.value}>
+                {height.name}
               </SelectItem>
             ))}
           </SelectContent>
