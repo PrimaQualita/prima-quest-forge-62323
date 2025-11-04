@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, Palette } from "lucide-react";
+import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -139,6 +139,15 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
           className="h-8 w-8 p-0"
         >
           <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => execCommand('underline')}
+          className="h-8 w-8 p-0"
+        >
+          <Underline className="h-4 w-4" />
         </Button>
         <div className="w-px bg-border mx-1" />
         <Button

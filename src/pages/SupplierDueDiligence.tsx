@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { generateSupplierPDF } from "@/utils/generateSupplierPDF";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 const SupplierDueDiligence = () => {
   const { toast } = useToast();
@@ -264,12 +265,10 @@ const SupplierDueDiligence = () => {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="question">Pergunta</Label>
-                <Textarea
-                  id="question"
+                <RichTextEditor
                   value={newQuestion}
-                  onChange={(e) => setNewQuestion(e.target.value)}
+                  onChange={setNewQuestion}
                   placeholder="Digite a pergunta para due diligence..."
-                  rows={4}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -343,7 +342,10 @@ const SupplierDueDiligence = () => {
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm mb-2">{question.question}</p>
+                      <div 
+                        className="text-sm mb-2 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: question.question }}
+                      />
                       <div className="flex gap-2 text-xs">
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                           SIM: {question.yes_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
@@ -552,9 +554,10 @@ const SupplierDueDiligence = () => {
                   <h3 className="font-semibold">Respostas do Questionário</h3>
                   {questions?.map((question, index) => (
                     <div key={question.id} className="p-3 border rounded-lg">
-                      <p className="text-sm font-medium mb-2">
-                        {index + 1}. {question.question}
-                      </p>
+                      <div 
+                        className="text-sm font-medium mb-2 prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: `${index + 1}. ${question.question}` }}
+                      />
                       <Badge variant={selectedSupplier.responses[question.id] === 'sim' ? 'default' : 'secondary'}>
                         {selectedSupplier.responses[question.id]?.toUpperCase() || 'NÃO RESPONDIDA'}
                       </Badge>

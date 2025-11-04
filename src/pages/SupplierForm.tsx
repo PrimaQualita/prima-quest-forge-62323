@@ -387,7 +387,11 @@ const SupplierForm = () => {
                   {questions.map((question, index) => (
                     <div key={question.id} className="space-y-3 p-4 border rounded-lg">
                       <Label className="text-base">
-                        {index + 1}. {question.question} *
+                        <div 
+                          className="prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: `${index + 1}. ${question.question}` }}
+                        />
+                        <span className="text-destructive ml-1">*</span>
                       </Label>
                       <RadioGroup
                         value={formData.responses[question.id] || ""}
