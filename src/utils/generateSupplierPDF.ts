@@ -134,6 +134,46 @@ export const generateSupplierPDF = async (
     return tmp.textContent || tmp.innerText || '';
   };
 
+  // Função para renderizar texto justificado
+  const renderJustifiedText = (text: string, x: number, y: number, maxWidth: number) => {
+    const lines = doc.splitTextToSize(text, maxWidth);
+    let currentY = y;
+
+    lines.forEach((line: string, index: number) => {
+      const isLastLine = index === lines.length - 1;
+      
+      if (isLastLine || line.trim().length === 0) {
+        // Última linha ou linha vazia: alinhamento à esquerda
+        doc.text(line, x, currentY);
+      } else {
+        // Linhas intermediárias: justificadas
+        const words = line.trim().split(' ');
+        
+        if (words.length === 1) {
+          // Linha com apenas uma palavra: alinhamento à esquerda
+          doc.text(line, x, currentY);
+        } else {
+          // Calcular largura total das palavras
+          const wordsWidth = words.reduce((total, word) => total + doc.getTextWidth(word), 0);
+          // Calcular espaço disponível para distribuir entre palavras
+          const totalSpaceWidth = maxWidth - wordsWidth;
+          const spaceWidth = totalSpaceWidth / (words.length - 1);
+          
+          // Renderizar palavras com espaçamento calculado
+          let currentX = x;
+          words.forEach((word, wordIndex) => {
+            doc.text(word, currentX, currentY);
+            currentX += doc.getTextWidth(word) + spaceWidth;
+          });
+        }
+      }
+      
+      currentY += 5;
+    });
+
+    return currentY;
+  };
+
   questions.forEach((question, index) => {
     // Verificar se precisa de nova página
     if (yPos > 270) {
@@ -149,13 +189,10 @@ export const generateSupplierPDF = async (
     // Remover HTML das perguntas para o PDF
     const cleanQuestion = stripHtml(question.question);
     const questionText = `${index + 1}. ${cleanQuestion}`;
-    const questionLines = doc.splitTextToSize(questionText, pageWidth - 40);
     
-    // Renderizar cada linha da pergunta com justificação
-    questionLines.forEach((line: string, lineIndex: number) => {
-      doc.text(line, 20, yPos + (lineIndex * 5), { align: 'justify', maxWidth: pageWidth - 40 });
-    });
-    yPos += questionLines.length * 5 + 2;
+    // Renderizar pergunta com texto justificado
+    yPos = renderJustifiedText(questionText, 20, yPos, pageWidth - 40);
+    yPos += 2;
 
     doc.setFont('helvetica', 'normal');
     doc.text(`Resposta: ${responseText} (${points} pontos)`, 25, yPos);
