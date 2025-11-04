@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Building2, Check, X, Eye, Pencil } from "lucide-react";
+import { Plus, Building2, Check, X, Eye, Pencil, Download, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { generateSupplierPDF } from "@/utils/generateSupplierPDF";
 
 const SupplierDueDiligence = () => {
   const { toast } = useToast();
@@ -25,6 +26,7 @@ const SupplierDueDiligence = () => {
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [kpmgReportFile, setKpmgReportFile] = useState<File | null>(null);
   const [certificateExpiry, setCertificateExpiry] = useState<string>(
     format(addYears(new Date(), 1), "yyyy-MM-dd")
   );
@@ -101,24 +103,55 @@ const SupplierDueDiligence = () => {
       id, 
       status, 
       rejection_reason, 
-      certificate_expires_at 
+      certificate_expires_at,
+      kpmg_report_file
     }: { 
       id: string; 
       status: 'approved' | 'rejected'; 
       rejection_reason?: string;
       certificate_expires_at?: string;
+      kpmg_report_file?: File | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      let kpmgReportPath = null;
+
+      // Upload do relatório KPMG se fornecido
+      if (kpmg_report_file) {
+        const fileExt = kpmg_report_file.name.split('.').pop();
+        const fileName = `${id}/kpmg-report-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('supplier-documents')
+          .upload(fileName, kpmg_report_file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('supplier-documents')
+          .getPublicUrl(fileName);
+        
+        kpmgReportPath = publicUrl;
+      }
+      
+      const updateData: any = {
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user?.id,
+        rejection_reason: rejection_reason || null,
+        certificate_expires_at: certificate_expires_at || null,
+      };
+
+      if (kpmgReportPath) {
+        updateData.kpmg_report_file_path = kpmgReportPath;
+      }
+
       const { error } = await supabase
         .from('supplier_due_diligence')
-        .update({
-          status,
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id,
-          rejection_reason: rejection_reason || null,
-          certificate_expires_at: certificate_expires_at || null,
-        })
+        .update(updateData)
         .eq('id', id);
         
       if (error) throw error;
@@ -129,6 +162,7 @@ const SupplierDueDiligence = () => {
       setIsReviewDialogOpen(false);
       setSelectedSupplier(null);
       setRejectionReason("");
+      setKpmgReportFile(null);
     },
   });
 
@@ -138,6 +172,7 @@ const SupplierDueDiligence = () => {
         id: selectedSupplier.id,
         status: 'approved',
         certificate_expires_at: certificateExpiry,
+        kpmg_report_file: kpmgReportFile,
       });
     }
   };
@@ -350,6 +385,7 @@ const SupplierDueDiligence = () => {
                   <TableHead>Empresa</TableHead>
                   <TableHead>CNPJ</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Pontuação</TableHead>
                   <TableHead>Data Cadastro</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -362,6 +398,11 @@ const SupplierDueDiligence = () => {
                     <TableCell className="font-medium">{supplier.company_name}</TableCell>
                     <TableCell>{supplier.cnpj}</TableCell>
                     <TableCell>{supplier.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={supplier.total_score >= 200 ? "destructive" : "default"}>
+                        {supplier.total_score} pts
+                      </Badge>
+                    </TableCell>
                     <TableCell>{format(new Date(supplier.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     <TableCell>
                       {supplier.certificate_expires_at 
@@ -370,17 +411,29 @@ const SupplierDueDiligence = () => {
                       }
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedSupplier(supplier);
-                          setIsReviewDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Avaliar
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedSupplier(supplier);
+                            setIsReviewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Avaliar
+                        </Button>
+                        {supplier.status !== 'pending' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => generateSupplierPDF(supplier, questions || [])}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            PDF
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -426,8 +479,42 @@ const SupplierDueDiligence = () => {
                       <p className="font-medium">{selectedSupplier.partners}</p>
                     </div>
                   )}
+                  <div>
+                    <p className="text-muted-foreground">Pontuação Total</p>
+                    <Badge variant={selectedSupplier.total_score >= 200 ? "destructive" : "default"} className="text-base">
+                      {selectedSupplier.total_score} pontos
+                    </Badge>
+                  </div>
                 </div>
               </div>
+
+              {selectedSupplier.certificate_file_path && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Certificado</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(selectedSupplier.certificate_file_path, '_blank')}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Certificado
+                  </Button>
+                </div>
+              )}
+
+              {selectedSupplier.kpmg_report_file_path && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Relatório KPMG</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(selectedSupplier.kpmg_report_file_path, '_blank')}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Relatório KPMG
+                  </Button>
+                </div>
+              )}
 
               {selectedSupplier.responses && Object.keys(selectedSupplier.responses).length > 0 && (
                 <div className="space-y-4">
@@ -455,6 +542,33 @@ const SupplierDueDiligence = () => {
                       value={certificateExpiry}
                       onChange={(e) => setCertificateExpiry(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="kpmg-report">Relatório KPMG (PDF - Opcional)</Label>
+                    <Input
+                      id="kpmg-report"
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.size > 10 * 1024 * 1024) {
+                          toast({
+                            title: "Arquivo muito grande",
+                            description: "O arquivo deve ter no máximo 10MB",
+                            variant: "destructive"
+                          });
+                          e.target.value = '';
+                          return;
+                        }
+                        setKpmgReportFile(file || null);
+                      }}
+                    />
+                    {kpmgReportFile && (
+                      <p className="text-sm text-muted-foreground">
+                        Arquivo selecionado: {kpmgReportFile.name} ({(kpmgReportFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -491,22 +605,33 @@ const SupplierDueDiligence = () => {
               )}
 
               {selectedSupplier.status !== 'pending' && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-sm">
-                    <strong>Status:</strong> {getStatusBadge(selectedSupplier.status)}
-                  </p>
-                  {selectedSupplier.reviewed_at && (
-                    <p className="text-sm mt-2">
-                      <strong>Avaliado em:</strong>{" "}
-                      {format(new Date(selectedSupplier.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                <>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm">
+                      <strong>Status:</strong> {getStatusBadge(selectedSupplier.status)}
                     </p>
-                  )}
-                  {selectedSupplier.rejection_reason && (
-                    <p className="text-sm mt-2">
-                      <strong>Motivo:</strong> {selectedSupplier.rejection_reason}
-                    </p>
-                  )}
-                </div>
+                    {selectedSupplier.reviewed_at && (
+                      <p className="text-sm mt-2">
+                        <strong>Avaliado em:</strong>{" "}
+                        {format(new Date(selectedSupplier.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                    )}
+                    {selectedSupplier.rejection_reason && (
+                      <p className="text-sm mt-2">
+                        <strong>Motivo:</strong> {selectedSupplier.rejection_reason}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => generateSupplierPDF(selectedSupplier, questions || [])}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Gerar Relatório em PDF
+                  </Button>
+                </>
               )}
             </div>
           )}

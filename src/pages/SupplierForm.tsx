@@ -23,6 +23,7 @@ const SupplierForm = () => {
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     company_name: "",
     cnpj: "",
@@ -66,6 +67,37 @@ const SupplierForm = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("Erro ao criar conta");
 
+      let certificateFilePath = null;
+
+      // Upload do certificado se fornecido
+      if (certificateFile) {
+        const fileExt = certificateFile.name.split('.').pop();
+        const fileName = `${authData.user.id}/certificate-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('supplier-documents')
+          .upload(fileName, certificateFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('supplier-documents')
+          .getPublicUrl(fileName);
+        
+        certificateFilePath = publicUrl;
+      }
+
+      // Calcular pontuação total
+      const totalScore = questions?.reduce((sum, question) => {
+        const response = data.responses[question.id];
+        if (response === 'sim') return sum + question.yes_points;
+        if (response === 'nao') return sum + question.no_points;
+        return sum;
+      }, 0) || 0;
+
       // Inserir dados do fornecedor
       const { password, confirmPassword, ...supplierData } = data;
       const { error: insertError } = await supabase
@@ -73,7 +105,9 @@ const SupplierForm = () => {
         .insert([{
           ...supplierData,
           user_id: authData.user.id,
-          status: 'pending'
+          status: 'pending',
+          certificate_file_path: certificateFilePath,
+          total_score: totalScore
         }]);
       
       if (insertError) throw insertError;
@@ -317,6 +351,33 @@ const SupplierForm = () => {
                     onChange={(e) => setFormData({ ...formData, partners: e.target.value })}
                     placeholder="Liste os sócios cotistas (opcional)"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="certificate">Certificado (PDF, PNG, JPG - Opcional)</Label>
+                  <Input
+                    id="certificate"
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        toast({
+                          title: "Arquivo muito grande",
+                          description: "O arquivo deve ter no máximo 10MB",
+                          variant: "destructive"
+                        });
+                        e.target.value = '';
+                        return;
+                      }
+                      setCertificateFile(file || null);
+                    }}
+                  />
+                  {certificateFile && (
+                    <p className="text-sm text-muted-foreground">
+                      Arquivo selecionado: {certificateFile.name} ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
                 </div>
               </div>
 

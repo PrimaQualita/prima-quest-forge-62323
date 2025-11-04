@@ -334,12 +334,14 @@ export type Database = {
       supplier_due_diligence: {
         Row: {
           certificate_expires_at: string | null
+          certificate_file_path: string | null
           certificate_url: string | null
           cnpj: string
           company_name: string
           created_at: string | null
           email: string
           id: string
+          kpmg_report_file_path: string | null
           owner: string
           partners: string | null
           phone: string
@@ -348,17 +350,20 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           status: string | null
+          total_score: number | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           certificate_expires_at?: string | null
+          certificate_file_path?: string | null
           certificate_url?: string | null
           cnpj: string
           company_name: string
           created_at?: string | null
           email: string
           id?: string
+          kpmg_report_file_path?: string | null
           owner: string
           partners?: string | null
           phone: string
@@ -367,17 +372,20 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string | null
+          total_score?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           certificate_expires_at?: string | null
+          certificate_file_path?: string | null
           certificate_url?: string | null
           cnpj?: string
           company_name?: string
           created_at?: string | null
           email?: string
           id?: string
+          kpmg_report_file_path?: string | null
           owner?: string
           partners?: string | null
           phone?: string
@@ -386,6 +394,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string | null
+          total_score?: number | null
           updated_at?: string | null
           user_id?: string | null
         }
