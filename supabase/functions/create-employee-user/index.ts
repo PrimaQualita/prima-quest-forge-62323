@@ -45,29 +45,56 @@ serve(async (req) => {
 
     console.log('Creating user with CPF:', cpf);
 
-    // Create user in auth with CPF-based email
-    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email: authEmail,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        employee_id: employee.id,
-        cpf: cpf,
-        actual_email: employee.email
-      }
-    });
+    // Try to get existing user first
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === authEmail);
 
-    if (userError) {
-      console.error('Error creating user:', userError);
-      throw userError;
+    let userId: string;
+
+    if (existingUser) {
+      console.log('User already exists:', existingUser.id);
+      userId = existingUser.id;
+    } else {
+      // Create user in auth with CPF-based email
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+        email: authEmail,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          employee_id: employee.id,
+          cpf: cpf,
+          actual_email: employee.email
+        }
+      });
+
+      if (userError) {
+        console.error('Error creating user:', userError);
+        throw userError;
+      }
+
+      console.log('User created successfully:', userData.user.id);
+      userId = userData.user.id;
     }
 
-    console.log('User created successfully:', userData.user.id);
+    // Create profile first (required by foreign key)
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: userId,
+        cpf: cpf,
+        birth_date: employee.birth_date,
+        first_login: true
+      }, { onConflict: 'id' });
+
+    if (profileError) {
+      console.error('Error creating profile:', profileError);
+      throw profileError;
+    }
 
     // Update employee with user_id
     const { error: updateError } = await supabaseAdmin
       .from('employees')
-      .update({ user_id: userData.user.id })
+      .update({ user_id: userId })
       .eq('id', employee.id);
 
     if (updateError) {
@@ -79,7 +106,7 @@ serve(async (req) => {
     if (employee.is_manager) {
       const { error: roleError } = await supabaseAdmin
         .from('user_roles')
-        .insert({ user_id: userData.user.id, role: 'admin' });
+        .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' });
 
       if (roleError) {
         console.error('Error adding admin role:', roleError);
@@ -90,7 +117,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user_id: userData.user.id,
+        user_id: userId,
         message: 'Usuário criado com sucesso',
         login_info: {
           username: cpf,
