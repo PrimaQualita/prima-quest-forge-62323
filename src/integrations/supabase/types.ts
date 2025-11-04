@@ -343,6 +343,7 @@ export type Database = {
           reviewed_by: string | null
           status: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           certificate_expires_at?: string | null
@@ -361,6 +362,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           certificate_expires_at?: string | null
@@ -379,6 +381,7 @@ export type Database = {
           reviewed_by?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -21,7 +21,9 @@ const Auth = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [isSupplierLogin, setIsSupplierLogin] = useState(false);
   const [cpf, setCpf] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -39,20 +41,28 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const cleanCpf = cpf.replace(/[.-\s]/g, "");
+      let authEmail: string;
       const cleanPassword = password.replace(/\s/g, "");
 
-      if (cleanCpf.length !== 11) {
-        toast({
-          title: "CPF inválido",
-          description: "O CPF deve conter 11 dígitos",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
+      if (isSupplierLogin) {
+        // Login de fornecedor com email
+        authEmail = email.trim();
+      } else {
+        // Login de colaborador com CPF
+        const cleanCpf = cpf.replace(/[.-\s]/g, "");
+        
+        if (cleanCpf.length !== 11) {
+          toast({
+            title: "CPF inválido",
+            description: "O CPF deve conter 11 dígitos",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        authEmail = `${cleanCpf}@primaqualita.local`;
       }
-
-      const authEmail = `${cleanCpf}@primaqualita.local`;
 
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: authEmail,
@@ -62,13 +72,36 @@ const Auth = () => {
       if (signInError) {
         toast({
           title: "Erro ao fazer login",
-          description: "CPF ou senha incorretos",
+          description: isSupplierLogin ? "E-mail ou senha incorretos" : "CPF ou senha incorretos",
           variant: "destructive",
         });
         setLoading(false);
         return;
       }
 
+      // Verificar se é fornecedor
+      const { data: supplierData } = await supabase
+        .from("supplier_due_diligence")
+        .select("status")
+        .eq("user_id", signInData.user.id)
+        .maybeSingle();
+
+      if (supplierData) {
+        if (supplierData.status !== 'approved') {
+          await supabase.auth.signOut();
+          toast({
+            title: "Cadastro pendente",
+            description: "Seu cadastro ainda está em análise. Você será notificado quando for aprovado.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        navigate("/supplier-portal");
+        return;
+      }
+
+      // Se não é fornecedor, verificar se é colaborador
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_login")
@@ -130,20 +163,54 @@ const Auth = () => {
           <CardDescription>Prima Qualitá Saúde</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Button
+              type="button"
+              variant={!isSupplierLogin ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setIsSupplierLogin(false)}
+            >
+              Colaborador
+            </Button>
+            <Button
+              type="button"
+              variant={isSupplierLogin ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setIsSupplierLogin(true)}
+            >
+              Fornecedor
+            </Button>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                type="text"
-                placeholder="00000000000"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                maxLength={14}
-                required
-              />
-              <p className="text-xs text-muted-foreground">Digite apenas números</p>
-            </div>
+            {!isSupplierLogin ? (
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  type="text"
+                  placeholder="00000000000"
+                  value={cpf}
+                  onChange={(e) => setCpf(e.target.value)}
+                  maxLength={14}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">Digite apenas números</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
@@ -154,9 +221,11 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <p className="text-xs text-muted-foreground">
-                Primeiro acesso: use sua data de nascimento (Ex: 07011990)
-              </p>
+              {!isSupplierLogin && (
+                <p className="text-xs text-muted-foreground">
+                  Primeiro acesso: use sua data de nascimento (Ex: 07011990)
+                </p>
+              )}
             </div>
             
             <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>

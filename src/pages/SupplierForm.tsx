@@ -7,11 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+
+const passwordSchema = z.string()
+  .min(6, "A senha deve ter no mínimo 6 caracteres")
+  .max(100, "A senha deve ter no máximo 100 caracteres");
+
+const emailSchema = z.string()
+  .email("E-mail inválido")
+  .max(255, "E-mail deve ter no máximo 255 caracteres");
 
 const SupplierForm = () => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     company_name: "",
     cnpj: "",
@@ -19,6 +30,8 @@ const SupplierForm = () => {
     phone: "",
     owner: "",
     partners: "",
+    password: "",
+    confirmPassword: "",
     responses: {} as Record<string, string>,
   });
 
@@ -37,19 +50,46 @@ const SupplierForm = () => {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { error } = await supabase
+      // Criar conta de usuário
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/supplier-portal`,
+          data: {
+            company_name: data.company_name,
+            cnpj: data.cnpj,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Erro ao criar conta");
+
+      // Inserir dados do fornecedor
+      const { password, confirmPassword, ...supplierData } = data;
+      const { error: insertError } = await supabase
         .from('supplier_due_diligence')
-        .insert([data]);
-      if (error) throw error;
+        .insert([{
+          ...supplierData,
+          user_id: authData.user.id,
+          status: 'pending'
+        }]);
+      
+      if (insertError) throw insertError;
+
+      return authData;
     },
     onSuccess: () => {
       setSubmitted(true);
-      toast({ title: "Formulário enviado com sucesso!" });
+      toast({ title: "Cadastro realizado com sucesso!" });
     },
     onError: (error: any) => {
       toast({
-        title: "Erro ao enviar formulário",
-        description: error.message,
+        title: "Erro ao realizar cadastro",
+        description: error.message === "User already registered" 
+          ? "Este e-mail já está cadastrado" 
+          : error.message,
         variant: "destructive",
       });
     },
@@ -57,6 +97,38 @@ const SupplierForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar email
+    const emailValidation = emailSchema.safeParse(formData.email);
+    if (!emailValidation.success) {
+      toast({
+        title: "E-mail inválido",
+        description: emailValidation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar senha
+    const passwordValidation = passwordSchema.safeParse(formData.password);
+    if (!passwordValidation.success) {
+      toast({
+        title: "Senha inválida",
+        description: passwordValidation.error.errors[0].message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar confirmação de senha
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Senhas não coincidem",
+        description: "A senha e confirmação devem ser iguais",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validar que todas as perguntas foram respondidas
     if (questions && questions.length > 0) {
@@ -98,9 +170,9 @@ const SupplierForm = () => {
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-secondary/10 flex items-center justify-center">
               <CheckCircle className="h-10 w-10 text-secondary" />
             </div>
-            <CardTitle className="text-2xl">Formulário Enviado!</CardTitle>
+            <CardTitle className="text-2xl">Cadastro Realizado!</CardTitle>
             <CardDescription>
-              Obrigado por preencher o formulário de due diligence. Entraremos em contato em breve com a avaliação do seu cadastro.
+              Seu cadastro foi realizado com sucesso e está em análise. Você receberá um e-mail quando for aprovado e poderá acessar o portal do fornecedor com as credenciais cadastradas.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -148,28 +220,82 @@ const SupplierForm = () => {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail (será usado para login) *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone (DDD + Número) *</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                    required
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">E-mail *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
+                    <Label htmlFor="password">Senha *</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone (DDD + Número) *</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
-                      placeholder="(00) 00000-0000"
-                      maxLength={15}
-                      required
-                    />
+                    <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        placeholder="Digite a senha novamente"
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

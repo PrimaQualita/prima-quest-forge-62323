@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Calendar, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { Download, Calendar, AlertCircle, CheckCircle, Clock, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
@@ -13,42 +13,49 @@ import { ptBR } from "date-fns/locale";
 const SupplierPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [supplierEmail, setSupplierEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar se há um fornecedor logado (simulado via query param ou localStorage)
-    const email = new URLSearchParams(window.location.search).get('email') || 
-                  localStorage.getItem('supplier_email');
+    // Verificar autenticação
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Acesso negado",
+          description: "Você precisa fazer login para acessar esta página",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
+      }
+      
+      setUserId(session.user.id);
+    };
     
-    if (!email) {
-      toast({
-        title: "Acesso negado",
-        description: "Você precisa estar cadastrado para acessar esta página",
-        variant: "destructive",
-      });
-      navigate('/supplier-form');
-      return;
-    }
-    
-    setSupplierEmail(email);
+    checkAuth();
   }, [navigate, toast]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
   const { data: supplierData, isLoading } = useQuery({
-    queryKey: ['supplier_data', supplierEmail],
+    queryKey: ['supplier_data', userId],
     queryFn: async () => {
-      if (!supplierEmail) return null;
+      if (!userId) return null;
       
       const { data, error } = await supabase
         .from('supplier_due_diligence')
         .select('*')
-        .eq('email', supplierEmail)
-        .eq('status', 'approved')
+        .eq('user_id', userId)
         .maybeSingle();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!supplierEmail,
+    enabled: !!userId,
   });
 
   if (isLoading) {
@@ -62,7 +69,7 @@ const SupplierPortal = () => {
     );
   }
 
-  if (!supplierData) {
+  if (!supplierData || supplierData.status !== 'approved') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
         <Card className="w-full max-w-2xl text-center">
@@ -70,11 +77,21 @@ const SupplierPortal = () => {
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-muted flex items-center justify-center">
               <Clock className="h-10 w-10 text-muted-foreground" />
             </div>
-            <CardTitle className="text-2xl">Cadastro em Análise</CardTitle>
+            <CardTitle className="text-2xl">
+              {supplierData?.status === 'rejected' ? 'Cadastro Rejeitado' : 'Cadastro em Análise'}
+            </CardTitle>
             <CardDescription>
-              Seu cadastro está sendo analisado pela nossa equipe. Você receberá um e-mail assim que for aprovado.
+              {supplierData?.status === 'rejected' 
+                ? `Seu cadastro foi rejeitado. Motivo: ${supplierData.rejection_reason}` 
+                : 'Seu cadastro está sendo analisado pela nossa equipe. Você receberá um e-mail assim que for aprovado.'}
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button onClick={handleLogout} variant="outline">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -89,11 +106,19 @@ const SupplierPortal = () => {
       <div className="max-w-4xl mx-auto py-8 space-y-6">
         <Card>
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-              <img src="/logo-prima-qualita.png" alt="Prima Qualitá" className="h-16 w-16 object-contain" />
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <img src="/logo-prima-qualita.png" alt="Prima Qualitá" className="h-16 w-16 object-contain" />
+                </div>
+                <CardTitle className="text-3xl">Portal do Fornecedor</CardTitle>
+                <CardDescription>Prima Qualitá Saúde</CardDescription>
+              </div>
+              <Button onClick={handleLogout} variant="outline" size="sm">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
             </div>
-            <CardTitle className="text-3xl">Portal do Fornecedor</CardTitle>
-            <CardDescription>Prima Qualitá Saúde</CardDescription>
           </CardHeader>
         </Card>
 
