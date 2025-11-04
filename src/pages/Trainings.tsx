@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, Plus, CheckCircle, Clock, Video, Trash2, MoveUp, MoveDown } from "lucide-react";
+import { GraduationCap, Plus, CheckCircle, Clock, Video, Trash2, MoveUp, MoveDown, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -46,6 +46,8 @@ const Trainings = () => {
     file: null,
     uploadType: 'url'
   }]);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   const { data: trainings } = useQuery({
     queryKey: ['trainings'],
@@ -54,7 +56,8 @@ const Trainings = () => {
         .from('trainings')
         .select(`
           *,
-          training_videos (*)
+          training_videos (*),
+          training_documents (*)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -141,9 +144,63 @@ const Trainings = () => {
 
         if (videosError) throw videosError;
       }
+
+      // Upload de documentos
+      if (documents.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        for (const doc of documents) {
+          const fileExt = doc.name.split('.').pop();
+          const fileName = `${training.id}/${crypto.randomUUID()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('compliance-documents')
+            .upload(fileName, doc);
+
+          if (uploadError) throw uploadError;
+
+          const { error: docError } = await supabase
+            .from('training_documents')
+            .insert({
+              training_id: training.id,
+              file_name: doc.name,
+              file_path: fileName,
+              uploaded_by: user?.id
+            });
+
+          if (docError) throw docError;
+
+          // Ler conteúdo do documento para gerar questões
+          const reader = new FileReader();
+          const content = await new Promise<string>((resolve, reject) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.onerror = reject;
+            reader.readAsText(doc);
+          });
+
+          // Gerar questões via IA (assíncrono, não bloqueia)
+          setIsGeneratingQuestions(true);
+          supabase.functions.invoke('generate-training-questions', {
+            body: { 
+              trainingId: training.id, 
+              documentContent: content 
+            }
+          }).then(() => {
+            setIsGeneratingQuestions(false);
+          }).catch((err) => {
+            console.error('Erro ao gerar questões:', err);
+            setIsGeneratingQuestions(false);
+          });
+        }
+      }
+
+      return training;
     },
     onSuccess: () => {
-      toast({ title: "Treinamento criado com sucesso!" });
+      toast({ 
+        title: "Treinamento criado com sucesso!",
+        description: isGeneratingQuestions ? "As questões estão sendo geradas pela IA..." : undefined
+      });
       setIsAddDialogOpen(false);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
@@ -173,6 +230,7 @@ const Trainings = () => {
       file: null,
       uploadType: 'url'
     }]);
+    setDocuments([]);
     setIsTrail(false);
   };
 
@@ -319,6 +377,30 @@ const Trainings = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Documentos do Treinamento (PDF, DOCX, TXT)</Label>
+                  <Input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setDocuments(files);
+                    }}
+                  />
+                  {documents.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      {documents.length} documento(s) selecionado(s)
+                      <p className="text-xs mt-1">
+                        💡 A IA irá gerar 30 questões automaticamente a partir destes documentos.
+                        Cada colaborador receberá 10 questões aleatórias únicas.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="border-t pt-4 space-y-4">
@@ -506,7 +588,15 @@ const Trainings = () => {
                 
                 {training.training_videos && training.training_videos.length > 0 && (
                   <div className="text-sm text-muted-foreground">
+                    <Video className="w-4 h-4 inline mr-1" />
                     <strong>{training.training_videos.length}</strong> vídeo(s)
+                  </div>
+                )}
+
+                {training.training_documents && training.training_documents.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    <FileText className="w-4 h-4 inline mr-1" />
+                    <strong>{training.training_documents.length}</strong> documento(s)
                   </div>
                 )}
                 

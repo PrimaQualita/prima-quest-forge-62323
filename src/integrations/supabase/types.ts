@@ -385,6 +385,92 @@ export type Database = {
         }
         Relationships: []
       }
+      training_assessments: {
+        Row: {
+          answers: Json | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          questions: Json
+          score: number | null
+          training_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          questions: Json
+          score?: number | null
+          training_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          questions?: Json
+          score?: number | null
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_assessments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assessments_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_documents: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          id: string
+          training_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          training_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          training_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_documents_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_participations: {
         Row: {
           completed: boolean | null
@@ -420,6 +506,41 @@ export type Database = {
           },
           {
             foreignKeyName: "training_participations_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          id: string
+          options: Json
+          question: string
+          training_id: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          id?: string
+          options: Json
+          question: string
+          training_id: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_questions_training_id_fkey"
             columns: ["training_id"]
             isOneToOne: false
             referencedRelation: "trainings"
