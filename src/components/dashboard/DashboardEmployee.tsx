@@ -165,7 +165,10 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                       <h4 className="font-medium">{doc.title}</h4>
                       <Badge variant="outline">{doc.category}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{doc.description}</p>
+                    <div 
+                      className="text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: doc.description || "" }}
+                    />
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/documents')}
