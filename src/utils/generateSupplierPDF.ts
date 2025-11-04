@@ -127,6 +127,13 @@ export const generateSupplierPDF = async (
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
 
+  // Função auxiliar para remover tags HTML
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
   questions.forEach((question, index) => {
     // Verificar se precisa de nova página
     if (yPos > 270) {
@@ -139,7 +146,9 @@ export const generateSupplierPDF = async (
     const points = response === 'sim' ? question.yes_points : response === 'nao' ? question.no_points : 0;
 
     doc.setFont('helvetica', 'bold');
-    const questionText = `${index + 1}. ${question.question}`;
+    // Remover HTML das perguntas para o PDF
+    const cleanQuestion = stripHtml(question.question);
+    const questionText = `${index + 1}. ${cleanQuestion}`;
     const questionLines = doc.splitTextToSize(questionText, pageWidth - 40);
     
     // Renderizar cada linha da pergunta
