@@ -92,11 +92,11 @@ const SupplierPortal = () => {
               <Clock className="h-10 w-10 text-muted-foreground" />
             </div>
             <CardTitle className="text-2xl">
-              {supplierData?.status === 'rejected' ? 'Cadastro Rejeitado' : 'Cadastro em Análise'}
+              {supplierData?.status === 'rejected' ? 'Cadastro Reprovado' : 'Cadastro em Análise'}
             </CardTitle>
             <CardDescription>
               {supplierData?.status === 'rejected' 
-                ? `Seu cadastro foi rejeitado. Motivo: ${supplierData.rejection_reason}` 
+                ? `Seu cadastro foi reprovado. Motivo: ${supplierData.rejection_reason}` 
                 : 'Seu cadastro está sendo analisado pela nossa equipe. Você receberá um e-mail assim que for aprovado.'}
             </CardDescription>
           </CardHeader>

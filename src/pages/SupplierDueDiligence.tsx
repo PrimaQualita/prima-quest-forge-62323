@@ -229,7 +229,7 @@ const SupplierDueDiligence = () => {
       case 'approved':
         return <Badge className="bg-green-500">Aprovado</Badge>;
       case 'rejected':
-        return <Badge variant="destructive">Rejeitado</Badge>;
+        return <Badge variant="destructive">Reprovado</Badge>;
       default:
         return <Badge variant="outline">Pendente</Badge>;
     }
@@ -630,12 +630,12 @@ const SupplierDueDiligence = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rejection-reason">Motivo da Rejeição (opcional)</Label>
+                    <Label htmlFor="rejection-reason">Motivo da Reprovação (opcional)</Label>
                     <Textarea
                       id="rejection-reason"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Descreva o motivo caso vá rejeitar..."
+                      placeholder="Descreva o motivo caso vá reprovar..."
                       rows={3}
                     />
                   </div>
@@ -656,7 +656,7 @@ const SupplierDueDiligence = () => {
                       disabled={reviewSupplierMutation.isPending}
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Rejeitar
+                      Reprovar
                     </Button>
                   </div>
                 </>
@@ -782,12 +782,12 @@ const SupplierDueDiligence = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="reeval-rejection-reason">Motivo (para rejeição)</Label>
+                      <Label htmlFor="reeval-rejection-reason">Motivo (para reprovação)</Label>
                       <Textarea
                         id="reeval-rejection-reason"
                         value={rejectionReason}
                         onChange={(e) => setRejectionReason(e.target.value)}
-                        placeholder="Descreva o motivo caso vá rejeitar..."
+                        placeholder="Descreva o motivo caso vá reprovar..."
                         rows={3}
                       />
                     </div>
@@ -808,7 +808,7 @@ const SupplierDueDiligence = () => {
                         disabled={reviewSupplierMutation.isPending}
                       >
                         <X className="w-4 h-4 mr-2" />
-                        Rejeitar
+                        Reprovar
                       </Button>
                     </div>
                   </div>

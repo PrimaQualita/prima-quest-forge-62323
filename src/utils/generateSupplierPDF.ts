@@ -95,7 +95,7 @@ export const generateSupplierPDF = async (
   doc.setFont('helvetica', 'normal');
   
   const statusText = supplier.status === 'approved' ? 'APROVADO' : 
-                     supplier.status === 'rejected' ? 'REJEITADO' : 'PENDENTE';
+                     supplier.status === 'rejected' ? 'REPROVADO' : 'PENDENTE';
   
   doc.setTextColor(supplier.status === 'approved' ? 0 : supplier.status === 'rejected' ? 255 : 0, 
                    supplier.status === 'approved' ? 128 : 0, 0);
