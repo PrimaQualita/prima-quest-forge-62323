@@ -40,10 +40,14 @@ const Dashboard = () => {
     );
   }
 
-  return employeeData.is_manager ? (
-    <DashboardManager />
-  ) : (
-    <DashboardEmployee employeeId={employeeData.id} />
+  return (
+    <>
+      {employeeData.is_manager ? (
+        <DashboardManager />
+      ) : (
+        <DashboardEmployee employeeId={employeeData.id} />
+      )}
+    </>
   );
 };
 
