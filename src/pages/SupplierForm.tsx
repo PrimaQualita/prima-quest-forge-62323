@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle } from "lucide-react";
 
@@ -57,7 +57,37 @@ const SupplierForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar que todas as perguntas foram respondidas
+    if (questions && questions.length > 0) {
+      const allAnswered = questions.every(q => formData.responses[q.id]);
+      if (!allAnswered) {
+        toast({
+          title: "Respostas incompletas",
+          description: "Por favor, responda todas as perguntas",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     submitMutation.mutate(formData);
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+    if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`;
+    if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+    return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
   };
 
   if (submitted) {
@@ -70,7 +100,7 @@ const SupplierForm = () => {
             </div>
             <CardTitle className="text-2xl">Formulário Enviado!</CardTitle>
             <CardDescription>
-              Obrigado por preencher o formulário de due diligence. Entraremos em contato em breve.
+              Obrigado por preencher o formulário de due diligence. Entraremos em contato em breve com a avaliação do seu cadastro.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -86,9 +116,9 @@ const SupplierForm = () => {
             <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
               <img src="/logo-prima-qualita.png" alt="Prima Qualitá" className="h-16 w-16 object-contain" />
             </div>
-            <CardTitle className="text-3xl">Formulário de Due Diligence</CardTitle>
+            <CardTitle className="text-3xl">Cadastro de Fornecedores</CardTitle>
             <CardDescription>
-              Prima Qualitá Saúde - Cadastro de Fornecedores
+              Prima Qualitá Saúde - Formulário de Due Diligence
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -111,8 +141,9 @@ const SupplierForm = () => {
                   <Input
                     id="cnpj"
                     value={formData.cnpj}
-                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
                     placeholder="00.000.000/0000-00"
+                    maxLength={18}
                     required
                   />
                 </div>
@@ -130,12 +161,13 @@ const SupplierForm = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone *</Label>
+                    <Label htmlFor="phone">Telefone (DDD + Número) *</Label>
                     <Input
                       id="phone"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                       placeholder="(00) 00000-0000"
+                      maxLength={15}
                       required
                     />
                   </div>
@@ -153,12 +185,11 @@ const SupplierForm = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="partners">Sócios Cotistas</Label>
-                  <Textarea
+                  <Input
                     id="partners"
                     value={formData.partners}
                     onChange={(e) => setFormData({ ...formData, partners: e.target.value })}
-                    placeholder="Liste os sócios cotistas..."
-                    rows={3}
+                    placeholder="Liste os sócios cotistas (opcional)"
                   />
                 </div>
               </div>
@@ -167,24 +198,34 @@ const SupplierForm = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Questionário de Due Diligence</h3>
                   {questions.map((question, index) => (
-                    <div key={question.id} className="space-y-2">
-                      <Label htmlFor={`question-${question.id}`}>
+                    <div key={question.id} className="space-y-3 p-4 border rounded-lg">
+                      <Label className="text-base">
                         {index + 1}. {question.question} *
                       </Label>
-                      <Textarea
-                        id={`question-${question.id}`}
+                      <RadioGroup
                         value={formData.responses[question.id] || ""}
-                        onChange={(e) => setFormData({
+                        onValueChange={(value) => setFormData({
                           ...formData,
                           responses: {
                             ...formData.responses,
-                            [question.id]: e.target.value
+                            [question.id]: value
                           }
                         })}
-                        placeholder="Digite sua resposta..."
-                        rows={4}
                         required
-                      />
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="sim" id={`${question.id}-sim`} />
+                          <Label htmlFor={`${question.id}-sim`} className="font-normal cursor-pointer">
+                            SIM
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="nao" id={`${question.id}-nao`} />
+                          <Label htmlFor={`${question.id}-nao`} className="font-normal cursor-pointer">
+                            NÃO
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
                   ))}
                 </div>

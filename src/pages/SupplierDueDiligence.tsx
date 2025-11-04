@@ -7,15 +7,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Building2, Edit } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Building2, Check, X, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format, addYears } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const SupplierDueDiligence = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [newQuestion, setNewQuestion] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [certificateExpiry, setCertificateExpiry] = useState<string>(
+    format(addYears(new Date(), 1), "yyyy-MM-dd")
+  );
 
   const { data: questions } = useQuery({
     queryKey: ['due_diligence_questions'],
@@ -60,12 +69,85 @@ const SupplierDueDiligence = () => {
     },
   });
 
+  const reviewSupplierMutation = useMutation({
+    mutationFn: async ({ 
+      id, 
+      status, 
+      rejection_reason, 
+      certificate_expires_at 
+    }: { 
+      id: string; 
+      status: 'approved' | 'rejected'; 
+      rejection_reason?: string;
+      certificate_expires_at?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('supplier_due_diligence')
+        .update({
+          status,
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user?.id,
+          rejection_reason: rejection_reason || null,
+          certificate_expires_at: certificate_expires_at || null,
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier_due_diligence'] });
+      toast({ title: "Fornecedor avaliado com sucesso!" });
+      setIsReviewDialogOpen(false);
+      setSelectedSupplier(null);
+      setRejectionReason("");
+    },
+  });
+
+  const handleApprove = () => {
+    if (selectedSupplier) {
+      reviewSupplierMutation.mutate({
+        id: selectedSupplier.id,
+        status: 'approved',
+        certificate_expires_at: certificateExpiry,
+      });
+    }
+  };
+
+  const handleReject = () => {
+    if (selectedSupplier && rejectionReason.trim()) {
+      reviewSupplierMutation.mutate({
+        id: selectedSupplier.id,
+        status: 'rejected',
+        rejection_reason: rejectionReason,
+      });
+    } else {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da rejeição",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500">Aprovado</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejeitado</Badge>;
+      default:
+        return <Badge variant="outline">Pendente</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground">Due Diligence de Fornecedores</h1>
-          <p className="text-muted-foreground mt-1">Gerencie perguntas e respostas de fornecedores</p>
+          <p className="text-muted-foreground mt-1">Gerencie perguntas e avalie fornecedores</p>
         </div>
         <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
           <DialogTrigger asChild>
@@ -128,85 +210,78 @@ const SupplierDueDiligence = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Fornecedores Cadastrados</CardTitle>
+            <CardTitle>Link para Formulário</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {suppliers?.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhum fornecedor cadastrado
-                </p>
-              ) : (
-                suppliers?.map((supplier) => (
-                  <div key={supplier.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                    <Building2 className="w-5 h-5 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="font-medium">{supplier.company_name}</p>
-                      <p className="text-sm text-muted-foreground">{supplier.cnpj}</p>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={`${window.location.origin}/supplier-form`}
+                  readOnly
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/supplier-form`);
+                    toast({ title: "Link copiado!" });
+                  }}
+                >
+                  Copiar
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Compartilhe este link com fornecedores para preenchimento do formulário
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Link para Formulário Público</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <Input
-              value={`${window.location.origin}/supplier-form`}
-              readOnly
-              className="flex-1"
-            />
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/supplier-form`);
-                toast({ title: "Link copiado!" });
-              }}
-            >
-              Copiar Link
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Compartilhe este link com fornecedores para que eles preencham o formulário de due diligence
-          </p>
-        </CardContent>
-      </Card>
-
       {suppliers && suppliers.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Todos os Fornecedores</CardTitle>
+            <CardTitle>Fornecedores Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Status</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>CNPJ</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Proprietário</TableHead>
-                  <TableHead>Data</TableHead>
+                  <TableHead>Data Cadastro</TableHead>
+                  <TableHead>Validade</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {suppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
+                    <TableCell>{getStatusBadge(supplier.status)}</TableCell>
                     <TableCell className="font-medium">{supplier.company_name}</TableCell>
                     <TableCell>{supplier.cnpj}</TableCell>
                     <TableCell>{supplier.email}</TableCell>
-                    <TableCell>{supplier.phone}</TableCell>
-                    <TableCell>{supplier.owner}</TableCell>
-                    <TableCell>{new Date(supplier.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{format(new Date(supplier.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                    <TableCell>
+                      {supplier.certificate_expires_at 
+                        ? format(new Date(supplier.certificate_expires_at), "dd/MM/yyyy", { locale: ptBR })
+                        : "-"
+                      }
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedSupplier(supplier);
+                          setIsReviewDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Avaliar
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -214,6 +289,129 @@ const SupplierDueDiligence = () => {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Avaliar Fornecedor</DialogTitle>
+          </DialogHeader>
+          {selectedSupplier && (
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <h3 className="font-semibold">Informações da Empresa</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Razão Social</p>
+                    <p className="font-medium">{selectedSupplier.company_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">CNPJ</p>
+                    <p className="font-medium">{selectedSupplier.cnpj}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-medium">{selectedSupplier.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Telefone</p>
+                    <p className="font-medium">{selectedSupplier.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Proprietário</p>
+                    <p className="font-medium">{selectedSupplier.owner}</p>
+                  </div>
+                  {selectedSupplier.partners && (
+                    <div>
+                      <p className="text-muted-foreground">Sócios</p>
+                      <p className="font-medium">{selectedSupplier.partners}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {selectedSupplier.responses && Object.keys(selectedSupplier.responses).length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Respostas do Questionário</h3>
+                  {questions?.map((question, index) => (
+                    <div key={question.id} className="p-3 border rounded-lg">
+                      <p className="text-sm font-medium mb-2">
+                        {index + 1}. {question.question}
+                      </p>
+                      <Badge variant={selectedSupplier.responses[question.id] === 'sim' ? 'default' : 'secondary'}>
+                        {selectedSupplier.responses[question.id]?.toUpperCase() || 'NÃO RESPONDIDA'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {selectedSupplier.status === 'pending' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="certificate-expiry">Data de Validade do Certificado</Label>
+                    <Input
+                      id="certificate-expiry"
+                      type="date"
+                      value={certificateExpiry}
+                      onChange={(e) => setCertificateExpiry(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rejection-reason">Motivo da Rejeição (opcional)</Label>
+                    <Textarea
+                      id="rejection-reason"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Descreva o motivo caso vá rejeitar..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={handleApprove}
+                      disabled={reviewSupplierMutation.isPending}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Aprovar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={handleReject}
+                      disabled={reviewSupplierMutation.isPending}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Rejeitar
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {selectedSupplier.status !== 'pending' && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    <strong>Status:</strong> {getStatusBadge(selectedSupplier.status)}
+                  </p>
+                  {selectedSupplier.reviewed_at && (
+                    <p className="text-sm mt-2">
+                      <strong>Avaliado em:</strong>{" "}
+                      {format(new Date(selectedSupplier.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  )}
+                  {selectedSupplier.rejection_reason && (
+                    <p className="text-sm mt-2">
+                      <strong>Motivo:</strong> {selectedSupplier.rejection_reason}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

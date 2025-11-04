@@ -17,6 +17,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ManagementContracts from "./pages/ManagementContracts";
 import SupplierDueDiligence from "./pages/SupplierDueDiligence";
 import SupplierForm from "./pages/SupplierForm";
+import SupplierPortal from "./pages/SupplierPortal";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/supplier-form" element={<SupplierForm />} />
+          <Route path="/supplier-portal" element={<SupplierPortal />} />
           <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
           
           {/* Rotas acessíveis a todos os usuários autenticados */}

@@ -327,6 +327,8 @@ export type Database = {
       }
       supplier_due_diligence: {
         Row: {
+          certificate_expires_at: string | null
+          certificate_url: string | null
           cnpj: string
           company_name: string
           created_at: string | null
@@ -335,10 +337,16 @@ export type Database = {
           owner: string
           partners: string | null
           phone: string
+          rejection_reason: string | null
           responses: Json | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
           updated_at: string | null
         }
         Insert: {
+          certificate_expires_at?: string | null
+          certificate_url?: string | null
           cnpj: string
           company_name: string
           created_at?: string | null
@@ -347,10 +355,16 @@ export type Database = {
           owner: string
           partners?: string | null
           phone: string
+          rejection_reason?: string | null
           responses?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
+          certificate_expires_at?: string | null
+          certificate_url?: string | null
           cnpj?: string
           company_name?: string
           created_at?: string | null
@@ -359,7 +373,11 @@ export type Database = {
           owner?: string
           partners?: string | null
           phone?: string
+          rejection_reason?: string | null
           responses?: Json | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +7,26 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Check if already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate("/");
@@ -29,10 +39,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Clean CPF (remove formatting)
       const cleanCpf = cpf.replace(/[.-\s]/g, "");
-      
-      // Clean password (remove spaces)
       const cleanPassword = password.replace(/\s/g, "");
 
       if (cleanCpf.length !== 11) {
@@ -45,19 +52,14 @@ const Auth = () => {
         return;
       }
 
-      console.log("Attempting login with CPF:", cleanCpf);
-
-      // The auth email is cpf@primaqualita.local
       const authEmail = `${cleanCpf}@primaqualita.local`;
 
-      // Try to sign in
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: authEmail,
         password: cleanPassword,
       });
 
       if (signInError) {
-        console.error("Login error:", signInError);
         toast({
           title: "Erro ao fazer login",
           description: "CPF ou senha incorretos",
@@ -67,9 +69,6 @@ const Auth = () => {
         return;
       }
 
-      console.log("Login successful");
-
-      // Check if this is first login
       const { data: profile } = await supabase
         .from("profiles")
         .select("first_login")
@@ -82,7 +81,6 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error: any) {
-      console.error("Login error:", error);
       toast({
         title: "Erro ao fazer login",
         description: error.message || "Ocorreu um erro inesperado",
@@ -90,6 +88,34 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/change-password`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "E-mail enviado!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+      });
+      setResetDialogOpen(false);
+      setResetEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar e-mail",
+        description: error.message || "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -132,11 +158,54 @@ const Auth = () => {
                 Primeiro acesso: use sua data de nascimento (Ex: 07011990)
               </p>
             </div>
+            
+            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="link" className="w-full text-xs">
+                  Esqueci minha senha
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Redefinir Senha</DialogTitle>
+                  <DialogDescription>
+                    Digite seu e-mail cadastrado para receber instruções de redefinição de senha.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handlePasswordReset} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">E-mail</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={resetLoading}>
+                    {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Enviar E-mail
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
           </form>
+
+          <div className="mt-6 pt-6 border-t text-center">
+            <p className="text-sm text-muted-foreground mb-2">É um fornecedor?</p>
+            <Link to="/supplier-form">
+              <Button variant="outline" className="w-full">
+                Cadastrar como Fornecedor
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
