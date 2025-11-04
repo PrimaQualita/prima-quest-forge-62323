@@ -664,31 +664,154 @@ const SupplierDueDiligence = () => {
 
               {selectedSupplier.status !== 'pending' && (
                 <>
-                  <div className="p-4 bg-muted rounded-lg">
-                    <p className="text-sm">
-                      <strong>Status:</strong> {getStatusBadge(selectedSupplier.status)}
-                    </p>
-                    {selectedSupplier.reviewed_at && (
-                      <p className="text-sm mt-2">
-                        <strong>Avaliado em:</strong>{" "}
-                        {format(new Date(selectedSupplier.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  <div className="p-4 bg-muted rounded-lg space-y-3">
+                    <div>
+                      <p className="text-sm">
+                        <strong>Status:</strong> {getStatusBadge(selectedSupplier.status)}
                       </p>
-                    )}
-                    {selectedSupplier.rejection_reason && (
-                      <p className="text-sm mt-2">
-                        <strong>Motivo:</strong> {selectedSupplier.rejection_reason}
-                      </p>
-                    )}
+                      {selectedSupplier.reviewed_at && (
+                        <p className="text-sm mt-2">
+                          <strong>Avaliado em:</strong>{" "}
+                          {format(new Date(selectedSupplier.reviewed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                      )}
+                      {selectedSupplier.rejection_reason && (
+                        <p className="text-sm mt-2">
+                          <strong>Motivo:</strong> {selectedSupplier.rejection_reason}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => generateSupplierPDF(selectedSupplier, questions || [])}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Gerar Relatório em PDF
-                  </Button>
+
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm">Ações Disponíveis</h3>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => generateSupplierPDF(selectedSupplier, questions || [])}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Gerar PDF
+                      </Button>
+                      <Button
+                        variant="default"
+                        className="flex-1"
+                        onClick={() => {
+                          // Preparar para reavaliação
+                          const newStatus = selectedSupplier.status === 'approved' ? 'rejected' : 'approved';
+                          if (newStatus === 'rejected') {
+                            setRejectionReason('');
+                          }
+                          // Resetar campos para reavaliação
+                          setCertificateFile(null);
+                          setKpmgReportFile(null);
+                        }}
+                      >
+                        Reavaliar Fornecedor
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Formulário de reavaliação */}
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                    <h3 className="font-semibold">Reavaliação</h3>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="reeval-certificate-expiry">Nova Data de Validade do Certificado</Label>
+                      <Input
+                        id="reeval-certificate-expiry"
+                        type="date"
+                        value={certificateExpiry}
+                        onChange={(e) => setCertificateExpiry(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="reeval-certificate-upload">Atualizar Certificado (PDF - Opcional)</Label>
+                      <Input
+                        id="reeval-certificate-upload"
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            toast({
+                              title: "Arquivo muito grande",
+                              description: "O arquivo deve ter no máximo 10MB",
+                              variant: "destructive"
+                            });
+                            e.target.value = '';
+                            return;
+                          }
+                          setCertificateFile(file || null);
+                        }}
+                      />
+                      {certificateFile && (
+                        <p className="text-sm text-muted-foreground">
+                          Arquivo selecionado: {certificateFile.name} ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="reeval-kpmg-report">Atualizar Relatório KPMG (PDF - Opcional)</Label>
+                      <Input
+                        id="reeval-kpmg-report"
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && file.size > 10 * 1024 * 1024) {
+                            toast({
+                              title: "Arquivo muito grande",
+                              description: "O arquivo deve ter no máximo 10MB",
+                              variant: "destructive"
+                            });
+                            e.target.value = '';
+                            return;
+                          }
+                          setKpmgReportFile(file || null);
+                        }}
+                      />
+                      {kpmgReportFile && (
+                        <p className="text-sm text-muted-foreground">
+                          Arquivo selecionado: {kpmgReportFile.name} ({(kpmgReportFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="reeval-rejection-reason">Motivo (para rejeição)</Label>
+                      <Textarea
+                        id="reeval-rejection-reason"
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Descreva o motivo caso vá rejeitar..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={handleApprove}
+                        disabled={reviewSupplierMutation.isPending}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Aprovar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className="flex-1"
+                        onClick={handleReject}
+                        disabled={reviewSupplierMutation.isPending}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Rejeitar
+                      </Button>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
