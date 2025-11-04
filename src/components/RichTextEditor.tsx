@@ -1,7 +1,12 @@
 import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, List } from "lucide-react";
+import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, List, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface RichTextEditorProps {
   value: string;
@@ -29,6 +34,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     document.execCommand(command, false, value);
     editorRef.current?.focus();
   };
+
+  const colors = [
+    { name: "Preto", value: "#000000" },
+    { name: "Vermelho", value: "#ef4444" },
+    { name: "Laranja", value: "#f97316" },
+    { name: "Amarelo", value: "#eab308" },
+    { name: "Verde", value: "#22c55e" },
+    { name: "Azul", value: "#3b82f6" },
+    { name: "Roxo", value: "#a855f7" },
+    { name: "Rosa", value: "#ec4899" },
+  ];
 
   return (
     <div className="space-y-2">
@@ -89,6 +105,33 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
         >
           <List className="h-4 w-4" />
         </Button>
+        <div className="w-px bg-border mx-1" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+            >
+              <Palette className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-2 bg-background border shadow-lg z-50">
+            <div className="grid grid-cols-4 gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color.value}
+                  type="button"
+                  onClick={() => execCommand('foreColor', color.value)}
+                  className="h-8 w-8 rounded border border-border hover:scale-110 transition-transform"
+                  style={{ backgroundColor: color.value }}
+                  title={color.name}
+                />
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
       <div
         ref={editorRef}
