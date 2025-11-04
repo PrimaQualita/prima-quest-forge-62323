@@ -1,0 +1,265 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, FileText, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+
+const ManagementContracts = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<any>(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [newContract, setNewContract] = useState({ name: "", description: "" });
+
+  const { data: contracts } = useQuery({
+    queryKey: ['management_contracts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('management_contracts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: documents } = useQuery({
+    queryKey: ['contract_documents', selectedContract?.id, selectedYear, selectedMonth],
+    queryFn: async () => {
+      if (!selectedContract) return [];
+      const { data, error } = await supabase
+        .from('contract_documents')
+        .select('*')
+        .eq('contract_id', selectedContract.id)
+        .eq('year', selectedYear)
+        .eq('month', selectedMonth)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedContract,
+  });
+
+  const addContractMutation = useMutation({
+    mutationFn: async (contract: typeof newContract) => {
+      const { data, error } = await supabase
+        .from('management_contracts')
+        .insert([contract])
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
+      toast({ title: "Contrato criado com sucesso!" });
+      setIsAddDialogOpen(false);
+      setNewContract({ name: "", description: "" });
+    },
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedContract) return;
+    
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Aqui você implementaria o upload para storage
+      // Por enquanto, apenas simulando o registro no banco
+      const { error } = await supabase
+        .from('contract_documents')
+        .insert({
+          contract_id: selectedContract.id,
+          file_name: file.name,
+          file_path: `contracts/${selectedContract.id}/${selectedYear}/${selectedMonth}/${file.name}`,
+          year: selectedYear,
+          month: selectedMonth,
+          uploaded_by: user?.id,
+        });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
+      toast({ title: "Documento enviado com sucesso!" });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar documento",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const months = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+
+  const years = [2024, 2025, 2026, 2027, 2028];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground">Contratos de Gestão</h1>
+          <p className="text-muted-foreground mt-1">Gerencie contratos e pareceres de compliance</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Contrato
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Novo Contrato</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome do Contrato</Label>
+                <Input
+                  id="name"
+                  value={newContract.name}
+                  onChange={(e) => setNewContract({ ...newContract, name: e.target.value })}
+                  placeholder="Ex: Contrato Hospital Municipal"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={newContract.description}
+                  onChange={(e) => setNewContract({ ...newContract, description: e.target.value })}
+                  placeholder="Descrição do contrato..."
+                  rows={4}
+                />
+              </div>
+              <Button 
+                onClick={() => addContractMutation.mutate(newContract)}
+                className="w-full"
+                disabled={addContractMutation.isPending}
+              >
+                Adicionar Contrato
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Contratos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {contracts?.map((contract) => (
+                <Button
+                  key={contract.id}
+                  variant={selectedContract?.id === contract.id ? "default" : "outline"}
+                  className="w-full justify-start"
+                  onClick={() => setSelectedContract(contract)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  {contract.name}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {selectedContract && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>{selectedContract.name}</CardTitle>
+              <p className="text-sm text-muted-foreground">{selectedContract.description}</p>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
+                <TabsList className="grid grid-cols-5 mb-4">
+                  {years.map((year) => (
+                    <TabsTrigger key={year} value={year.toString()}>
+                      {year}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {years.map((year) => (
+                  <TabsContent key={year} value={year.toString()} className="space-y-4">
+                    <div className="grid grid-cols-4 gap-2">
+                      {months.map((month, index) => (
+                        <Button
+                          key={month}
+                          variant={selectedMonth === index + 1 ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedMonth(index + 1)}
+                        >
+                          {month}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium">
+                          Documentos - {months[selectedMonth - 1]}/{selectedYear}
+                        </h3>
+                        <Button size="sm" asChild>
+                          <label className="cursor-pointer">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload
+                            <input
+                              type="file"
+                              className="hidden"
+                              onChange={handleFileUpload}
+                              accept=".pdf,.doc,.docx"
+                            />
+                          </label>
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {documents?.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">
+                            Nenhum documento enviado para este período
+                          </p>
+                        ) : (
+                          documents?.map((doc) => (
+                            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-sm">{doc.file_name}</span>
+                              </div>
+                              <Badge variant="outline">
+                                {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                              </Badge>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ManagementContracts;

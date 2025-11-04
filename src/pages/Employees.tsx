@@ -1,0 +1,297 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Upload, UserPlus, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+
+const Employees = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({
+    name: "",
+    cpf: "",
+    birth_date: "",
+    phone: "",
+    email: "",
+    is_manager: false,
+  });
+
+  const { data: employees, isLoading } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const addEmployeeMutation = useMutation({
+    mutationFn: async (employee: typeof newEmployee) => {
+      // Validate CPF format (only numbers, 11 digits)
+      const cpfNumbers = employee.cpf.replace(/\D/g, '');
+      if (cpfNumbers.length !== 11) {
+        throw new Error('CPF deve conter 11 dígitos');
+      }
+
+      // Check if CPF already exists
+      const { data: existingEmployee } = await supabase
+        .from('employees')
+        .select('cpf')
+        .eq('cpf', cpfNumbers)
+        .single();
+
+      if (existingEmployee) {
+        throw new Error('Este CPF já está cadastrado no sistema');
+      }
+
+      // Insert employee with cleaned CPF
+      const { data, error } = await supabase
+        .from('employees')
+        .insert([{ ...employee, cpf: cpfNumbers }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Create user account via edge function
+      const { error: userError } = await supabase.functions.invoke('create-employee-user', {
+        body: { employee: data }
+      });
+      
+      if (userError) {
+        console.error('Error creating user account:', userError);
+        throw new Error('Colaborador criado, mas houve erro ao criar conta de acesso');
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({ 
+        title: "Colaborador criado com sucesso!", 
+        description: "Login: CPF | Senha: Data de nascimento (DDMMAAAA)"
+      });
+      setIsAddDialogOpen(false);
+      setNewEmployee({ name: "", cpf: "", birth_date: "", phone: "", email: "", is_manager: false });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao adicionar colaborador", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const rows = text.split('\n').slice(1); // Skip header
+        
+        const employeesData = rows
+          .filter(row => row.trim())
+          .map(row => {
+            const [name, cpf, birth_date, phone, email] = row.split(',').map(s => s.trim());
+            return { name, cpf, birth_date, phone, email };
+          });
+
+        const { error } = await supabase
+          .from('employees')
+          .insert(employeesData);
+
+        if (error) throw error;
+
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+        toast({ title: "Planilha importada com sucesso!" });
+      } catch (error: any) {
+        toast({ 
+          title: "Erro ao importar planilha", 
+          description: error.message,
+          variant: "destructive" 
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const filteredEmployees = employees?.filter(emp =>
+    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.cpf.includes(searchTerm) ||
+    emp.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground">Gestão de Colaboradores</h1>
+          <p className="text-muted-foreground mt-1">Gerencie os colaboradores e suas informações</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <label className="cursor-pointer">
+              <Upload className="w-4 h-4 mr-2" />
+              Importar CSV
+              <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+            </label>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Colaborador
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Completo</Label>
+                  <Input
+                    id="name"
+                    value={newEmployee.name}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                    placeholder="João Silva"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    value={newEmployee.cpf}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, cpf: e.target.value })}
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="birth_date">Data de Nascimento</Label>
+                  <Input
+                    id="birth_date"
+                    type="date"
+                    value={newEmployee.birth_date}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, birth_date: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input
+                    id="phone"
+                    value={newEmployee.phone}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newEmployee.email}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                    placeholder="joao@primaqualita.com.br"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="is_manager"
+                    checked={newEmployee.is_manager}
+                    onCheckedChange={(checked) => 
+                      setNewEmployee({ ...newEmployee, is_manager: checked as boolean })
+                    }
+                  />
+                  <Label
+                    htmlFor="is_manager"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Gestor (acesso completo ao sistema)
+                  </Label>
+                </div>
+                <Button
+                  onClick={() => addEmployeeMutation.mutate(newEmployee)}
+                  className="w-full"
+                  disabled={addEmployeeMutation.isPending}
+                >
+                  Adicionar Colaborador
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome, CPF ou e-mail..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-center py-8 text-muted-foreground">Carregando...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Data de Nascimento</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>E-mail</TableHead>
+                  <TableHead>Tipo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEmployees?.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="font-medium">{employee.name}</TableCell>
+                    <TableCell>{employee.cpf}</TableCell>
+                    <TableCell>{new Date(employee.birth_date).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{employee.phone}</TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>
+                      {employee.is_manager ? (
+                        <Badge variant="default">Gestor</Badge>
+                      ) : (
+                        <Badge variant="secondary">Colaborador</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default Employees;
