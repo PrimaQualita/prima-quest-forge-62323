@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Calendar, AlertCircle, CheckCircle, Clock, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Download, Calendar, AlertCircle, CheckCircle, Clock, LogOut, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
@@ -13,7 +15,10 @@ import { ptBR } from "date-fns/locale";
 const SupplierPortal = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
+  const [certificateFile, setCertificateFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     // Verificar autenticação
@@ -57,6 +62,55 @@ const SupplierPortal = () => {
     },
     enabled: !!userId,
   });
+
+  const uploadCertificateMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!userId || !supplierData) throw new Error("Dados não disponíveis");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${supplierData.id}/certificate-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('supplier-documents')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('supplier-documents')
+        .getPublicUrl(fileName);
+      
+      const { error: updateError } = await supabase
+        .from('supplier_due_diligence')
+        .update({ certificate_file_path: publicUrl })
+        .eq('id', supplierData.id);
+
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier_data'] });
+      toast({ title: "Certificado enviado com sucesso!" });
+      setCertificateFile(null);
+      setIsUploading(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao enviar certificado",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    },
+  });
+
+  const handleCertificateUpload = async () => {
+    if (!certificateFile) return;
+    setIsUploading(true);
+    uploadCertificateMutation.mutate(certificateFile);
+  };
 
   if (isLoading) {
     return (
@@ -184,6 +238,69 @@ const SupplierPortal = () => {
                       Baixar Certificado
                     </a>
                   </Button>
+                )}
+              </div>
+
+              {supplierData.certificate_file_path && (
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">Seu Certificado Enviado</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(supplierData.certificate_file_path, '_blank')}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Certificado Enviado
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-3 p-4 border rounded-lg">
+                <Label htmlFor="certificate-upload" className="text-base font-semibold">
+                  {supplierData.certificate_file_path ? 'Atualizar Certificado' : 'Enviar Certificado em PDF'}
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Faça upload do seu certificado para manter seus dados atualizados
+                </p>
+                <Input
+                  id="certificate-upload"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.size > 10 * 1024 * 1024) {
+                      toast({
+                        title: "Arquivo muito grande",
+                        description: "O arquivo deve ter no máximo 10MB",
+                        variant: "destructive"
+                      });
+                      e.target.value = '';
+                      return;
+                    }
+                    setCertificateFile(file || null);
+                  }}
+                  disabled={isUploading}
+                />
+                {certificateFile && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      {certificateFile.name} ({(certificateFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                    <Button 
+                      onClick={handleCertificateUpload}
+                      disabled={isUploading}
+                      size="sm"
+                    >
+                      {isUploading ? (
+                        <>Enviando...</>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Enviar
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
 
