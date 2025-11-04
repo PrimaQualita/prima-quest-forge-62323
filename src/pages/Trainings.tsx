@@ -20,6 +20,8 @@ interface VideoData {
   description: string;
   duration_minutes: number;
   video_order: number;
+  file?: File | null;
+  uploadType: 'url' | 'file';
 }
 
 const Trainings = () => {
@@ -40,7 +42,9 @@ const Trainings = () => {
     url: "",
     description: "",
     duration_minutes: 0,
-    video_order: 1
+    video_order: 1,
+    file: null,
+    uploadType: 'url'
   }]);
 
   const { data: trainings } = useQuery({
@@ -95,16 +99,41 @@ const Trainings = () => {
 
       if (trainingError) throw trainingError;
 
-      // Se houver vídeos, inserir na tabela training_videos
-      if (videos.length > 0 && videos[0].url) {
-        const videosToInsert = videos.map(video => ({
-          training_id: training.id,
-          title: video.title,
-          url: video.url,
-          description: video.description,
-          duration_minutes: video.duration_minutes,
-          video_order: video.video_order,
-        }));
+      // Processar e inserir vídeos
+      if (videos.length > 0 && (videos[0].url || videos[0].file)) {
+        const videosToInsert = await Promise.all(
+          videos.map(async (video) => {
+            let videoUrl = video.url;
+
+            // Se for upload de arquivo, fazer o upload primeiro
+            if (video.uploadType === 'file' && video.file) {
+              const fileExt = video.file.name.split('.').pop();
+              const fileName = `${training.id}/${crypto.randomUUID()}.${fileExt}`;
+              
+              const { error: uploadError } = await supabase.storage
+                .from('training-videos')
+                .upload(fileName, video.file);
+
+              if (uploadError) throw uploadError;
+
+              // Obter URL pública
+              const { data: urlData } = supabase.storage
+                .from('training-videos')
+                .getPublicUrl(fileName);
+
+              videoUrl = urlData.publicUrl;
+            }
+
+            return {
+              training_id: training.id,
+              title: video.title,
+              url: videoUrl,
+              description: video.description,
+              duration_minutes: video.duration_minutes,
+              video_order: video.video_order,
+            };
+          })
+        );
 
         const { error: videosError } = await supabase
           .from('training_videos')
@@ -140,7 +169,9 @@ const Trainings = () => {
       url: "",
       description: "",
       duration_minutes: 0,
-      video_order: 1
+      video_order: 1,
+      file: null,
+      uploadType: 'url'
     }]);
     setIsTrail(false);
   };
@@ -151,7 +182,9 @@ const Trainings = () => {
       url: "",
       description: "",
       duration_minutes: 0,
-      video_order: videos.length + 1
+      video_order: videos.length + 1,
+      file: null,
+      uploadType: 'url'
     }]);
   };
 
@@ -354,13 +387,53 @@ const Trainings = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>URL do Vídeo (YouTube, Vimeo, etc.) *</Label>
-                        <Input
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          value={video.url}
-                          onChange={(e) => updateVideo(index, 'url', e.target.value)}
-                        />
+                        <Label>Tipo de Vídeo</Label>
+                        <RadioGroup
+                          value={video.uploadType}
+                          onValueChange={(value: 'url' | 'file') => updateVideo(index, 'uploadType', value)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="url" id={`url-${index}`} />
+                            <Label htmlFor={`url-${index}`} className="font-normal cursor-pointer">
+                              URL Externa (YouTube, Vimeo, etc.)
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="file" id={`file-${index}`} />
+                            <Label htmlFor={`file-${index}`} className="font-normal cursor-pointer">
+                              Upload de Arquivo
+                            </Label>
+                          </div>
+                        </RadioGroup>
                       </div>
+
+                      {video.uploadType === 'url' ? (
+                        <div className="space-y-2">
+                          <Label>URL do Vídeo *</Label>
+                          <Input
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            value={video.url}
+                            onChange={(e) => updateVideo(index, 'url', e.target.value)}
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>Upload do Vídeo * (MP4, WebM, máx. 500MB)</Label>
+                          <Input
+                            type="file"
+                            accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              updateVideo(index, 'file', file);
+                            }}
+                          />
+                          {video.file && (
+                            <p className="text-sm text-muted-foreground">
+                              Arquivo: {video.file.name} ({(video.file.size / 1024 / 1024).toFixed(2)} MB)
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <Label>Descrição</Label>
@@ -389,7 +462,12 @@ const Trainings = () => {
               <Button 
                 className="w-full"
                 onClick={() => addTrainingMutation.mutate()}
-                disabled={addTrainingMutation.isPending || !formData.title || !formData.category || !videos[0]?.url}
+                disabled={
+                  addTrainingMutation.isPending || 
+                  !formData.title || 
+                  !formData.category || 
+                  !videos.every(v => v.title && (v.uploadType === 'url' ? v.url : v.file))
+                }
               >
                 {addTrainingMutation.isPending ? "Criando..." : "Criar Treinamento"}
               </Button>
