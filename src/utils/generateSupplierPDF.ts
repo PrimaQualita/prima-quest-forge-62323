@@ -139,12 +139,14 @@ export const generateSupplierPDF = async (
     const points = response === 'sim' ? question.yes_points : response === 'nao' ? question.no_points : 0;
 
     doc.setFont('helvetica', 'bold');
-    const questionLines = doc.splitTextToSize(`${index + 1}. ${question.question}`, pageWidth - 40);
-    // Justificar o texto das perguntas
+    const questionText = `${index + 1}. ${question.question}`;
+    const questionLines = doc.splitTextToSize(questionText, pageWidth - 40);
+    
+    // Renderizar cada linha da pergunta
     questionLines.forEach((line: string, lineIndex: number) => {
-      doc.text(line, 20, yPos + (lineIndex * 5), { align: 'justify', maxWidth: pageWidth - 40 });
+      doc.text(line, 20, yPos + (lineIndex * 5));
     });
-    yPos += questionLines.length * 5;
+    yPos += questionLines.length * 5 + 2;
 
     doc.setFont('helvetica', 'normal');
     doc.text(`Resposta: ${responseText} (${points} pontos)`, 25, yPos);
