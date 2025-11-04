@@ -19,12 +19,14 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleSend = async () => {
@@ -117,55 +119,60 @@ const Chatbot = () => {
       </div>
 
       <Card className="h-[calc(100%-5rem)] flex flex-col">
-        <CardHeader>
+        <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
             Assistente Virtual de Compliance
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-0">
-          <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-            <div className="space-y-4">
-              {messages.map((message, idx) => (
-                <div
-                  key={idx}
-                  className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {message.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-5 h-5 text-primary" />
-                    </div>
-                  )}
+        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="p-6 space-y-4">
+                {messages.map((message, idx) => (
                   <div
-                    className={`max-w-[80%] rounded-lg p-4 ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
+                    key={idx}
+                    className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                  {message.role === "user" && (
-                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-accent" />
+                    {message.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <Bot className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-lg p-4 break-words ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                        {message.content}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-primary animate-pulse" />
+                    {message.role === "user" && (
+                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-5 h-5 text-accent" />
+                      </div>
+                    )}
                   </div>
-                  <div className="bg-muted rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground">Processando...</p>
+                ))}
+                {isLoading && (
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
+                      <Bot className="w-5 h-5 text-primary animate-pulse" />
+                    </div>
+                    <div className="bg-muted rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground">Processando...</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+          </div>
 
-          <div className="p-4 border-t">
+          <div className="p-4 border-t flex-shrink-0">
             <div className="flex gap-2">
               <Input
                 placeholder="Digite sua pergunta sobre compliance..."
