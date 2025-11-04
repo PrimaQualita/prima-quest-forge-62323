@@ -7,10 +7,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GraduationCap, Plus, CheckCircle, Clock } from "lucide-react";
+import { GraduationCap, Plus, CheckCircle, Clock, Video, Trash2, MoveUp, MoveDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+
+interface VideoData {
+  title: string;
+  url: string;
+  description: string;
+  duration_minutes: number;
+  video_order: number;
+}
 
 const Trainings = () => {
   const { toast } = useToast();
@@ -18,13 +28,30 @@ const Trainings = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [isTrail, setIsTrail] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    description: "",
+    duration_hours: 0,
+  });
+  const [videos, setVideos] = useState<VideoData[]>([{
+    title: "",
+    url: "",
+    description: "",
+    duration_minutes: 0,
+    video_order: 1
+  }]);
 
   const { data: trainings } = useQuery({
     queryKey: ['trainings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trainings')
-        .select('*')
+        .select(`
+          *,
+          training_videos (*)
+        `)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -50,6 +77,113 @@ const Trainings = () => {
       return data;
     },
   });
+
+  const addTrainingMutation = useMutation({
+    mutationFn: async () => {
+      // Criar o treinamento
+      const { data: training, error: trainingError } = await supabase
+        .from('trainings')
+        .insert({
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          duration_hours: formData.duration_hours,
+          is_trail: isTrail,
+        })
+        .select()
+        .single();
+
+      if (trainingError) throw trainingError;
+
+      // Se houver vídeos, inserir na tabela training_videos
+      if (videos.length > 0 && videos[0].url) {
+        const videosToInsert = videos.map(video => ({
+          training_id: training.id,
+          title: video.title,
+          url: video.url,
+          description: video.description,
+          duration_minutes: video.duration_minutes,
+          video_order: video.video_order,
+        }));
+
+        const { error: videosError } = await supabase
+          .from('training_videos')
+          .insert(videosToInsert);
+
+        if (videosError) throw videosError;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Treinamento criado com sucesso!" });
+      setIsAddDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar treinamento",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      category: "",
+      description: "",
+      duration_hours: 0,
+    });
+    setVideos([{
+      title: "",
+      url: "",
+      description: "",
+      duration_minutes: 0,
+      video_order: 1
+    }]);
+    setIsTrail(false);
+  };
+
+  const addVideo = () => {
+    setVideos([...videos, {
+      title: "",
+      url: "",
+      description: "",
+      duration_minutes: 0,
+      video_order: videos.length + 1
+    }]);
+  };
+
+  const removeVideo = (index: number) => {
+    if (videos.length > 1) {
+      const newVideos = videos.filter((_, i) => i !== index);
+      // Reordenar
+      newVideos.forEach((video, i) => {
+        video.video_order = i + 1;
+      });
+      setVideos(newVideos);
+    }
+  };
+
+  const moveVideo = (index: number, direction: 'up' | 'down') => {
+    const newVideos = [...videos];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex >= 0 && targetIndex < videos.length) {
+      [newVideos[index], newVideos[targetIndex]] = [newVideos[targetIndex], newVideos[index]];
+      newVideos.forEach((video, i) => {
+        video.video_order = i + 1;
+      });
+      setVideos(newVideos);
+    }
+  };
+
+  const updateVideo = (index: number, field: keyof VideoData, value: any) => {
+    const newVideos = [...videos];
+    newVideos[index] = { ...newVideos[index], [field]: value };
+    setVideos(newVideos);
+  };
 
   const completeTrainingMutation = useMutation({
     mutationFn: async ({ trainingId, employeeId }: any) => {
@@ -97,24 +231,168 @@ const Trainings = () => {
             <DialogHeader>
               <DialogTitle>Criar Novo Treinamento</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
               <div className="space-y-2">
-                <Label>Título</Label>
-                <Input placeholder="Ex: LGPD e Proteção de Dados" />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="is-trail">Tipo de Treinamento</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{isTrail ? "Trilha (vários vídeos)" : "Simples (um vídeo)"}</span>
+                    <Switch
+                      id="is-trail"
+                      checked={isTrail}
+                      onCheckedChange={setIsTrail}
+                    />
+                  </div>
+                </div>
               </div>
+
               <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Input placeholder="Ex: Segurança da Informação" />
+                <Label htmlFor="title">Título *</Label>
+                <Input 
+                  id="title"
+                  placeholder="Ex: LGPD e Proteção de Dados" 
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label>Duração (horas)</Label>
-                <Input type="number" placeholder="4" />
+                <Label htmlFor="category">Categoria *</Label>
+                <Input 
+                  id="category"
+                  placeholder="Ex: Segurança da Informação" 
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                />
               </div>
+
               <div className="space-y-2">
-                <Label>Descrição</Label>
-                <Textarea placeholder="Descrição detalhada do treinamento..." rows={4} />
+                <Label htmlFor="duration">Duração Total (horas) *</Label>
+                <Input 
+                  id="duration"
+                  type="number" 
+                  placeholder="4" 
+                  value={formData.duration_hours || ""}
+                  onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })}
+                />
               </div>
-              <Button className="w-full">Criar Treinamento</Button>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição *</Label>
+                <Textarea 
+                  id="description"
+                  placeholder="Descrição detalhada do treinamento..." 
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg">Vídeos do Treinamento</Label>
+                  {isTrail && (
+                    <Button type="button" onClick={addVideo} size="sm" variant="outline">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Vídeo
+                    </Button>
+                  )}
+                </div>
+
+                {videos.map((video, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2">
+                          <Video className="w-4 h-4" />
+                          Vídeo {index + 1}
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          {isTrail && videos.length > 1 && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => moveVideo(index, 'up')}
+                                disabled={index === 0}
+                              >
+                                <MoveUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => moveVideo(index, 'down')}
+                                disabled={index === videos.length - 1}
+                              >
+                                <MoveDown className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => removeVideo(index)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Título do Vídeo *</Label>
+                        <Input
+                          placeholder="Ex: Introdução à LGPD"
+                          value={video.title}
+                          onChange={(e) => updateVideo(index, 'title', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>URL do Vídeo (YouTube, Vimeo, etc.) *</Label>
+                        <Input
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={video.url}
+                          onChange={(e) => updateVideo(index, 'url', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Descrição</Label>
+                        <Textarea
+                          placeholder="Breve descrição do vídeo..."
+                          rows={2}
+                          value={video.description}
+                          onChange={(e) => updateVideo(index, 'description', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Duração (minutos)</Label>
+                        <Input
+                          type="number"
+                          placeholder="30"
+                          value={video.duration_minutes || ""}
+                          onChange={(e) => updateVideo(index, 'duration_minutes', parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <Button 
+                className="w-full"
+                onClick={() => addTrainingMutation.mutate()}
+                disabled={addTrainingMutation.isPending || !formData.title || !formData.category || !videos[0]?.url}
+              >
+                {addTrainingMutation.isPending ? "Criando..." : "Criar Treinamento"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -129,16 +407,30 @@ const Trainings = () => {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <GraduationCap className="w-8 h-8 text-secondary" />
-                  <Badge variant="outline">
-                    <Clock className="w-3 h-3 mr-1" />
-                    {training.duration_hours}h
-                  </Badge>
+                  <div className="flex gap-2">
+                    {training.is_trail && (
+                      <Badge variant="secondary">
+                        <Video className="w-3 h-3 mr-1" />
+                        Trilha
+                      </Badge>
+                    )}
+                    <Badge variant="outline">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {training.duration_hours}h
+                    </Badge>
+                  </div>
                 </div>
                 <CardTitle className="mt-4">{training.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">{training.description}</p>
                 <Badge>{training.category}</Badge>
+                
+                {training.training_videos && training.training_videos.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    <strong>{training.training_videos.length}</strong> vídeo(s)
+                  </div>
+                )}
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
