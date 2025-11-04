@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Bot, User } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   role: "user" | "assistant";
@@ -112,67 +111,66 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
-      <div className="mb-6">
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      <div className="mb-6 flex-shrink-0">
         <h1 className="text-4xl font-bold text-foreground">Chatbot de Compliance</h1>
         <p className="text-muted-foreground mt-1">Tire suas dúvidas sobre regulamentos e políticas</p>
       </div>
 
-      <Card className="h-[calc(100%-5rem)] flex flex-col">
+      <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader className="flex-shrink-0">
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" />
             Assistente Virtual de Compliance
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
-          <div className="flex-1 overflow-hidden">
-            <ScrollArea className="h-full">
-              <div className="p-6 space-y-4">
-                {messages.map((message, idx) => (
+        <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-4">
+              {messages.map((message, idx) => (
+                <div
+                  key={idx}
+                  className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  {message.role === "assistant" && (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <Bot className="w-5 h-5 text-primary" />
+                    </div>
+                  )}
                   <div
-                    key={idx}
-                    className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`max-w-[75%] rounded-lg p-4 break-words overflow-wrap-anywhere ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                    }`}
+                    style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                   >
-                    {message.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <Bot className="w-5 h-5 text-primary" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-lg p-4 break-words ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                        {message.content}
-                      </div>
-                    </div>
-                    {message.role === "user" && (
-                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-5 h-5 text-accent" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
-                      <Bot className="w-5 h-5 text-primary animate-pulse" />
-                    </div>
-                    <div className="bg-muted rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">Processando...</p>
+                    <div className="text-sm whitespace-pre-wrap">
+                      {message.content}
                     </div>
                   </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+                  {message.role === "user" && (
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <User className="w-5 h-5 text-accent" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
+                    <Bot className="w-5 h-5 text-primary animate-pulse" />
+                  </div>
+                  <div className="bg-muted rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground">Processando...</p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
-          <div className="p-4 border-t flex-shrink-0">
+          <div className="p-4 border-t flex-shrink-0 bg-background">
             <div className="flex gap-2">
               <Input
                 placeholder="Digite sua pergunta sobre compliance..."
@@ -180,8 +178,9 @@ const Chatbot = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSend()}
                 disabled={isLoading}
+                className="flex-1"
               />
-              <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
+              <Button onClick={handleSend} disabled={isLoading || !input.trim()} className="flex-shrink-0">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
