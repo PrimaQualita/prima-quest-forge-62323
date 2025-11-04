@@ -7,6 +7,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface RichTextEditorProps {
   value: string;
@@ -35,6 +42,17 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
     editorRef.current?.focus();
   };
 
+  const fonts = [
+    { name: "Arial", value: "Arial, sans-serif" },
+    { name: "Times New Roman", value: "Times New Roman, serif" },
+    { name: "Georgia", value: "Georgia, serif" },
+    { name: "Courier New", value: "Courier New, monospace" },
+    { name: "Verdana", value: "Verdana, sans-serif" },
+    { name: "Helvetica", value: "Helvetica, sans-serif" },
+    { name: "Comic Sans", value: "Comic Sans MS, cursive" },
+    { name: "Impact", value: "Impact, fantasy" },
+  ];
+
   const colors = [
     { name: "Preto", value: "#000000" },
     { name: "Vermelho", value: "#ef4444" },
@@ -48,7 +66,20 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-1 p-2 border rounded-md bg-muted/50">
+      <div className="flex gap-1 p-2 border rounded-md bg-muted/50 flex-wrap items-center">
+        <Select onValueChange={(value) => execCommand('fontName', value)}>
+          <SelectTrigger className="h-8 w-[140px]">
+            <SelectValue placeholder="Fonte" />
+          </SelectTrigger>
+          <SelectContent>
+            {fonts.map((font) => (
+              <SelectItem key={font.value} value={font.value}>
+                <span style={{ fontFamily: font.value }}>{font.name}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="w-px bg-border mx-1" />
         <Button
           type="button"
           variant="ghost"
