@@ -14,16 +14,511 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_conversations: {
+        Row: {
+          created_at: string | null
+          employee_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          employee_id?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_documents: {
+        Row: {
+          category: string
+          content: string | null
+          correct_answer: string
+          created_at: string | null
+          description: string | null
+          file_path: string | null
+          id: string
+          quiz_options: Json
+          quiz_question: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          content?: string | null
+          correct_answer: string
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          quiz_options: Json
+          quiz_question: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          correct_answer?: string
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          quiz_options?: Json
+          quiz_question?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contract_documents: {
+        Row: {
+          contract_id: string
+          created_at: string | null
+          file_name: string
+          file_path: string
+          id: string
+          month: number
+          uploaded_by: string | null
+          year: number
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          month: number
+          uploaded_by?: string | null
+          year: number
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          month?: number
+          uploaded_by?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "management_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_acknowledgments: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string | null
+          document_id: string
+          employee_id: string
+          id: string
+          quiz_answered: boolean | null
+          quiz_correct: boolean | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          document_id: string
+          employee_id: string
+          id?: string
+          quiz_answered?: boolean | null
+          quiz_correct?: boolean | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string | null
+          document_id?: string
+          employee_id?: string
+          id?: string
+          quiz_answered?: boolean | null
+          quiz_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_acknowledgments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_acknowledgments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      due_diligence_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          question: string
+          question_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question: string
+          question_order: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          question?: string
+          question_order?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          birth_date: string
+          cpf: string
+          created_at: string | null
+          email: string
+          id: string
+          is_manager: boolean | null
+          name: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          birth_date: string
+          cpf: string
+          created_at?: string | null
+          email: string
+          id?: string
+          is_manager?: boolean | null
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          birth_date?: string
+          cpf?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_manager?: boolean | null
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      management_contracts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          birth_date: string
+          cpf: string
+          created_at: string | null
+          first_login: boolean | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          birth_date: string
+          cpf: string
+          created_at?: string | null
+          first_login?: boolean | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          birth_date?: string
+          cpf?: string
+          created_at?: string | null
+          first_login?: boolean | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      supplier_due_diligence: {
+        Row: {
+          cnpj: string
+          company_name: string
+          created_at: string | null
+          email: string
+          id: string
+          owner: string
+          partners: string | null
+          phone: string
+          responses: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          cnpj: string
+          company_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          owner: string
+          partners?: string | null
+          phone: string
+          responses?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          cnpj?: string
+          company_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          owner?: string
+          partners?: string | null
+          phone?: string
+          responses?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      training_participations: {
+        Row: {
+          completed: boolean | null
+          completion_date: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          training_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completion_date?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          training_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completion_date?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_participations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_participations_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_videos: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          title: string
+          training_id: string
+          updated_at: string | null
+          url: string
+          video_order: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          title: string
+          training_id: string
+          updated_at?: string | null
+          url: string
+          video_order?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          title?: string
+          training_id?: string
+          updated_at?: string | null
+          url?: string
+          video_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_videos_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainings: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          duration_hours: number | null
+          id: string
+          is_trail: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_trail?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          duration_hours?: number | null
+          id?: string
+          is_trail?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +645,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "employee"],
+    },
   },
 } as const
