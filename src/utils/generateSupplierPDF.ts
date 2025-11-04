@@ -31,7 +31,7 @@ export const generateSupplierPDF = async (
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 20;
 
-  // Adicionar logo (menor e melhor formatada)
+  // Adicionar logo
   try {
     const logoImg = await fetch('/logo-prima-qualita.png');
     const logoBlob = await logoImg.blob();
@@ -40,8 +40,8 @@ export const generateSupplierPDF = async (
       reader.onloadend = () => resolve(reader.result as string);
       reader.readAsDataURL(logoBlob);
     });
-    // Logo menor e mais bem posicionada
-    doc.addImage(logoDataUrl, 'PNG', pageWidth - 40, 15, 30, 30);
+    // Logo compacta no canto superior direito
+    doc.addImage(logoDataUrl, 'PNG', pageWidth - 50, 10, 40, 15);
   } catch (error) {
     console.error('Erro ao carregar logo:', error);
   }
@@ -151,9 +151,9 @@ export const generateSupplierPDF = async (
     const questionText = `${index + 1}. ${cleanQuestion}`;
     const questionLines = doc.splitTextToSize(questionText, pageWidth - 40);
     
-    // Renderizar cada linha da pergunta
+    // Renderizar cada linha da pergunta com justificação
     questionLines.forEach((line: string, lineIndex: number) => {
-      doc.text(line, 20, yPos + (lineIndex * 5));
+      doc.text(line, 20, yPos + (lineIndex * 5), { align: 'justify', maxWidth: pageWidth - 40 });
     });
     yPos += questionLines.length * 5 + 2;
 
