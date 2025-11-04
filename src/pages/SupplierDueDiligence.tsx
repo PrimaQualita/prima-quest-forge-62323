@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Building2, Check, X, Eye } from "lucide-react";
+import { Plus, Building2, Check, X, Eye, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, addYears } from "date-fns";
@@ -19,6 +19,9 @@ const SupplierDueDiligence = () => {
   const queryClient = useQueryClient();
   const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false);
   const [newQuestion, setNewQuestion] = useState("");
+  const [yesPoints, setYesPoints] = useState<number>(0);
+  const [noPoints, setNoPoints] = useState<number>(200);
+  const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -52,11 +55,11 @@ const SupplierDueDiligence = () => {
   });
 
   const addQuestionMutation = useMutation({
-    mutationFn: async (question: string) => {
+    mutationFn: async ({ question, yes_points, no_points }: { question: string; yes_points: number; no_points: number }) => {
       const maxOrder = questions?.length || 0;
       const { data, error } = await supabase
         .from('due_diligence_questions')
-        .insert([{ question, question_order: maxOrder + 1 }])
+        .insert([{ question, question_order: maxOrder + 1, yes_points, no_points }])
         .select();
       if (error) throw error;
       return data;
@@ -66,6 +69,30 @@ const SupplierDueDiligence = () => {
       toast({ title: "Pergunta adicionada com sucesso!" });
       setIsQuestionDialogOpen(false);
       setNewQuestion("");
+      setYesPoints(0);
+      setNoPoints(200);
+      setEditingQuestion(null);
+    },
+  });
+
+  const updateQuestionMutation = useMutation({
+    mutationFn: async ({ id, question, yes_points, no_points }: { id: string; question: string; yes_points: number; no_points: number }) => {
+      const { data, error } = await supabase
+        .from('due_diligence_questions')
+        .update({ question, yes_points, no_points })
+        .eq('id', id)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['due_diligence_questions'] });
+      toast({ title: "Pergunta atualizada com sucesso!" });
+      setIsQuestionDialogOpen(false);
+      setNewQuestion("");
+      setYesPoints(0);
+      setNoPoints(200);
+      setEditingQuestion(null);
     },
   });
 
@@ -149,7 +176,15 @@ const SupplierDueDiligence = () => {
           <h1 className="text-4xl font-bold text-foreground">Due Diligence de Fornecedores</h1>
           <p className="text-muted-foreground mt-1">Gerencie perguntas e avalie fornecedores</p>
         </div>
-        <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+        <Dialog open={isQuestionDialogOpen} onOpenChange={(open) => {
+          setIsQuestionDialogOpen(open);
+          if (!open) {
+            setNewQuestion("");
+            setYesPoints(0);
+            setNoPoints(200);
+            setEditingQuestion(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -158,7 +193,7 @@ const SupplierDueDiligence = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar Nova Pergunta</DialogTitle>
+              <DialogTitle>{editingQuestion ? "Editar Pergunta" : "Adicionar Nova Pergunta"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -171,12 +206,53 @@ const SupplierDueDiligence = () => {
                   rows={4}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="yes-points">Pontos para "SIM"</Label>
+                  <select
+                    id="yes-points"
+                    value={yesPoints}
+                    onChange={(e) => setYesPoints(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value={0}>0 (Aprovado)</option>
+                    <option value={200}>200 (Reprovado)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="no-points">Pontos para "NÃO"</Label>
+                  <select
+                    id="no-points"
+                    value={noPoints}
+                    onChange={(e) => setNoPoints(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value={0}>0 (Aprovado)</option>
+                    <option value={200}>200 (Reprovado)</option>
+                  </select>
+                </div>
+              </div>
               <Button 
-                onClick={() => addQuestionMutation.mutate(newQuestion)}
+                onClick={() => {
+                  if (editingQuestion) {
+                    updateQuestionMutation.mutate({
+                      id: editingQuestion.id,
+                      question: newQuestion,
+                      yes_points: yesPoints,
+                      no_points: noPoints
+                    });
+                  } else {
+                    addQuestionMutation.mutate({
+                      question: newQuestion,
+                      yes_points: yesPoints,
+                      no_points: noPoints
+                    });
+                  }
+                }}
                 className="w-full"
-                disabled={addQuestionMutation.isPending || !newQuestion.trim()}
+                disabled={addQuestionMutation.isPending || updateQuestionMutation.isPending || !newQuestion.trim()}
               >
-                Adicionar Pergunta
+                {editingQuestion ? "Atualizar Pergunta" : "Adicionar Pergunta"}
               </Button>
             </div>
           </DialogContent>
@@ -196,11 +272,35 @@ const SupplierDueDiligence = () => {
                 </p>
               ) : (
                 questions?.map((question, index) => (
-                  <div key={question.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                  <div key={question.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium flex-shrink-0">
                       {index + 1}
                     </div>
-                    <p className="text-sm flex-1">{question.question}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm mb-2">{question.question}</p>
+                      <div className="flex gap-2 text-xs">
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          SIM: {question.yes_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
+                        </Badge>
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          NÃO: {question.no_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingQuestion(question);
+                        setNewQuestion(question.question);
+                        setYesPoints(question.yes_points);
+                        setNoPoints(question.no_points);
+                        setIsQuestionDialogOpen(true);
+                      }}
+                      className="flex-shrink-0"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))
               )}

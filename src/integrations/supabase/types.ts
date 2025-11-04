@@ -205,25 +205,31 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          no_points: number
           question: string
           question_order: number
           updated_at: string | null
+          yes_points: number
         }
         Insert: {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          no_points?: number
           question: string
           question_order: number
           updated_at?: string | null
+          yes_points?: number
         }
         Update: {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          no_points?: number
           question?: string
           question_order?: number
           updated_at?: string | null
+          yes_points?: number
         }
         Relationships: []
       }
