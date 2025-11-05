@@ -130,7 +130,7 @@ const Employees = () => {
 
   const handleDownloadTemplate = () => {
     const headers = ['Nome', 'CPF', 'Data de Nascimento (AAAA-MM-DD)', 'Telefone', 'E-mail', 'Departamento', 'Cargo/Função', 'ID do Contrato de Gestão'];
-    const csv = headers.join(',') + '\n';
+    const csv = headers.join(';') + '\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -153,7 +153,7 @@ const Employees = () => {
         const employeesData = rows
           .filter(row => row.trim())
           .map(row => {
-            const [name, cpf, birth_date, phone, email, department, job_title, management_contract_id] = row.split(',').map(s => s.trim());
+            const [name, cpf, birth_date, phone, email, department, job_title, management_contract_id] = row.split(';').map(s => s.trim());
             return { 
               name, 
               cpf, 
