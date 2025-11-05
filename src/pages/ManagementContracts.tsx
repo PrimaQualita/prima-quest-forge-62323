@@ -29,7 +29,6 @@ const ManagementContracts = () => {
   const [newContract, setNewContract] = useState({ name: "", description: "" });
   const [editContract, setEditContract] = useState<any>(null);
   const [renewalData, setRenewalData] = useState({ 
-    renewal_date: "", 
     renewal_start_date: "", 
     renewal_end_date: "", 
     notes: "" 
@@ -123,7 +122,6 @@ const ManagementContracts = () => {
   const addRenewalMutation = useMutation({
     mutationFn: async (renewal: { 
       contract_id: string; 
-      renewal_date: string; 
       renewal_start_date: string; 
       renewal_end_date: string; 
       notes: string 
@@ -133,7 +131,6 @@ const ManagementContracts = () => {
         .from('contract_renewals')
         .insert([{
           contract_id: renewal.contract_id,
-          renewal_date: renewal.renewal_date,
           renewal_start_date: renewal.renewal_start_date,
           renewal_end_date: renewal.renewal_end_date,
           notes: renewal.notes,
@@ -149,7 +146,6 @@ const ManagementContracts = () => {
       toast({ title: "Renovação adicionada com sucesso!" });
       setIsRenewalDialogOpen(false);
       setRenewalData({ 
-        renewal_date: "", 
         renewal_start_date: "", 
         renewal_end_date: "", 
         notes: "" 
@@ -160,7 +156,6 @@ const ManagementContracts = () => {
   const updateRenewalMutation = useMutation({
     mutationFn: async (renewal: { 
       id: string;
-      renewal_date: string; 
       renewal_start_date: string; 
       renewal_end_date: string; 
       notes: string 
@@ -168,7 +163,6 @@ const ManagementContracts = () => {
       const { data, error } = await supabase
         .from('contract_renewals')
         .update({
-          renewal_date: renewal.renewal_date,
           renewal_start_date: renewal.renewal_start_date,
           renewal_end_date: renewal.renewal_end_date,
           notes: renewal.notes,
@@ -462,18 +456,6 @@ const ManagementContracts = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="renewal-date">Data de Efetivação da Renovação</Label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="renewal-date"
-                    type="date"
-                    value={renewalData.renewal_date}
-                    onChange={(e) => setRenewalData({ ...renewalData, renewal_date: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="renewal-start-date">Data de Início do Período Renovado</Label>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -509,10 +491,9 @@ const ManagementContracts = () => {
               </div>
               <Button 
                 onClick={() => {
-                  if (editContract?.id && renewalData.renewal_date && renewalData.renewal_start_date && renewalData.renewal_end_date) {
+                  if (editContract?.id && renewalData.renewal_start_date && renewalData.renewal_end_date) {
                     addRenewalMutation.mutate({
                       contract_id: editContract.id,
-                      renewal_date: renewalData.renewal_date,
                       renewal_start_date: renewalData.renewal_start_date,
                       renewal_end_date: renewalData.renewal_end_date,
                       notes: renewalData.notes
@@ -520,7 +501,7 @@ const ManagementContracts = () => {
                   }
                 }}
                 className="w-full"
-                disabled={!renewalData.renewal_date || !renewalData.renewal_start_date || !renewalData.renewal_end_date || addRenewalMutation.isPending}
+                disabled={!renewalData.renewal_start_date || !renewalData.renewal_end_date || addRenewalMutation.isPending}
               >
                 Adicionar Renovação
               </Button>
@@ -535,18 +516,6 @@ const ManagementContracts = () => {
               <DialogTitle>Editar Renovação</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-renewal-date">Data de Efetivação da Renovação</Label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="edit-renewal-date"
-                    type="date"
-                    value={renewalToEdit?.renewal_date || ""}
-                    onChange={(e) => setRenewalToEdit({ ...renewalToEdit, renewal_date: e.target.value })}
-                  />
-                </div>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-renewal-start-date">Data de Início do Período Renovado</Label>
                 <div className="flex items-center gap-2">
@@ -583,10 +552,9 @@ const ManagementContracts = () => {
               </div>
               <Button 
                 onClick={() => {
-                  if (renewalToEdit?.id && renewalToEdit.renewal_date && renewalToEdit.renewal_start_date && renewalToEdit.renewal_end_date) {
+                  if (renewalToEdit?.id && renewalToEdit.renewal_start_date && renewalToEdit.renewal_end_date) {
                     updateRenewalMutation.mutate({
                       id: renewalToEdit.id,
-                      renewal_date: renewalToEdit.renewal_date,
                       renewal_start_date: renewalToEdit.renewal_start_date,
                       renewal_end_date: renewalToEdit.renewal_end_date,
                       notes: renewalToEdit.notes || ""
@@ -594,7 +562,7 @@ const ManagementContracts = () => {
                   }
                 }}
                 className="w-full"
-                disabled={!renewalToEdit?.renewal_date || !renewalToEdit?.renewal_start_date || !renewalToEdit?.renewal_end_date || updateRenewalMutation.isPending}
+                disabled={!renewalToEdit?.renewal_start_date || !renewalToEdit?.renewal_end_date || updateRenewalMutation.isPending}
               >
                 Salvar Alterações
               </Button>

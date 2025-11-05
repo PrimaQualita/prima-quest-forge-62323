@@ -162,7 +162,7 @@ export type Database = {
           created_by: string | null
           id: string
           notes: string | null
-          renewal_date: string
+          renewal_date: string | null
           renewal_end_date: string
           renewal_start_date: string
         }
@@ -172,7 +172,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           notes?: string | null
-          renewal_date: string
+          renewal_date?: string | null
           renewal_end_date?: string
           renewal_start_date?: string
         }
@@ -182,7 +182,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           notes?: string | null
-          renewal_date?: string
+          renewal_date?: string | null
           renewal_end_date?: string
           renewal_start_date?: string
         }
