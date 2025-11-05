@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Video, FileText, CheckCircle, Lock, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import DOMPurify from "dompurify";
 
 interface AssessmentWithQuestions {
   id: string;
@@ -229,7 +230,10 @@ const TrainingView = () => {
 
       <div>
         <h1 className="text-2xl md:text-4xl font-bold text-foreground">{training.title}</h1>
-        <p className="text-sm md:text-base text-muted-foreground mt-2">{training.description}</p>
+        <div 
+          className="text-sm md:text-base text-muted-foreground mt-2 prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(training.description || "") }}
+        />
         <Badge className="mt-2">{training.category}</Badge>
       </div>
 
@@ -268,7 +272,10 @@ const TrainingView = () => {
                     )}
                   </CardTitle>
                   {currentVideo?.description && (
-                    <p className="text-sm text-muted-foreground">{currentVideo.description}</p>
+                    <div 
+                      className="text-sm text-muted-foreground prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(currentVideo.description || "") }}
+                    />
                   )}
                 </CardHeader>
                 <CardContent>

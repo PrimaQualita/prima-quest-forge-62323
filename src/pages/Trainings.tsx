@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import DOMPurify from "dompurify";
 
 interface VideoData {
   title: string;
@@ -589,7 +590,10 @@ const Trainings = () => {
                 <CardTitle className="mt-4">{training.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">{training.description}</p>
+                <div 
+                  className="text-sm text-muted-foreground prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(training.description || "") }}
+                />
                 <Badge>{training.category}</Badge>
                 
                 {training.training_videos && training.training_videos.length > 0 && (
