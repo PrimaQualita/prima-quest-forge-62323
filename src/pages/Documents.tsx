@@ -54,12 +54,17 @@ const Documents = () => {
       };
       
       // Ordenar com base no mapa, documentos não listados vão para o final
-      return data?.sort((a, b) => {
+      const sorted = data?.sort((a, b) => {
         const orderA = orderMap[a.title] || 999;
         const orderB = orderMap[b.title] || 999;
         return orderA - orderB;
       }) || [];
+      
+      console.log('Documents order:', sorted.map(d => d.title));
+      return sorted;
     },
+    staleTime: 0, // Force fresh data
+    refetchOnMount: true,
   });
 
   const { data: currentEmployee } = useQuery({
