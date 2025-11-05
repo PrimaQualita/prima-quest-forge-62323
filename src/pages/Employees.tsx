@@ -26,6 +26,8 @@ const Employees = () => {
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const [csvAnalysis, setCsvAnalysis] = useState<any>(null);
   const [pendingCsvText, setPendingCsvText] = useState<string>("");
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(50);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -39,22 +41,32 @@ const Employees = () => {
   });
 
   const { data: employees, isLoading } = useQuery({
-    queryKey: ['employees'],
+    queryKey: ['employees', searchTerm, page],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('employees')
-        .select(`
-          *,
-          management_contracts:management_contract_id (
-            id,
-            name
-          )
-        `)
-        .order('created_at', { ascending: false });
+        .select('id, name, cpf, email, is_manager', { count: 'exact' });
+      
+      // Apply search filter
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,cpf.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+      }
+      
+      // Apply pagination
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
       if (error) throw error;
-      return data;
+      return { data, count };
     },
   });
+
+  const totalEmployees = employees?.count || 0;
+  const totalPages = Math.ceil(totalEmployees / pageSize);
 
   const { data: contracts } = useQuery({
     queryKey: ['management_contracts'],
@@ -119,30 +131,6 @@ const Employees = () => {
       });
     },
   });
-
-  // Detect duplicates and inactive employees
-  const problemEmployees = employees?.reduce((acc, emp) => {
-    // Find duplicates by CPF
-    const duplicates = employees.filter(e => e.cpf === emp.cpf);
-    if (duplicates.length > 1 && !acc.find(e => e.id === emp.id)) {
-      acc.push({
-        ...emp,
-        issue: 'duplicate',
-        issueDescription: `CPF duplicado (${duplicates.length} registros)`
-      });
-    }
-    
-    // Find inactive (no user account)
-    if (!emp.user_id && !acc.find(e => e.id === emp.id)) {
-      acc.push({
-        ...emp,
-        issue: 'inactive',
-        issueDescription: 'Sem conta de acesso'
-      });
-    }
-    
-    return acc;
-  }, [] as any[]) || [];
 
   const addEmployeeMutation = useMutation({
     mutationFn: async (employee: typeof newEmployee) => {
@@ -358,18 +346,16 @@ const Employees = () => {
     }
   };
 
-  const filteredEmployees = employees?.filter(emp =>
-    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.cpf.includes(searchTerm) ||
-    emp.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEmployees = employees?.data || [];
 
   return (
     <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
-          <p className="text-muted-foreground mt-1">Gerencie os colaboradores e suas informações</p>
+          <p className="text-muted-foreground mt-1">
+            Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleDownloadTemplate}>
@@ -383,85 +369,6 @@ const Employees = () => {
               <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
             </label>
           </Button>
-          {problemEmployees.length > 0 && (
-            <Dialog open={isCleanupDialogOpen} onOpenChange={setIsCleanupDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Limpar Duplicados ({problemEmployees.length})
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Colaboradores Duplicados ou Inativos</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Foram encontrados {problemEmployees.length} colaborador(es) com problemas. 
-                      Selecione os que deseja remover permanentemente.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="space-y-2">
-                    {problemEmployees.map((emp) => (
-                      <div key={emp.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                        <Checkbox
-                          checked={selectedForDeletion.includes(emp.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedForDeletion([...selectedForDeletion, emp.id]);
-                            } else {
-                              setSelectedForDeletion(selectedForDeletion.filter(id => id !== emp.id));
-                            }
-                          }}
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{emp.name}</span>
-                            <Badge variant={emp.issue === 'duplicate' ? 'destructive' : 'secondary'}>
-                              {emp.issue === 'duplicate' ? 'Duplicado' : 'Inativo'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            CPF: {emp.cpf} • {emp.issueDescription}
-                          </p>
-                          {emp.email && (
-                            <p className="text-sm text-muted-foreground">
-                              Email: {emp.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedForDeletion([]);
-                        setIsCleanupDialogOpen(false);
-                      }}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => deleteEmployeesMutation.mutate(selectedForDeletion)}
-                      disabled={selectedForDeletion.length === 0 || deleteEmployeesMutation.isPending}
-                      className="flex-1"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remover Selecionados ({selectedForDeletion.length})
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
           
           {/* CSV Analysis Dialog */}
           <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
@@ -692,7 +599,10 @@ const Employees = () => {
               <Input
                 placeholder="Buscar por nome, CPF ou e-mail..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(0); // Reset to first page on search
+                }}
                 className="pl-10"
               />
             </div>
@@ -702,50 +612,77 @@ const Employees = () => {
           {isLoading ? (
             <p className="text-center py-8 text-muted-foreground">Carregando...</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Gestor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees?.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell>{employee.cpf}</TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell>
-                      {employee.is_manager ? (
-                        <Badge variant="default">Gestor</Badge>
-                      ) : (
-                        <Badge variant="secondary">Colaborador</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={employee.is_manager || false}
-                          onCheckedChange={(checked) => 
-                            toggleManagerStatus.mutate({ 
-                              employeeId: employee.id, 
-                              isManager: checked 
-                            })
-                          }
-                          disabled={toggleManagerStatus.isPending}
-                        />
-                        <span className="text-sm text-muted-foreground">
-                          {employee.is_manager ? "Sim" : "Não"}
-                        </span>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CPF</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Gestor</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmployees?.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="font-medium">{employee.name}</TableCell>
+                      <TableCell>{employee.cpf}</TableCell>
+                      <TableCell>{employee.email || '-'}</TableCell>
+                      <TableCell>
+                        {employee.is_manager ? (
+                          <Badge variant="default">Gestor</Badge>
+                        ) : (
+                          <Badge variant="secondary">Colaborador</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={employee.is_manager || false}
+                            onCheckedChange={(checked) => 
+                              toggleManagerStatus.mutate({ 
+                                employeeId: employee.id, 
+                                isManager: checked 
+                              })
+                            }
+                            disabled={toggleManagerStatus.isPending}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {employee.is_manager ? "Sim" : "Não"}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalEmployees)} de {totalEmployees.toLocaleString()}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
+                    Próxima
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
