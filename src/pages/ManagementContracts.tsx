@@ -23,6 +23,7 @@ const ManagementContracts = () => {
   const [isEditRenewalDialogOpen, setIsEditRenewalDialogOpen] = useState(false);
   const [renewalToDelete, setRenewalToDelete] = useState<any>(null);
   const [renewalToEdit, setRenewalToEdit] = useState<any>(null);
+  const [contractToDelete, setContractToDelete] = useState<any>(null);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -200,6 +201,42 @@ const ManagementContracts = () => {
       queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
       toast({ title: "Renovação removida com sucesso!" });
       setRenewalToDelete(null);
+    },
+  });
+
+  const deleteContractMutation = useMutation({
+    mutationFn: async (contractId: string) => {
+      // Primeiro deletar todas as renovações associadas
+      const { error: renewalsError } = await supabase
+        .from('contract_renewals')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (renewalsError) throw renewalsError;
+
+      // Depois deletar os documentos associados
+      const { error: documentsError } = await supabase
+        .from('contract_documents')
+        .delete()
+        .eq('contract_id', contractId);
+      
+      if (documentsError) throw documentsError;
+
+      // Por fim, deletar o contrato
+      const { error } = await supabase
+        .from('management_contracts')
+        .delete()
+        .eq('id', contractId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
+      queryClient.invalidateQueries({ queryKey: ['contract_renewals'] });
+      queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
+      toast({ title: "Contrato excluído com sucesso!" });
+      setContractToDelete(null);
+      setSelectedContract(null);
     },
   });
 
@@ -594,7 +631,7 @@ const ManagementContracts = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Alert Dialog de Confirmar Exclusão */}
+        {/* Alert Dialog de Confirmar Exclusão de Renovação */}
         <AlertDialog open={!!renewalToDelete} onOpenChange={(open) => !open && setRenewalToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -614,6 +651,31 @@ const ManagementContracts = () => {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Alert Dialog de Confirmar Exclusão de Contrato */}
+        <AlertDialog open={!!contractToDelete} onOpenChange={(open) => !open && setContractToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir Contrato</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o contrato "{contractToDelete?.name}"? Esta ação irá remover permanentemente o contrato, todas as suas renovações e documentos associados. Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (contractToDelete?.id) {
+                    deleteContractMutation.mutate(contractToDelete.id);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir Contrato
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -644,24 +706,32 @@ const ManagementContracts = () => {
                   <span className="font-medium text-foreground">{contract.name}</span>
                 </button>
                 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {contract.is_active ? (
-                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">Vigente</Badge>
-                  ) : (
-                    <Badge variant="destructive">Encerrado</Badge>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      setEditContract(contract);
-                      setIsEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {contract.is_active ? (
+                      <Badge variant="default" className="bg-green-600 hover:bg-green-700">Vigente</Badge>
+                    ) : (
+                      <Badge variant="destructive">Encerrado</Badge>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setEditContract(contract);
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setContractToDelete(contract)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
               </div>
             ))}
           </div>
