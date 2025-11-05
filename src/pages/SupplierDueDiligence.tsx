@@ -15,6 +15,7 @@ import { format, addYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { generateSupplierPDF } from "@/utils/generateSupplierPDF";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import DOMPurify from "dompurify";
 
 const SupplierDueDiligence = () => {
   const { toast } = useToast();
@@ -344,7 +345,7 @@ const SupplierDueDiligence = () => {
                     <div className="flex-1 min-w-0">
                       <div 
                         className="text-sm mb-2 prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: question.question }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question) }}
                       />
                       <div className="flex gap-2 text-xs">
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">

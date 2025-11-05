@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import DOMPurify from "dompurify";
 
 const Documents = () => {
   const { toast } = useToast();
@@ -444,7 +445,7 @@ const Documents = () => {
             <CardContent>
               <div 
                 className="text-sm text-muted-foreground mb-4" 
-                dangerouslySetInnerHTML={{ __html: doc.description || "" }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
               />
               {doc.file_path && (
                 <Button

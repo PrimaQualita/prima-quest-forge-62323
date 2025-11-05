@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
+import DOMPurify from "dompurify";
 
 const passwordSchema = z.string()
   .min(6, "A senha deve ter no mínimo 6 caracteres")
@@ -389,7 +390,7 @@ const SupplierForm = () => {
                       <Label className="text-base">
                         <div 
                           className="prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ __html: `${index + 1}. ${question.question}` }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(`${index + 1}. ${question.question}`) }}
                         />
                         <span className="text-destructive ml-1">*</span>
                       </Label>
