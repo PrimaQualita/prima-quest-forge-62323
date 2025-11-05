@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ interface VideoData {
 const Trainings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
@@ -607,6 +609,14 @@ const Trainings = () => {
                   </div>
                   <Progress value={completionRate} className="h-2" />
                 </div>
+
+                <Button 
+                  className="w-full"
+                  onClick={() => navigate(`/trainings/${training.id}`)}
+                >
+                  <Video className="w-4 h-4 mr-2" />
+                  Acessar Curso
+                </Button>
 
                 <Dialog>
                   <DialogTrigger asChild>

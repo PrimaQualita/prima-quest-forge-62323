@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import Documents from "./pages/Documents";
 import Trainings from "./pages/Trainings";
+import TrainingView from "./pages/TrainingView";
 import Chatbot from "./pages/Chatbot";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
           <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
+          <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
           
           {/* Rotas apenas para gestores/admins */}
           <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />
