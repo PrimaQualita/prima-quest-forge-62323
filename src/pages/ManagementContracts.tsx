@@ -284,7 +284,12 @@ const ManagementContracts = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-end-date">Data de Encerramento (Opcional)</Label>
+                <Label htmlFor="edit-end-date">
+                  Data de Vigência 
+                  {renewals && renewals.length > 0 && (
+                    <span className="text-xs text-muted-foreground ml-2">(Calculada automaticamente)</span>
+                  )}
+                </Label>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Input
@@ -296,6 +301,7 @@ const ManagementContracts = () => {
                       end_date: e.target.value,
                       is_active: e.target.value ? new Date(e.target.value) > new Date() : true
                     })}
+                    disabled={renewals && renewals.length > 0}
                   />
                 </div>
                 {editContract?.end_date && (
@@ -305,6 +311,11 @@ const ManagementContracts = () => {
                     ) : (
                       <span className="text-red-600 font-medium">Encerrado</span>
                     )}
+                  </p>
+                )}
+                {renewals && renewals.length > 0 && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    💡 A data de vigência é atualizada automaticamente com base na última renovação
                   </p>
                 )}
               </div>
