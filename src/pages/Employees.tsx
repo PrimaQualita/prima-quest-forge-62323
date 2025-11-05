@@ -42,7 +42,7 @@ const Employees = () => {
     email: "",
     is_manager: false,
     department: "",
-    management_contract_id: "",
+    management_contract_id: null as string | null,
     job_title: "",
   });
 
@@ -306,11 +306,12 @@ const Employees = () => {
         throw new Error('Data de nascimento não confere com o CPF informado');
       }
 
-      // Normalize email to lowercase
+      // Normalize email to lowercase and ensure UUID fields are null if empty
       const normalizedEmployee = {
         ...employee,
         cpf: cpfNumbers,
-        email: employee.email ? employee.email.toLowerCase().trim() : null
+        email: employee.email ? employee.email.toLowerCase().trim() : null,
+        management_contract_id: employee.management_contract_id || null
       };
 
       // Insert employee with cleaned data
@@ -349,7 +350,7 @@ const Employees = () => {
         email: "", 
         is_manager: false,
         department: "",
-        management_contract_id: "",
+        management_contract_id: null,
         job_title: ""
       });
     },
@@ -821,8 +822,8 @@ const Employees = () => {
                   <div className="space-y-2">
                     <Label htmlFor="contract">Contrato de Gestão (opcional)</Label>
                     <Select
-                      value={newEmployee.management_contract_id}
-                      onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value })}
+                      value={newEmployee.management_contract_id || undefined}
+                      onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value || null })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Nenhum contrato selecionado" />
