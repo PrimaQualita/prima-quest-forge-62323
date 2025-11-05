@@ -93,7 +93,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   return (
     <div className="space-y-6 md:space-y-8">
       <div>
-        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">Meu Dashboard de Compliance</h1>
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2 uppercase">DASHBOARD DE COMPLIANCE</h1>
         <p className="text-sm md:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
       </div>
 

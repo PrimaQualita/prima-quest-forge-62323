@@ -142,7 +142,7 @@ const Employees = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground">Gestão de Colaboradores</h1>
+          <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
           <p className="text-muted-foreground mt-1">Gerencie os colaboradores e suas informações</p>
         </div>
         <div className="flex gap-2">

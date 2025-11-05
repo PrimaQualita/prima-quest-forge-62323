@@ -241,7 +241,7 @@ const SupplierDueDiligence = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground">Due Diligence de Fornecedores</h1>
+          <h1 className="text-4xl font-bold text-foreground uppercase">DUE DILIGENCE DE FORNECEDORES</h1>
           <p className="text-muted-foreground mt-1">Gerencie perguntas e avalie fornecedores</p>
         </div>
         <Dialog open={isQuestionDialogOpen} onOpenChange={(open) => {

@@ -310,7 +310,7 @@ const Trainings = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-0">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-foreground">Gestão de Treinamentos</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-foreground uppercase">GESTÃO DE TREINAMENTOS</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

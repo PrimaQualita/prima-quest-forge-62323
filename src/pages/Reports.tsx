@@ -37,7 +37,7 @@ const Reports = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-4xl font-bold text-foreground">Relatórios de Compliance</h1>
+        <h1 className="text-4xl font-bold text-foreground uppercase">RELATÓRIOS DE COMPLIANCE</h1>
         <p className="text-muted-foreground mt-1">Análise detalhada de indicadores de conformidade</p>
       </div>
 

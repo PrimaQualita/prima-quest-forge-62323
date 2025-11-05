@@ -270,7 +270,7 @@ const Documents = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground">Documentos de Compliance</h1>
+          <h1 className="text-4xl font-bold text-foreground uppercase">DOCUMENTOS DE COMPLIANCE</h1>
           <p className="text-muted-foreground mt-1">Gerencie políticas e regulamentos</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
