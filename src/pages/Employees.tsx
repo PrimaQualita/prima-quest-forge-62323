@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users } from "lucide-react";
+import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ const Employees = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCleanupDialogOpen, setIsCleanupDialogOpen] = useState(false);
   const [isAnalysisDialogOpen, setIsAnalysisDialogOpen] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
@@ -29,6 +30,7 @@ const Employees = () => {
   const [page, setPage] = useState(0);
   const [pageSize] = useState(50);
   const [isProcessingUsers, setIsProcessingUsers] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -205,6 +207,47 @@ const Employees = () => {
     onError: (error: any) => {
       toast({ 
         title: "Erro ao remover colaboradores", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const editEmployeeMutation = useMutation({
+    mutationFn: async (employee: any) => {
+      // Normalize email to lowercase
+      const updateData = {
+        name: employee.name,
+        phone: employee.phone,
+        email: employee.email ? employee.email.toLowerCase().trim() : null,
+        department: employee.department,
+        job_title: employee.job_title,
+        management_contract_id: employee.management_contract_id || null,
+        // Explicitamente NÃO incluir user_id, cpf, birth_date
+      };
+
+      const { data, error } = await supabase
+        .from('employees')
+        .update(updateData)
+        .eq('id', employee.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({ 
+        title: "Colaborador atualizado com sucesso!", 
+        description: "As informações foram salvas."
+      });
+      setIsEditDialogOpen(false);
+      setEditingEmployee(null);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar colaborador", 
         description: error.message,
         variant: "destructive" 
       });
@@ -722,6 +765,123 @@ const Employees = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Employee Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Editar Colaborador</DialogTitle>
+                <DialogDescription>
+                  Atualize as informações do colaborador. CPF, data de nascimento e credenciais de acesso não podem ser alterados.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nome Completo *</Label>
+                  <Input
+                    id="edit-name"
+                    value={editingEmployee?.name || ""}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                    placeholder="Nome completo"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cpf">CPF *</Label>
+                  <Input
+                    id="edit-cpf"
+                    value={editingEmployee?.cpf || ""}
+                    disabled
+                    className="bg-muted cursor-not-allowed"
+                  />
+                  <p className="text-xs text-muted-foreground">CPF não pode ser alterado</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-birth-date">Data de Nascimento *</Label>
+                  <Input
+                    id="edit-birth-date"
+                    type="date"
+                    value={editingEmployee?.birth_date || ""}
+                    disabled
+                    className="bg-muted cursor-not-allowed"
+                  />
+                  <p className="text-xs text-muted-foreground">Data de nascimento não pode ser alterada</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone">Telefone</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editingEmployee?.phone || ""}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email">E-mail</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editingEmployee?.email || ""}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                    placeholder="joao@primaqualita.com.br"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-department">Departamento</Label>
+                  <Input
+                    id="edit-department"
+                    value={editingEmployee?.department || ""}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
+                    placeholder="Ex: Recursos Humanos"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-job-title">Cargo/Função</Label>
+                  <Input
+                    id="edit-job-title"
+                    value={editingEmployee?.job_title || ""}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, job_title: e.target.value })}
+                    placeholder="Ex: Analista de Compliance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-contract">Contrato de Gestão</Label>
+                  <Select
+                    value={editingEmployee?.management_contract_id || ""}
+                    onValueChange={(value) => setEditingEmployee({ ...editingEmployee, management_contract_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um contrato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {contracts?.map((contract) => (
+                        <SelectItem key={contract.id} value={contract.id}>
+                          {contract.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
+                    ℹ️ Informações de Acesso
+                  </p>
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
+                    Para alterar o status de gestor, use o switch na tabela de colaboradores.
+                    Usuário e senha não podem ser alterados por segurança.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => editEmployeeMutation.mutate(editingEmployee)}
+                  className="w-full"
+                  disabled={editEmployeeMutation.isPending || !editingEmployee?.name}
+                >
+                  {editEmployeeMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -804,14 +964,35 @@ const Employees = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteEmployeesMutation.mutate([employee.id])}
-                          disabled={deleteEmployeesMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              // Buscar dados completos do colaborador
+                              const { data } = await supabase
+                                .from('employees')
+                                .select('*')
+                                .eq('id', employee.id)
+                                .single();
+                              
+                              if (data) {
+                                setEditingEmployee(data);
+                                setIsEditDialogOpen(true);
+                              }
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deleteEmployeesMutation.mutate([employee.id])}
+                            disabled={deleteEmployeesMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
