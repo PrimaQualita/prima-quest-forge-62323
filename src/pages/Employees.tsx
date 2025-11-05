@@ -592,14 +592,14 @@ const Employees = () => {
         throw new Error('Erro ao validar CPFs. Tente novamente.');
       }
 
-      // Filtrar apenas colaboradores com CPF válido
+      // Filtrar apenas colaboradores com CPF válido E data de nascimento coincidente
       const validCpfs = new Set(
         validationData.results
-          .filter((r: any) => r.isValid)
+          .filter((r: any) => r.isValid && r.birthDateMatches !== false)
           .map((r: any) => r.cpf)
       );
 
-      const invalidResults = validationData.results.filter((r: any) => !r.isValid);
+      const invalidResults = validationData.results.filter((r: any) => !r.isValid || r.birthDateMatches === false);
       
       if (invalidResults.length > 0) {
         console.warn(`${invalidResults.length} CPF(s) inválido(s) encontrado(s):`, invalidResults);
