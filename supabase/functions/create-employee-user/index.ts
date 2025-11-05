@@ -108,7 +108,7 @@ serve(async (req) => {
         if (existingUsersMap.has(authEmail)) {
           userId = existingUsersMap.get(authEmail)!;
         } else {
-          // Create user in auth with CPF-based email
+          // Try to create user in auth with CPF-based email
           const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
             email: authEmail,
             password: password,
@@ -120,17 +120,39 @@ serve(async (req) => {
             }
           });
 
-          if (userError) {
+          // If user already exists, get their ID
+          if (userError && userError.message.includes('already registered')) {
+            // User exists, fetch from the map we loaded at start
+            const existingUser = existingUsersMap.get(authEmail);
+            if (existingUser) {
+              userId = existingUser;
+            } else {
+              // Fallback: fetch user by email
+              const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+              const foundUser = users?.find(u => u.email === authEmail);
+              if (foundUser) {
+                userId = foundUser.id;
+                existingUsersMap.set(authEmail, userId);
+              } else {
+                return {
+                  type: 'error',
+                  employee_id: employee.id,
+                  employee_name: employee.name,
+                  error: 'Usuário já existe mas não foi encontrado'
+                };
+              }
+            }
+          } else if (userError) {
             return {
               type: 'error',
               employee_id: employee.id,
               employee_name: employee.name,
               error: userError.message
             };
+          } else {
+            userId = userData.user.id;
+            existingUsersMap.set(authEmail, userId); // Cache the new user
           }
-
-          userId = userData.user.id;
-          existingUsersMap.set(authEmail, userId); // Cache the new user
         }
 
         // Create profile, update employee, and add role in parallel
