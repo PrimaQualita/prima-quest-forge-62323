@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
     console.log(`Encontrados ${userIds.length} usuário(s) vinculado(s)`);
 
-    // 8. Deletar roles de usuários ANTES de deletar os colaboradores
+    // 8. Deletar roles de usuários
     if (userIds.length > 0) {
       console.log('Deletando roles de usuários...');
       const { error: rolesError } = await supabase
@@ -140,7 +140,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 9. Deletar colaboradores (isso libera a foreign key para profiles)
+    // 9. REMOVER a referência user_id dos colaboradores (setar para NULL)
+    console.log('Removendo referência user_id dos colaboradores...');
+    const { error: unlinkError } = await supabase
+      .from('employees')
+      .update({ user_id: null })
+      .in('id', employeeIds);
+
+    if (unlinkError) {
+      console.error('Erro ao remover referência user_id:', unlinkError);
+      deletionErrors.push(`Unlink: ${unlinkError.message}`);
+    }
+
+    // 10. Agora deletar colaboradores (sem referência a profiles)
     console.log('Deletando colaboradores...');
     const { error: employeesError } = await supabase
       .from('employees')
@@ -152,7 +164,7 @@ Deno.serve(async (req) => {
       throw new Error(`Falha ao deletar colaboradores: ${employeesError.message}`);
     }
 
-    // 10. Agora podemos deletar perfis (já não há foreign key de employees)
+    // 11. Agora podemos deletar perfis (sem foreign key de employees)
     if (userIds.length > 0) {
       console.log('Deletando perfis de usuários...');
       const { error: profilesError } = await supabase
@@ -166,7 +178,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 11. Deletar usuários do auth
+    // 12. Deletar usuários do auth
     if (userIds.length > 0) {
       console.log('Deletando usuários do auth...');
       for (const userId of userIds) {
