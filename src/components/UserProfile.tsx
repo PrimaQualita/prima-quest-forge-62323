@@ -25,7 +25,7 @@ export const UserProfile = () => {
 
     const { data: profileData, error } = await supabase
       .from('profiles')
-      .select('full_name, avatar_url')
+      .select('avatar_url')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -34,15 +34,15 @@ export const UserProfile = () => {
       return;
     }
 
-    // Buscar job_title do employee
+    // Buscar name e job_title do employee
     const { data: employeeData } = await supabase
       .from('employees')
-      .select('job_title')
+      .select('name, job_title')
       .eq('user_id', user.id)
       .maybeSingle();
 
     setProfile({
-      full_name: profileData?.full_name || null,
+      full_name: employeeData?.name || null,
       avatar_url: profileData?.avatar_url || null,
       job_title: employeeData?.job_title || null,
     });
