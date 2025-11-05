@@ -5,15 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, UserPlus, Search, Trash2, AlertTriangle } from "lucide-react";
+import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { analyzeCsvDuplicates } from "@/utils/analyzeDuplicates";
 
 const Employees = () => {
   const { toast } = useToast();
@@ -21,7 +22,10 @@ const Employees = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCleanupDialogOpen, setIsCleanupDialogOpen] = useState(false);
+  const [isAnalysisDialogOpen, setIsAnalysisDialogOpen] = useState(false);
   const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
+  const [csvAnalysis, setCsvAnalysis] = useState<any>(null);
+  const [pendingCsvText, setPendingCsvText] = useState<string>("");
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -228,82 +232,111 @@ const Employees = () => {
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        const rows = text.split('\n').slice(1); // Skip header
         
-        // Fetch all contracts to map names to IDs
-        const { data: contracts } = await supabase
-          .from('management_contracts')
-          .select('id, name');
+        // Analyze the CSV for duplicates
+        const analysis = analyzeCsvDuplicates(text);
+        setCsvAnalysis(analysis);
+        setPendingCsvText(text);
         
-        const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
-        
-        const employeesData = rows
-          .filter(row => row.trim())
-          .map(row => {
-            const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s.trim());
-            
-            // Clean CPF (remove non-numeric characters)
-            const cleanedCpf = cpf.replace(/\D/g, '');
-            
-            // Look up contract ID by name, or set to null if not found
-            const management_contract_id = contract_name && contractMap.has(contract_name) 
-              ? contractMap.get(contract_name) 
-              : null;
-            
-            return { 
-              name, 
-              cpf: cleanedCpf, 
-              birth_date, 
-              phone: phone || null, 
-              email: email || null,
-              department: department || null,
-              job_title: job_title || null,
-              management_contract_id
-            };
-          });
-
-        // Check for duplicate CPFs in the file
-        const cpfSet = new Set();
-        const duplicatesInFile = [];
-        for (const emp of employeesData) {
-          if (cpfSet.has(emp.cpf)) {
-            duplicatesInFile.push(emp.cpf);
-          }
-          cpfSet.add(emp.cpf);
-        }
-
-        if (duplicatesInFile.length > 0) {
-          throw new Error(`CPFs duplicados na planilha: ${[...new Set(duplicatesInFile)].join(', ')}`);
-        }
-
-        // Check for existing CPFs in database
-        const { data: existingEmployees } = await supabase
-          .from('employees')
-          .select('cpf')
-          .in('cpf', employeesData.map(e => e.cpf));
-
-        if (existingEmployees && existingEmployees.length > 0) {
-          const existingCpfs = existingEmployees.map(e => e.cpf);
-          throw new Error(`CPFs já cadastrados no sistema: ${existingCpfs.join(', ')}`);
-        }
-
-        const { error } = await supabase
-          .from('employees')
-          .insert(employeesData);
-
-        if (error) throw error;
-
-        queryClient.invalidateQueries({ queryKey: ['employees'] });
-        toast({ title: "Planilha importada com sucesso!" });
+        // Show analysis dialog
+        setIsAnalysisDialogOpen(true);
       } catch (error: any) {
         toast({ 
-          title: "Erro ao importar planilha", 
+          title: "Erro ao analisar planilha", 
           description: error.message,
           variant: "destructive" 
         });
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleConfirmImport = async () => {
+    try {
+      const text = pendingCsvText;
+      const rows = text.split('\n').slice(1); // Skip header
+      
+      // Fetch all contracts to map names to IDs
+      const { data: contracts } = await supabase
+        .from('management_contracts')
+        .select('id, name');
+      
+      const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
+      
+      // Track CPFs we've seen to skip duplicates
+      const seenCpfs = new Set<string>();
+      
+      const employeesData = rows
+        .filter(row => row.trim())
+        .map(row => {
+          const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s.trim());
+          
+          // Clean CPF (remove non-numeric characters)
+          const cleanedCpf = cpf.replace(/\D/g, '');
+          
+          // Look up contract ID by name, or set to null if not found
+          const management_contract_id = contract_name && contractMap.has(contract_name) 
+            ? contractMap.get(contract_name) 
+            : null;
+          
+          return { 
+            name, 
+            cpf: cleanedCpf, 
+            birth_date, 
+            phone: phone || null, 
+            email: email || null,
+            department: department || null,
+            job_title: job_title || null,
+            management_contract_id
+          };
+        })
+        .filter(emp => {
+          // Skip duplicates within the file (keep only first occurrence)
+          if (seenCpfs.has(emp.cpf)) {
+            return false;
+          }
+          seenCpfs.add(emp.cpf);
+          return true;
+        });
+
+      // Check for existing CPFs in database
+      const { data: existingEmployees } = await supabase
+        .from('employees')
+        .select('cpf')
+        .in('cpf', employeesData.map(e => e.cpf));
+
+      // Filter out employees that already exist
+      const existingCpfs = new Set(existingEmployees?.map(e => e.cpf) || []);
+      const newEmployeesData = employeesData.filter(emp => !existingCpfs.has(emp.cpf));
+
+      if (newEmployeesData.length === 0) {
+        throw new Error('Todos os CPFs já estão cadastrados no sistema');
+      }
+
+      const { error } = await supabase
+        .from('employees')
+        .insert(newEmployeesData);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      
+      const skipped = employeesData.length - newEmployeesData.length;
+      toast({ 
+        title: "Planilha importada!", 
+        description: `${newEmployeesData.length} colaborador(es) adicionado(s)${skipped > 0 ? `, ${skipped} ignorado(s) (já existentes)` : ''}`
+      });
+      
+      setIsAnalysisDialogOpen(false);
+      setCsvAnalysis(null);
+      setPendingCsvText("");
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao importar planilha", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
   };
 
   const filteredEmployees = employees?.filter(emp =>
@@ -410,6 +443,105 @@ const Employees = () => {
               </DialogContent>
             </Dialog>
           )}
+          
+          {/* CSV Analysis Dialog */}
+          <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Análise da Planilha</DialogTitle>
+                <DialogDescription>
+                  Verifique as informações antes de importar
+                </DialogDescription>
+              </DialogHeader>
+              {csvAnalysis && (
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-2xl font-bold">{csvAnalysis.totalRows}</div>
+                        <p className="text-sm text-muted-foreground">Total de linhas</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-2xl font-bold">{csvAnalysis.uniqueCpfs}</div>
+                        <p className="text-sm text-muted-foreground">CPFs únicos</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="text-2xl font-bold text-destructive">{csvAnalysis.duplicates.length}</div>
+                        <p className="text-sm text-muted-foreground">CPFs duplicados</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {csvAnalysis.duplicates.length > 0 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>CPFs Duplicados Encontrados</AlertTitle>
+                      <AlertDescription>
+                        A planilha contém {csvAnalysis.duplicates.length} CPF(s) duplicado(s). 
+                        Apenas a primeira ocorrência de cada CPF será importada.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {csvAnalysis.duplicates.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Detalhes dos CPFs Duplicados:</h4>
+                      <div className="max-h-60 overflow-y-auto space-y-2">
+                        {csvAnalysis.duplicates.slice(0, 20).map((dup: any, index: number) => (
+                          <div key={index} className="p-3 border rounded-lg bg-destructive/5">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-mono font-bold">CPF: {dup.cpf}</span>
+                              <Badge variant="destructive">{dup.count}x duplicado</Badge>
+                            </div>
+                            <div className="text-sm space-y-1">
+                              {dup.names.map((name: string, i: number) => (
+                                <div key={i} className="text-muted-foreground">
+                                  • Linha {dup.lines[i]}: {name}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        {csvAnalysis.duplicates.length > 20 && (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            ... e mais {csvAnalysis.duplicates.length - 20} CPF(s) duplicado(s)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setIsAnalysisDialogOpen(false);
+                        setCsvAnalysis(null);
+                        setPendingCsvText("");
+                      }}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={handleConfirmImport}
+                      className="flex-1"
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {csvAnalysis.duplicates.length > 0 
+                        ? `Importar ${csvAnalysis.uniqueCpfs} CPFs Únicos` 
+                        : 'Confirmar Importação'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
