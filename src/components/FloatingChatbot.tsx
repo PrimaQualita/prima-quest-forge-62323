@@ -116,70 +116,71 @@ export const FloatingChatbot = () => {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
           size="icon"
         >
-          <MessageSquare className="h-6 w-6" />
+          <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
         </Button>
       )}
 
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl flex flex-col z-50 bg-background">
-          <CardHeader className="border-b flex-shrink-0">
+        <Card className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-6rem)] sm:h-[600px] max-h-[600px] shadow-2xl flex flex-col z-50 bg-background">
+          <CardHeader className="border-b flex-shrink-0 py-3 sm:py-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Bot className="w-5 h-5 text-primary" />
-                Assistente de Compliance
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="hidden xs:inline">Assistente de Compliance</span>
+                <span className="xs:hidden">Assistente</span>
               </CardTitle>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
-                className="h-8 w-8"
+                className="h-7 w-7 sm:h-8 sm:w-8"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+              <div className="space-y-3 sm:space-y-4">
                 {messages.map((message, idx) => (
                   <div
                     key={idx}
-                    className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    className={`flex gap-2 sm:gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {message.role === "assistant" && (
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <Bot className="w-5 h-5 text-primary" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                       </div>
                     )}
                     <div
-                      className={`max-w-[70%] rounded-lg p-3 break-words overflow-wrap-anywhere ${
+                      className={`max-w-[75%] sm:max-w-[70%] rounded-lg p-2.5 sm:p-3 break-words overflow-wrap-anywhere ${
                         message.role === "user"
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted text-foreground"
                       }`}
                       style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                     >
-                      <div className="text-sm whitespace-pre-wrap">
+                      <div className="text-xs sm:text-sm whitespace-pre-wrap">
                         {message.content}
                       </div>
                     </div>
                     {message.role === "user" && (
-                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
-                        <User className="w-5 h-5 text-accent" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
+                        <User className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
                       </div>
                     )}
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
-                      <Bot className="w-5 h-5 text-primary animate-pulse" />
+                  <div className="flex gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/10 flex items-center justify-center mt-1">
+                      <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse" />
                     </div>
-                    <div className="bg-muted rounded-lg p-3">
-                      <p className="text-sm text-muted-foreground">Processando...</p>
+                    <div className="bg-muted rounded-lg p-2.5 sm:p-3">
+                      <p className="text-xs sm:text-sm text-muted-foreground">Processando...</p>
                     </div>
                   </div>
                 )}
@@ -187,7 +188,7 @@ export const FloatingChatbot = () => {
               </div>
             </div>
 
-            <div className="p-4 border-t flex-shrink-0 bg-background">
+            <div className="p-3 sm:p-4 border-t flex-shrink-0 bg-background">
               <div className="flex gap-2">
                 <Input
                   placeholder="Digite sua pergunta..."
@@ -195,10 +196,10 @@ export const FloatingChatbot = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSend()}
                   disabled={isLoading}
-                  className="flex-1"
+                  className="flex-1 text-sm"
                 />
-                <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="flex-shrink-0">
-                  <Send className="w-4 h-4" />
+                <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="icon" className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10">
+                  <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </div>

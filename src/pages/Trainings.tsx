@@ -308,23 +308,23 @@ const Trainings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-foreground">Gestão de Treinamentos</h1>
-          <p className="text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">Gestão de Treinamentos</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
               Novo Treinamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Criar Novo Treinamento</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="is-trail">Tipo de Treinamento</Label>

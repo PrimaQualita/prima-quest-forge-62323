@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
   { icon: FileText, label: "Documentos", path: "/documents", adminOnly: false },
@@ -26,7 +30,7 @@ const menuItems = [
   { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
@@ -34,12 +38,17 @@ export const Sidebar = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+    onNavigate?.();
+  };
+
+  const handleNavClick = () => {
+    onNavigate?.();
   };
 
   const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border overflow-y-auto">
       <div className="flex flex-col h-full">
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
@@ -66,6 +75,7 @@ export const Sidebar = () => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={handleNavClick}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
                   isActive

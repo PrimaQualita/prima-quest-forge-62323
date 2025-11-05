@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 
 interface DashboardEmployeeProps {
   employeeId: string;
@@ -90,13 +91,13 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   const totalPending = (stats?.pendingDocs || 0) + (stats?.pendingTrainings || 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Meu Dashboard de Compliance</h1>
-        <p className="text-muted-foreground">Acompanhe suas pendências e progresso</p>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">Meu Dashboard de Compliance</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Documentos Pendentes"
           value={stats?.pendingDocs || 0}
@@ -143,12 +144,12 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <FileCheck className="w-5 h-5" />
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-base sm:text-lg">
+                <FileCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                 Documentos Pendentes
               </span>
               <Badge variant={pendingDocuments && pendingDocuments.length > 0 ? "destructive" : "default"}>
@@ -160,19 +161,19 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
             {pendingDocuments && pendingDocuments.length > 0 ? (
               <>
                 {pendingDocuments.map((doc) => (
-                  <div key={doc.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">{doc.title}</h4>
-                      <Badge variant="outline">{doc.category}</Badge>
+                  <div key={doc.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                      <h4 className="font-medium text-sm sm:text-base">{doc.title}</h4>
+                      <Badge variant="outline" className="self-start">{doc.category}</Badge>
                     </div>
                     <div 
-                      className="text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: doc.description || "" }}
+                      className="text-xs sm:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
                     />
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/documents')}
-                      className="w-full"
+                      className="w-full text-xs sm:text-sm"
                     >
                       Ler e Aceitar
                     </Button>
@@ -180,9 +181,9 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                 ))}
               </>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                <p>Todos os documentos foram aceitos!</p>
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-green-600" />
+                <p className="text-sm">Todos os documentos foram aceitos!</p>
               </div>
             )}
           </CardContent>
@@ -190,9 +191,9 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
+            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-base sm:text-lg">
+                <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
                 Treinamentos Pendentes
               </span>
               <Badge variant={pendingTrainings && pendingTrainings.length > 0 ? "destructive" : "default"}>
@@ -204,16 +205,16 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
             {pendingTrainings && pendingTrainings.length > 0 ? (
               <>
                 {pendingTrainings.map((training) => (
-                  <div key={training.id} className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">{training.title}</h4>
-                      <Badge variant="outline">{training.category}</Badge>
+                  <div key={training.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
+                      <h4 className="font-medium text-sm sm:text-base">{training.title}</h4>
+                      <Badge variant="outline" className="self-start">{training.category}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">{training.description}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-3">{training.description}</p>
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/trainings')}
-                      className="w-full"
+                      className="w-full text-xs sm:text-sm"
                     >
                       Iniciar Treinamento
                     </Button>
@@ -221,9 +222,9 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                 ))}
               </>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-600" />
-                <p>Todos os treinamentos foram concluídos!</p>
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-green-600" />
+                <p className="text-sm">Todos os treinamentos foram concluídos!</p>
               </div>
             )}
           </CardContent>

@@ -219,37 +219,37 @@ const TrainingView = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => navigate('/trainings')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/trainings')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
       </div>
 
       <div>
-        <h1 className="text-4xl font-bold text-foreground">{training.title}</h1>
-        <p className="text-muted-foreground mt-2">{training.description}</p>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">{training.title}</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-2">{training.description}</p>
         <Badge className="mt-2">{training.category}</Badge>
       </div>
 
       <Tabs defaultValue="videos" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="videos">
-            <Video className="w-4 h-4 mr-2" />
-            Vídeos
+          <TabsTrigger value="videos" className="text-xs sm:text-sm">
+            <Video className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Vídeos</span>
           </TabsTrigger>
-          <TabsTrigger value="materials">
-            <FileText className="w-4 h-4 mr-2" />
-            Materiais
+          <TabsTrigger value="materials" className="text-xs sm:text-sm">
+            <FileText className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Materiais</span>
           </TabsTrigger>
-          <TabsTrigger value="assessment" disabled={!canTakeAssessment}>
+          <TabsTrigger value="assessment" disabled={!canTakeAssessment} className="text-xs sm:text-sm">
             {canTakeAssessment ? (
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
             ) : (
-              <Lock className="w-4 h-4 mr-2" />
+              <Lock className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
             )}
-            Avaliação
+            <span className="hidden sm:inline">Avaliação</span>
           </TabsTrigger>
         </TabsList>
 
@@ -414,9 +414,9 @@ const TrainingView = () => {
       </Tabs>
 
       <Dialog open={isAssessmentOpen} onOpenChange={setIsAssessmentOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Avaliação - {training.title}</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">Avaliação - {training.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {assessment?.training_questions?.map((q: any, index: number) => (
