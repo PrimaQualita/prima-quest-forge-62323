@@ -24,7 +24,12 @@ const ManagementContracts = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [newContract, setNewContract] = useState({ name: "", description: "" });
   const [editContract, setEditContract] = useState<any>(null);
-  const [renewalData, setRenewalData] = useState({ renewal_date: "", notes: "" });
+  const [renewalData, setRenewalData] = useState({ 
+    renewal_date: "", 
+    renewal_start_date: "", 
+    renewal_end_date: "", 
+    notes: "" 
+  });
 
   const { data: contracts } = useQuery({
     queryKey: ['management_contracts'],
@@ -112,13 +117,21 @@ const ManagementContracts = () => {
   });
 
   const addRenewalMutation = useMutation({
-    mutationFn: async (renewal: { contract_id: string; renewal_date: string; notes: string }) => {
+    mutationFn: async (renewal: { 
+      contract_id: string; 
+      renewal_date: string; 
+      renewal_start_date: string; 
+      renewal_end_date: string; 
+      notes: string 
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('contract_renewals')
         .insert([{
           contract_id: renewal.contract_id,
           renewal_date: renewal.renewal_date,
+          renewal_start_date: renewal.renewal_start_date,
+          renewal_end_date: renewal.renewal_end_date,
           notes: renewal.notes,
           created_by: user?.id
         }])
@@ -128,9 +141,15 @@ const ManagementContracts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contract_renewals'] });
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
       toast({ title: "Renovação adicionada com sucesso!" });
       setIsRenewalDialogOpen(false);
-      setRenewalData({ renewal_date: "", notes: "" });
+      setRenewalData({ 
+        renewal_date: "", 
+        renewal_start_date: "", 
+        renewal_end_date: "", 
+        notes: "" 
+      });
     },
   });
 
@@ -307,19 +326,22 @@ const ManagementContracts = () => {
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {renewals.map((renewal: any) => (
                       <div key={renewal.id} className="p-3 border rounded-lg bg-muted/50">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {new Date(renewal.renewal_date).toLocaleDateString('pt-BR')}
+                            <span className="font-medium text-sm">
+                              Efetivada em: {new Date(renewal.renewal_date).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          <Badge variant="outline">
-                            {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
+                          <Badge variant="outline" className="text-xs">
+                            Registrada em {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
                           </Badge>
                         </div>
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">Período renovado:</span> {new Date(renewal.renewal_start_date).toLocaleDateString('pt-BR')} até {new Date(renewal.renewal_end_date).toLocaleDateString('pt-BR')}
+                        </div>
                         {renewal.notes && (
-                          <p className="text-sm text-muted-foreground mt-2">{renewal.notes}</p>
+                          <p className="text-sm text-muted-foreground mt-2 italic">{renewal.notes}</p>
                         )}
                       </div>
                     ))}
@@ -351,7 +373,7 @@ const ManagementContracts = () => {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="renewal-date">Data de Renovação</Label>
+                <Label htmlFor="renewal-date">Data de Efetivação da Renovação</Label>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <Input
@@ -359,6 +381,30 @@ const ManagementContracts = () => {
                     type="date"
                     value={renewalData.renewal_date}
                     onChange={(e) => setRenewalData({ ...renewalData, renewal_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="renewal-start-date">Data de Início do Período Renovado</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="renewal-start-date"
+                    type="date"
+                    value={renewalData.renewal_start_date}
+                    onChange={(e) => setRenewalData({ ...renewalData, renewal_start_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="renewal-end-date">Data de Fim do Período Renovado</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="renewal-end-date"
+                    type="date"
+                    value={renewalData.renewal_end_date}
+                    onChange={(e) => setRenewalData({ ...renewalData, renewal_end_date: e.target.value })}
                   />
                 </div>
               </div>
@@ -374,16 +420,18 @@ const ManagementContracts = () => {
               </div>
               <Button 
                 onClick={() => {
-                  if (editContract?.id && renewalData.renewal_date) {
+                  if (editContract?.id && renewalData.renewal_date && renewalData.renewal_start_date && renewalData.renewal_end_date) {
                     addRenewalMutation.mutate({
                       contract_id: editContract.id,
                       renewal_date: renewalData.renewal_date,
+                      renewal_start_date: renewalData.renewal_start_date,
+                      renewal_end_date: renewalData.renewal_end_date,
                       notes: renewalData.notes
                     });
                   }
                 }}
                 className="w-full"
-                disabled={!renewalData.renewal_date || addRenewalMutation.isPending}
+                disabled={!renewalData.renewal_date || !renewalData.renewal_start_date || !renewalData.renewal_end_date || addRenewalMutation.isPending}
               >
                 Adicionar Renovação
               </Button>

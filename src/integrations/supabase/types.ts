@@ -163,6 +163,8 @@ export type Database = {
           id: string
           notes: string | null
           renewal_date: string
+          renewal_end_date: string
+          renewal_start_date: string
         }
         Insert: {
           contract_id: string
@@ -171,6 +173,8 @@ export type Database = {
           id?: string
           notes?: string | null
           renewal_date: string
+          renewal_end_date?: string
+          renewal_start_date?: string
         }
         Update: {
           contract_id?: string
@@ -179,6 +183,8 @@ export type Database = {
           id?: string
           notes?: string | null
           renewal_date?: string
+          renewal_end_date?: string
+          renewal_start_date?: string
         }
         Relationships: [
           {
