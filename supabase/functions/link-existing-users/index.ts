@@ -58,10 +58,38 @@ serve(async (req) => {
 
     // Get all existing users once
     console.log('Buscando usuários existentes...');
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUsersMap = new Map(
-      existingUsers?.users?.map(u => [u.email, u.id]) || []
-    );
+    const existingUsersMap = new Map<string, string>();
+    
+    // Paginate through all users
+    let page = 0;
+    const perPage = 1000;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const { data: usersPage, error } = await supabaseAdmin.auth.admin.listUsers({
+        page: page,
+        perPage: perPage
+      });
+      
+      if (error) {
+        console.error('Erro ao buscar usuários:', error);
+        break;
+      }
+      
+      if (usersPage?.users) {
+        usersPage.users.forEach(u => {
+          if (u.email) {
+            existingUsersMap.set(u.email, u.id);
+          }
+        });
+        
+        hasMore = usersPage.users.length === perPage;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+    
     console.log(`${existingUsersMap.size} usuários encontrados no auth`);
 
     // Process employees in parallel batches
