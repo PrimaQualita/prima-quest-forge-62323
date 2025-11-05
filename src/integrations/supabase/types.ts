@@ -280,7 +280,7 @@ export type Database = {
           cpf: string
           created_at: string | null
           department: string | null
-          email: string
+          email: string | null
           id: string
           is_manager: boolean | null
           job_title: string | null
@@ -295,7 +295,7 @@ export type Database = {
           cpf: string
           created_at?: string | null
           department?: string | null
-          email: string
+          email?: string | null
           id?: string
           is_manager?: boolean | null
           job_title?: string | null
@@ -310,7 +310,7 @@ export type Database = {
           cpf?: string
           created_at?: string | null
           department?: string | null
-          email?: string
+          email?: string | null
           id?: string
           is_manager?: boolean | null
           job_title?: string | null
