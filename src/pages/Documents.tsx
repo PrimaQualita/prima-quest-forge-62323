@@ -22,6 +22,9 @@ const Documents = () => {
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [quizAnswer, setQuizAnswer] = useState("");
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [currentQuiz, setCurrentQuiz] = useState<any>(null);
+  const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
+  const [isGeneratingNewQuestion, setIsGeneratingNewQuestion] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -234,41 +237,81 @@ const Documents = () => {
     },
   });
 
+  const generateNewQuestionMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      const doc = documents?.find(d => d.id === docId);
+      if (!doc) throw new Error("Documento não encontrado");
+
+      setIsGeneratingNewQuestion(true);
+      try {
+        const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-quiz', {
+          body: { 
+            content: doc.content,
+            title: doc.title
+          }
+        });
+
+        if (quizError) throw quizError;
+        return quizData;
+      } finally {
+        setIsGeneratingNewQuestion(false);
+      }
+    },
+    onSuccess: (quizData) => {
+      setCurrentQuiz(quizData);
+      setQuizAnswer("");
+      setQuizResult(null);
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Erro ao gerar nova pergunta", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
   const submitAcknowledgmentMutation = useMutation({
     mutationFn: async ({ docId, answer }: any) => {
       if (!currentEmployee) {
         throw new Error("Você precisa estar logado como colaborador para aceitar documentos");
       }
 
-      const doc = documents?.find(d => d.id === docId);
-      const isCorrect = answer === doc?.correct_answer;
+      const quiz = currentQuiz || documents?.find(d => d.id === docId);
+      const isCorrect = answer === quiz?.correct_answer;
 
-      const { error } = await supabase
-        .from('document_acknowledgments')
-        .upsert({
-          document_id: docId,
-          employee_id: currentEmployee.id,
-          quiz_answered: true,
-          quiz_correct: isCorrect,
-          acknowledged_at: isCorrect ? new Date().toISOString() : null,
-        });
+      if (isCorrect) {
+        const { error } = await supabase
+          .from('document_acknowledgments')
+          .upsert({
+            document_id: docId,
+            employee_id: currentEmployee.id,
+            quiz_answered: true,
+            quiz_correct: isCorrect,
+            acknowledged_at: new Date().toISOString(),
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
+
       return isCorrect;
     },
-    onSuccess: (isCorrect) => {
+    onSuccess: (isCorrect, variables) => {
       if (isCorrect) {
-        toast({ title: "Resposta correta! Documento aceito com sucesso." });
+        setQuizResult('correct');
+        queryClient.invalidateQueries({ queryKey: ['acknowledgments'] });
       } else {
-        toast({ 
-          title: "Resposta incorreta", 
-          description: "Por favor, leia o documento novamente e tente outra vez.",
-          variant: "destructive" 
-        });
+        setQuizResult('incorrect');
+        // Gerar nova pergunta automaticamente
+        generateNewQuestionMutation.mutate(variables.docId);
       }
-      setSelectedDoc(null);
-      setQuizAnswer("");
-      queryClient.invalidateQueries({ queryKey: ['acknowledgments'] });
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Erro ao processar resposta", 
+        description: error.message,
+        variant: "destructive" 
+      });
     },
   });
 
@@ -485,12 +528,24 @@ const Documents = () => {
                   Baixar Arquivo
                 </Button>
               )}
-              <Dialog>
+              <Dialog open={selectedDoc?.id === doc.id} onOpenChange={(open) => {
+                if (!open) {
+                  setSelectedDoc(null);
+                  setQuizAnswer("");
+                  setQuizResult(null);
+                  setCurrentQuiz(null);
+                }
+              }}>
                 <DialogTrigger asChild>
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => setSelectedDoc(doc)}
+                    onClick={() => {
+                      setSelectedDoc(doc);
+                      setCurrentQuiz(null);
+                      setQuizResult(null);
+                      setQuizAnswer("");
+                    }}
                   >
                     Ler e Aceitar
                   </Button>
@@ -507,28 +562,107 @@ const Documents = () => {
                     
                     <div className="border-t pt-6 space-y-4">
                       <h3 className="font-semibold text-lg">Quiz de Validação</h3>
-                      <p className="text-sm text-muted-foreground">{doc.quiz_question}</p>
                       
-                      <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer}>
-                        {(doc.quiz_options as string[])?.map((option, idx) => (
-                          <div key={idx} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`opt-${idx}`} />
-                            <Label htmlFor={`opt-${idx}`}>{option}</Label>
+                      {quizResult === 'correct' ? (
+                        <div className="space-y-4">
+                          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                            <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                              <CheckCircle className="w-5 h-5" />
+                              <p className="font-semibold">Resposta correta!</p>
+                            </div>
+                            <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+                              Documento aceito com sucesso. Você pode fechar esta janela.
+                            </p>
                           </div>
-                        ))}
-                      </RadioGroup>
-                      
-                      <Button 
-                        className="w-full"
-                        disabled={!quizAnswer || !currentEmployee}
-                        onClick={() => submitAcknowledgmentMutation.mutate({
-                          docId: doc.id,
-                          answer: quizAnswer
-                        })}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Confirmar Aceite
-                      </Button>
+                          <Button 
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedDoc(null);
+                              setQuizAnswer("");
+                              setQuizResult(null);
+                              setCurrentQuiz(null);
+                            }}
+                          >
+                            Fechar
+                          </Button>
+                        </div>
+                      ) : quizResult === 'incorrect' ? (
+                        <div className="space-y-4">
+                          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                            <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
+                              <span className="text-xl">✗</span>
+                              <p className="font-semibold">Resposta incorreta</p>
+                            </div>
+                            <p className="text-sm text-red-700 dark:text-red-300 mt-2">
+                              {isGeneratingNewQuestion 
+                                ? "Gerando nova pergunta..." 
+                                : "Por favor, tente responder a nova pergunta abaixo."}
+                            </p>
+                          </div>
+                          
+                          {!isGeneratingNewQuestion && currentQuiz && (
+                            <>
+                              <p className="text-sm text-muted-foreground">{currentQuiz.question}</p>
+                              
+                              <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer}>
+                                {(currentQuiz.options as string[])?.map((option: string, idx: number) => (
+                                  <div key={idx} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option} id={`opt-new-${idx}`} />
+                                    <Label htmlFor={`opt-new-${idx}`}>{option}</Label>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                              
+                              <Button 
+                                className="w-full"
+                                disabled={!quizAnswer || !currentEmployee || submitAcknowledgmentMutation.isPending}
+                                onClick={() => submitAcknowledgmentMutation.mutate({
+                                  docId: doc.id,
+                                  answer: quizAnswer
+                                })}
+                              >
+                                {submitAcknowledgmentMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Confirmar Aceite
+                              </Button>
+                            </>
+                          )}
+                          
+                          {isGeneratingNewQuestion && (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-muted-foreground">
+                            {currentQuiz ? currentQuiz.question : doc.quiz_question}
+                          </p>
+                          
+                          <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer}>
+                            {((currentQuiz?.options || doc.quiz_options) as string[])?.map((option: string, idx: number) => (
+                              <div key={idx} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`opt-${idx}`} />
+                                <Label htmlFor={`opt-${idx}`}>{option}</Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                          
+                          <Button 
+                            className="w-full"
+                            disabled={!quizAnswer || !currentEmployee || submitAcknowledgmentMutation.isPending}
+                            onClick={() => submitAcknowledgmentMutation.mutate({
+                              docId: doc.id,
+                              answer: quizAnswer
+                            })}
+                          >
+                            {submitAcknowledgmentMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirmar Aceite
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </DialogContent>
