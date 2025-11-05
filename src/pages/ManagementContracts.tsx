@@ -421,8 +421,13 @@ const ManagementContracts = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-medium">Período renovado:</span> {new Date(renewal.renewal_start_date).toLocaleDateString('pt-BR')} até {new Date(renewal.renewal_end_date).toLocaleDateString('pt-BR')}
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <div>
+                            <span className="font-medium">Início da vigência:</span> {new Date(renewal.renewal_start_date).toLocaleDateString('pt-BR')}
+                          </div>
+                          <div>
+                            <span className="font-medium">Fim da vigência:</span> {new Date(renewal.renewal_end_date).toLocaleDateString('pt-BR')}
+                          </div>
                         </div>
                         {renewal.notes && (
                           <p className="text-sm text-muted-foreground mt-2 italic">{renewal.notes}</p>
