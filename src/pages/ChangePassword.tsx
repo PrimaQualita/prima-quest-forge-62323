@@ -77,7 +77,7 @@ const ChangePassword = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Alterar Senha</CardTitle>
           <CardDescription>
-            Como é seu primeiro acesso, por favor altere sua senha padrão
+            Por segurança, você precisa criar uma nova senha para acessar o sistema
           </CardDescription>
         </CardHeader>
         <CardContent>

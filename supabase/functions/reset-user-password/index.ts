@@ -82,6 +82,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Mark as first_login so user is forced to change password
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({ first_login: true })
+      .eq('id', employee.user_id)
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError)
+      // Don't fail the request, just log the error
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,

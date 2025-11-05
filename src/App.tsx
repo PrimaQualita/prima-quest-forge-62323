@@ -2,9 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import Documents from "./pages/Documents";
@@ -31,14 +33,45 @@ const ProtectedRoute = ({
   children: React.ReactNode;
   adminOnly?: boolean;
 }) => {
-  const { session, loading, isAdmin } = useAuth();
+  const { session, loading, isAdmin, user } = useAuth();
+  const location = useLocation();
+  const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    const checkFirstLogin = async () => {
+      if (user?.id && location.pathname !== '/change-password') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_login')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile?.first_login === true) {
+          setNeedsPasswordChange(true);
+        }
+      }
+      setCheckingFirstLogin(false);
+    };
+
+    if (!loading && user) {
+      checkFirstLogin();
+    } else if (!loading) {
+      setCheckingFirstLogin(false);
+    }
+  }, [user, loading, location.pathname]);
+
+  if (loading || checkingFirstLogin) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
   if (!session) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect to change password if needed (except if already on that page)
+  if (needsPasswordChange && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
 
   if (adminOnly && !isAdmin) {
