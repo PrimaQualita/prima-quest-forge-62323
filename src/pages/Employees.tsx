@@ -722,16 +722,15 @@ const Employees = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contract">Contrato de Gestão</Label>
+                  <Label htmlFor="contract">Contrato de Gestão (opcional)</Label>
                   <Select
-                    value={newEmployee.management_contract_id}
+                    value={newEmployee.management_contract_id || undefined}
                     onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um contrato" />
+                      <SelectValue placeholder="Nenhum contrato selecionado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
                       {contracts?.map((contract) => (
                         <SelectItem key={contract.id} value={contract.id}>
                           {contract.name}
@@ -845,16 +844,15 @@ const Employees = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-contract">Contrato de Gestão</Label>
+                  <Label htmlFor="edit-contract">Contrato de Gestão (opcional)</Label>
                   <Select
-                    value={editingEmployee?.management_contract_id || ""}
+                    value={editingEmployee?.management_contract_id || undefined}
                     onValueChange={(value) => setEditingEmployee({ ...editingEmployee, management_contract_id: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um contrato" />
+                      <SelectValue placeholder="Nenhum contrato selecionado" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
                       {contracts?.map((contract) => (
                         <SelectItem key={contract.id} value={contract.id}>
                           {contract.name}
