@@ -652,39 +652,42 @@ const ManagementContracts = () => {
             <CardTitle>Contratos de Gestão</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {contracts?.map((contract) => (
                 <div 
                   key={contract.id} 
-                  className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
-                    !contract.is_active 
-                      ? 'bg-red-50/50 dark:bg-red-950/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]' 
-                      : 'bg-green-50/50 dark:bg-green-950/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]'
+                  className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
+                    selectedContract?.id === contract.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
                   }`}
                 >
-                  <Button
-                    variant={selectedContract?.id === contract.id ? "default" : "outline"}
-                    className="flex-1 justify-start"
+                  <button
+                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     onClick={() => setSelectedContract(contract)}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    {contract.name}
+                    <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    <span className="font-medium text-foreground truncate">{contract.name}</span>
+                  </button>
+                  
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     {contract.is_active ? (
-                      <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700">Vigente</Badge>
+                      <Badge variant="default" className="bg-green-600 hover:bg-green-700">Vigente</Badge>
                     ) : (
-                      <Badge variant="destructive" className="ml-2">Encerrado</Badge>
+                      <Badge variant="destructive">Encerrado</Badge>
                     )}
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      setEditContract(contract);
-                      setIsEditDialogOpen(true);
-                    }}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setEditContract(contract);
+                        setIsEditDialogOpen(true);
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
