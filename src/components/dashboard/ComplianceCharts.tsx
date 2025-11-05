@@ -7,8 +7,33 @@ interface ComplianceChartsProps {
   totalEmployees: number;
 }
 
-const COLORS = ['#0ea5e9', '#10b981', '#8b5cf6', '#06b6d4', '#6366f1']; // Cores frias
-const NOT_COMPLETED_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#fb923c']; // Cores quentes
+// Cores frias para regulamentos/treinamentos realizados (expandido para 10 cores únicas)
+const COLORS = [
+  '#0ea5e9', // sky-500
+  '#10b981', // emerald-500
+  '#06b6d4', // cyan-500
+  '#14b8a6', // teal-500
+  '#6366f1', // indigo-500
+  '#8b5cf6', // violet-500
+  '#3b82f6', // blue-500
+  '#22c55e', // green-500
+  '#0891b2', // cyan-600
+  '#059669', // emerald-600
+];
+
+// Cores quentes para não realizados (expandido para 10 cores únicas)
+const NOT_COMPLETED_COLORS = [
+  '#ef4444', // red-500
+  '#f97316', // orange-500
+  '#f59e0b', // amber-500
+  '#fb923c', // orange-400
+  '#dc2626', // red-600
+  '#ea580c', // orange-600
+  '#d97706', // amber-600
+  '#fbbf24', // amber-400
+  '#f87171', // red-400
+  '#fdba74', // orange-300
+];
 
 export const ComplianceCharts = ({ 
   documentAcceptance = [], 
