@@ -39,6 +39,8 @@ const Employees = () => {
   const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isCleaningOrphans, setIsCleaningOrphans] = useState(false);
   const [resettingPasswordFor, setResettingPasswordFor] = useState<string | null>(null);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [employeeToResetPassword, setEmployeeToResetPassword] = useState<{ cpf: string; name: string } | null>(null);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -420,6 +422,14 @@ const Employees = () => {
       });
     } finally {
       setResettingPasswordFor(null);
+      setIsResetPasswordDialogOpen(false);
+      setEmployeeToResetPassword(null);
+    }
+  };
+
+  const confirmResetPassword = () => {
+    if (employeeToResetPassword) {
+      handleResetPassword(employeeToResetPassword.cpf, employeeToResetPassword.name);
     }
   };
 
@@ -1193,6 +1203,33 @@ const Employees = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Reset Password Confirmation Dialog */}
+      <AlertDialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resetar Senha do Colaborador?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a resetar a senha de <strong>{employeeToResetPassword?.name}</strong>.
+              <br /><br />
+              A senha será alterada para a data de nascimento no formato DDMMAAAA.
+              <br /><br />
+              No próximo login, o colaborador será obrigado a criar uma nova senha.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEmployeeToResetPassword(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmResetPassword}
+              disabled={resettingPasswordFor !== null}
+            >
+              {resettingPasswordFor ? "Resetando..." : "Sim, Resetar Senha"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Validation Results Dialog */}
       <Dialog open={isValidationDialogOpen} onOpenChange={setIsValidationDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -1401,7 +1438,10 @@ const Employees = () => {
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => handleResetPassword(employee.cpf, employee.name)}
+                            onClick={() => {
+                              setEmployeeToResetPassword({ cpf: employee.cpf, name: employee.name });
+                              setIsResetPasswordDialogOpen(true);
+                            }}
                             disabled={resettingPasswordFor === employee.cpf}
                             title="Resetar senha para data de nascimento"
                           >
