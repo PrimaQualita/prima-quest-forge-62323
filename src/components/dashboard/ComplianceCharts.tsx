@@ -7,8 +7,8 @@ interface ComplianceChartsProps {
   totalEmployees: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-const NOT_COMPLETED_COLORS = ['#e0f2fe', '#dcfce7', '#fef9c3', '#ffe4e6', '#ede9fe'];
+const COLORS = ['#0ea5e9', '#10b981', '#8b5cf6', '#06b6d4', '#6366f1']; // Cores frias
+const NOT_COMPLETED_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#fb923c']; // Cores quentes
 
 export const ComplianceCharts = ({ 
   documentAcceptance = [], 
