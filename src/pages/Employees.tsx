@@ -308,7 +308,8 @@ const Employees = () => {
         throw new Error(validation.error || 'CPF inválido ou dados inconsistentes');
       }
 
-      if (validation.birthDateMatches === false) {
+      // IMPORTANTE: Só verificar data de nascimento se a API conseguiu validar
+      if (validation.cpfExists && validation.birthDateMatches === false) {
         throw new Error('Data de nascimento não confere com o CPF informado');
       }
 
