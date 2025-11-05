@@ -114,7 +114,7 @@ const ManagementContracts = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground uppercase">CONTRATOS DE GESTÃO</h1>
+          <h1 className="text-4xl font-bold text-foreground uppercase">Contratos de Gestão</h1>
           <p className="text-muted-foreground mt-1">Gerencie contratos e pareceres de compliance</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -163,7 +163,7 @@ const ManagementContracts = () => {
       {/* Seção de Gráficos - Todos os Contratos */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">Documentos Mensais por Contrato</h2>
+          <h2 className="text-2xl font-bold text-foreground">Número de Pareceres Mensais</h2>
           <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
             <TabsList>
               {years.map((year) => (
