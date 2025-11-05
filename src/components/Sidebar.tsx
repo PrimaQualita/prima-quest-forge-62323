@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { UserProfile } from "@/components/UserProfile";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -90,21 +91,25 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
-          <div className="mb-3 px-2">
-            <p className="text-xs text-sidebar-foreground/60 mb-1">Tipo de Usuário</p>
-            <p className="text-sm text-sidebar-foreground font-medium">
-              {isAdmin ? "Gestor" : "Colaborador"}
-            </p>
+        <div>
+          <UserProfile />
+          
+          <div className="p-4 border-t border-sidebar-border">
+            <div className="mb-3 px-2">
+              <p className="text-xs text-sidebar-foreground/60 mb-1">Tipo de Usuário</p>
+              <p className="text-sm text-sidebar-foreground font-medium">
+                {isAdmin ? "Gestor" : "Colaborador"}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 border-sidebar-border hover:bg-sidebar-accent/50"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-2 border-sidebar-border hover:bg-sidebar-accent/50"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
         </div>
       </div>
     </aside>
