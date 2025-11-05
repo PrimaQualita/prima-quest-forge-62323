@@ -24,7 +24,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
   { icon: FileText, label: "Documentos", path: "/documents", adminOnly: false },
   { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
-  { icon: Briefcase, label: "Contratos", path: "/contracts", adminOnly: true },
+  { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
   { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
   { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
   { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
