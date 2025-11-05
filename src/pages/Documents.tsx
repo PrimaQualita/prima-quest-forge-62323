@@ -38,10 +38,27 @@ const Documents = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('compliance_documents')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
       if (error) throw error;
-      return data;
+      
+      // Ordem específica dos regulamentos
+      const orderMap: { [key: string]: number } = {
+        "Manual de Compliance": 1,
+        "Código de Ética e Conduta": 2,
+        "Política de Integridade": 3,
+        "Regulamento Antissuborno e Anticorrupção": 4,
+        "Regulamento de Due Dilligence": 5,
+        "Regulamento de Proteção de Dados": 6,
+        "Regulamento de Registros e Controles Contábeis e Financeiros": 7,
+        "Regulamento Canal de Denúncia": 8,
+      };
+      
+      // Ordenar com base no mapa, documentos não listados vão para o final
+      return data?.sort((a, b) => {
+        const orderA = orderMap[a.title] || 999;
+        const orderB = orderMap[b.title] || 999;
+        return orderA - orderB;
+      }) || [];
     },
   });
 
