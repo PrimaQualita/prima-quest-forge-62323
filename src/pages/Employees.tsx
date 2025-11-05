@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 const Employees = () => {
   const { toast } = useToast();
@@ -57,6 +58,31 @@ const Employees = () => {
         .order('name');
       if (error) throw error;
       return data;
+    },
+  });
+
+  const toggleManagerStatus = useMutation({
+    mutationFn: async ({ employeeId, isManager }: { employeeId: string; isManager: boolean }) => {
+      const { error } = await supabase
+        .from('employees')
+        .update({ is_manager: isManager })
+        .eq('id', employeeId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({ 
+        title: "Status atualizado!", 
+        description: "O tipo de colaborador foi alterado com sucesso."
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao atualizar", 
+        description: error.message,
+        variant: "destructive" 
+      });
     },
   });
 
@@ -358,6 +384,7 @@ const Employees = () => {
                   <TableHead>CPF</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Gestor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -372,6 +399,23 @@ const Employees = () => {
                       ) : (
                         <Badge variant="secondary">Colaborador</Badge>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={employee.is_manager || false}
+                          onCheckedChange={(checked) => 
+                            toggleManagerStatus.mutate({ 
+                              employeeId: employee.id, 
+                              isManager: checked 
+                            })
+                          }
+                          disabled={toggleManagerStatus.isPending}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {employee.is_manager ? "Sim" : "Não"}
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
