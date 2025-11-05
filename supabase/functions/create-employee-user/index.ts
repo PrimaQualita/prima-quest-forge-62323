@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const { employee } = await req.json();
     
-    if (!employee || !employee.cpf || !employee.birth_date || !employee.email) {
+    if (!employee || !employee.cpf || !employee.birth_date) {
       throw new Error('Dados do funcionário incompletos');
     }
 

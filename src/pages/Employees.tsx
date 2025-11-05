@@ -328,9 +328,16 @@ const Employees = () => {
 
       if (error) throw error;
 
-      // Create user accounts for all employees via edge function
+      // Create user accounts only for employees without user_id
       let userCreationErrors = 0;
+      let usersCreated = 0;
       for (const employee of upsertedEmployees || []) {
+        // Skip if employee already has a user_id
+        if (employee.user_id) {
+          console.log(`Skipping user creation for ${employee.name} - already has user`);
+          continue;
+        }
+
         try {
           const { error: userError } = await supabase.functions.invoke('create-employee-user', {
             body: { employee }
@@ -339,6 +346,8 @@ const Employees = () => {
           if (userError) {
             console.error(`Error creating user for ${employee.name}:`, userError);
             userCreationErrors++;
+          } else {
+            usersCreated++;
           }
         } catch (err) {
           console.error(`Failed to create user for ${employee.name}:`, err);
@@ -351,12 +360,12 @@ const Employees = () => {
       if (userCreationErrors === 0) {
         toast({ 
           title: "Importação concluída com sucesso!", 
-          description: `${employeesData.length} colaborador(es) importado(s) com usuários criados. Login: CPF | Senha: DD/MM/AAAA`
+          description: `${employeesData.length} colaborador(es) importado(s). ${usersCreated} novos usuários criados. Login: CPF | Senha: DD/MM/AAAA`
         });
       } else {
         toast({ 
           title: "Importação parcialmente concluída", 
-          description: `${employeesData.length} colaborador(es) importado(s), mas ${userCreationErrors} erro(s) ao criar usuários.`,
+          description: `${employeesData.length} colaborador(es) importado(s). ${usersCreated} usuários criados, ${userCreationErrors} erro(s).`,
           variant: "destructive"
         });
       }
