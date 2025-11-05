@@ -318,7 +318,10 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                       <h4 className="font-medium text-sm md:text-base">{training.title}</h4>
                       <Badge variant="outline" className="self-start">{training.category}</Badge>
                     </div>
-                    <p className="text-xs md:text-sm text-muted-foreground mb-3">{training.description}</p>
+                    <div 
+                      className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(training.description || "") }}
+                    />
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/trainings')}
