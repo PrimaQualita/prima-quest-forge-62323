@@ -117,14 +117,36 @@ Deno.serve(async (req) => {
     console.log('Buscando user_ids dos colaboradores...');
     const { data: employeesData } = await supabase
       .from('employees')
-      .select('user_id, name')
+      .select('user_id, name, cpf, email')
       .in('id', employeeIds);
     
     const userIds = employeesData
       ?.map(e => e.user_id)
       .filter(id => id !== null) || [];
 
-    console.log(`Encontrados ${userIds.length} usuário(s) vinculado(s)`);
+    console.log(`Encontrados ${userIds.length} usuário(s) vinculado(s) via user_id`);
+
+    // NOVO: Buscar usuários órfãos por email (podem não ter user_id atualizado ainda)
+    const employeeCPFs = employeesData?.map(e => e.cpf).filter(Boolean) || [];
+    if (employeeCPFs.length > 0) {
+      console.log('Buscando usuários órfãos por CPF/email...');
+      const orphanEmails = employeeCPFs.map(cpf => `${cpf}@primaqualita.local`);
+      
+      const { data: { users: orphanUsers }, error: orphanError } = await supabase.auth.admin.listUsers();
+      
+      if (!orphanError && orphanUsers) {
+        const foundOrphans = orphanUsers
+          .filter(u => orphanEmails.includes(u.email || ''))
+          .map(u => u.id);
+        
+        if (foundOrphans.length > 0) {
+          console.log(`Encontrados ${foundOrphans.length} usuário(s) órfão(s)`);
+          userIds.push(...foundOrphans.filter(id => !userIds.includes(id)));
+        }
+      }
+    }
+
+    console.log(`Total de usuários a deletar: ${userIds.length}`);
 
     // 8. Deletar roles de usuários
     if (userIds.length > 0) {

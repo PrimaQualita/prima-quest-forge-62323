@@ -37,6 +37,7 @@ const Employees = () => {
   const [isValidationDialogOpen, setIsValidationDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isCleaningOrphans, setIsCleaningOrphans] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -369,6 +370,30 @@ const Employees = () => {
       });
     },
   });
+
+  const cleanupOrphanUsers = async () => {
+    setIsCleaningOrphans(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('cleanup-orphan-users', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Limpeza concluída!",
+        description: `${data.deleted?.length || 0} usuário(s) órfão(s) removido(s).`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na limpeza",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsCleaningOrphans(false);
+    }
+  };
 
   const handleDownloadTemplate = () => {
     const headers = ['Nome', 'CPF', 'Data de Nascimento (AAAA-MM-DD)', 'Telefone', 'E-mail', 'Departamento', 'Cargo/Função', 'ID do Contrato de Gestão'];
@@ -725,6 +750,14 @@ const Employees = () => {
                 : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
             </Button>
           )}
+          <Button 
+            variant="outline" 
+            onClick={cleanupOrphanUsers}
+            disabled={isCleaningOrphans}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {isCleaningOrphans ? "Limpando..." : "Limpar Usuários Órfãos"}
+          </Button>
           <Button 
             variant="outline" 
             onClick={validateAllExistingEmployees}
