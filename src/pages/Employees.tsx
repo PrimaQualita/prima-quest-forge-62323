@@ -176,19 +176,32 @@ const Employees = () => {
         const text = event.target?.result as string;
         const rows = text.split('\n').slice(1); // Skip header
         
+        // Fetch all contracts to map names to IDs
+        const { data: contracts } = await supabase
+          .from('management_contracts')
+          .select('id, name');
+        
+        const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
+        
         const employeesData = rows
           .filter(row => row.trim())
           .map(row => {
-            const [name, cpf, birth_date, phone, email, department, job_title, management_contract_id] = row.split(';').map(s => s.trim());
+            const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s.trim());
+            
+            // Look up contract ID by name, or set to null if not found
+            const management_contract_id = contract_name && contractMap.has(contract_name) 
+              ? contractMap.get(contract_name) 
+              : null;
+            
             return { 
               name, 
               cpf, 
               birth_date, 
-              phone, 
-              email,
+              phone: phone || null, 
+              email: email || null,
               department: department || null,
               job_title: job_title || null,
-              management_contract_id: management_contract_id || null
+              management_contract_id
             };
           });
 
