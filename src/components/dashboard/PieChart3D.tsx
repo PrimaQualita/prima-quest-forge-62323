@@ -29,7 +29,7 @@ function PieSlice3D({
 
   const geometry = useMemo(() => {
     const radius = 2.2;
-    const height = 0.5;
+    const height = 0.8; // Aumentado de 0.5 para 0.8
     const segments = 64;
 
     const shape = new THREE.Shape();
@@ -47,8 +47,8 @@ function PieSlice3D({
     const extrudeSettings = {
       depth: height,
       bevelEnabled: true,
-      bevelThickness: 0.06,
-      bevelSize: 0.04,
+      bevelThickness: 0.08, // Aumentado de 0.06
+      bevelSize: 0.06, // Aumentado de 0.04
       bevelSegments: 3,
     };
 
@@ -82,7 +82,7 @@ function PieSlice3D({
           position={[
             Math.cos(midAngle) * 1.4,
             Math.sin(midAngle) * 1.4,
-            0.6
+            0.85 // Ajustado para a nova altura
           ]}
           fontSize={0.25}
           color="#ffffff"
