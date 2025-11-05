@@ -515,14 +515,16 @@ const Employees = () => {
 
   return (
     <div className="space-y-6 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
-          </p>
+      <div className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
+            <p className="text-muted-foreground mt-1">
+              Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex justify-end gap-2">
           {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
             <Button 
               variant="secondary" 
@@ -547,9 +549,33 @@ const Employees = () => {
             </label>
           </Button>
           
-          {/* CSV Analysis Dialog */}
-          <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Colaborador
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
+      </div>
+      
+      {/* CSV Analysis Dialog */}
+      <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Análise da Planilha</DialogTitle>
+            <DialogDescription>
+              Verifique as informações antes de importar
+            </DialogDescription>
+          </DialogHeader>
+          {csvAnalysis && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-3 gap-4">
+      
+      {/* CSV Analysis Dialog */}
+      <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Análise da Planilha</DialogTitle>
                 <DialogDescription>
@@ -642,126 +668,6 @@ const Employees = () => {
                   </div>
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Novo Colaborador
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input
-                    id="name"
-                    value={newEmployee.name}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                    placeholder="João Silva"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF</Label>
-                  <Input
-                    id="cpf"
-                    value={newEmployee.cpf}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, cpf: e.target.value })}
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="birth_date">Data de Nascimento</Label>
-                  <Input
-                    id="birth_date"
-                    type="date"
-                    value={newEmployee.birth_date}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, birth_date: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    value={newEmployee.phone}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={newEmployee.email}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                    placeholder="joao@primaqualita.com.br"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input
-                    id="department"
-                    value={newEmployee.department}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                    placeholder="Ex: Recursos Humanos"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="job_title">Cargo/Função</Label>
-                  <Input
-                    id="job_title"
-                    value={newEmployee.job_title}
-                    onChange={(e) => setNewEmployee({ ...newEmployee, job_title: e.target.value })}
-                    placeholder="Ex: Analista de Compliance"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contract">Contrato de Gestão (opcional)</Label>
-                  <Select
-                    value={newEmployee.management_contract_id || undefined}
-                    onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nenhum contrato selecionado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contracts?.map((contract) => (
-                        <SelectItem key={contract.id} value={contract.id}>
-                          {contract.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="is_manager"
-                    checked={newEmployee.is_manager}
-                    onCheckedChange={(checked) => 
-                      setNewEmployee({ ...newEmployee, is_manager: checked as boolean })
-                    }
-                  />
-                  <Label
-                    htmlFor="is_manager"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                  >
-                    Gestor (acesso completo ao sistema)
-                  </Label>
-                </div>
-                <Button
-                  onClick={() => addEmployeeMutation.mutate(newEmployee)}
-                  className="w-full"
-                  disabled={addEmployeeMutation.isPending}
-                >
-                  Adicionar Colaborador
-                </Button>
-              </div>
             </DialogContent>
           </Dialog>
 
