@@ -151,10 +151,17 @@ const Employees = () => {
         throw new Error('Este CPF já está cadastrado no sistema');
       }
 
-      // Insert employee with cleaned CPF
+      // Normalize email to lowercase
+      const normalizedEmployee = {
+        ...employee,
+        cpf: cpfNumbers,
+        email: employee.email ? employee.email.toLowerCase().trim() : null
+      };
+
+      // Insert employee with cleaned data
       const { data, error } = await supabase
         .from('employees')
-        .insert([{ ...employee, cpf: cpfNumbers }])
+        .insert([normalizedEmployee])
         .select()
         .single();
       
@@ -262,8 +269,8 @@ const Employees = () => {
           // Clean CPF (remove non-numeric characters)
           const cleanedCpf = cpf.replace(/\D/g, '');
           
-          // Validate and clean email
-          const cleanedEmail = email && email.includes('@') ? email : null;
+          // Validate and normalize email to lowercase
+          const cleanedEmail = email && email.includes('@') ? email.toLowerCase().trim() : null;
           
           // Look up contract ID by name, or set to null if not found
           const management_contract_id = contract_name && contractMap.has(contract_name) 

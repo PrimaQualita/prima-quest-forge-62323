@@ -122,7 +122,7 @@ const DashboardManager = () => {
   const { data: employeePendencies } = useQuery({
     queryKey: ['employee-pendencies'],
     queryFn: async () => {
-      // Fetch all employees (bypass 1000 limit)
+      // Fetch all employees in alphabetical order (bypass 1000 limit)
       let allEmployees: any[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -131,6 +131,7 @@ const DashboardManager = () => {
         const { data: batch } = await supabase
           .from('employees')
           .select('id, name, is_manager')
+          .order('name', { ascending: true })
           .range(from, from + batchSize - 1);
         
         if (!batch || batch.length === 0) break;
@@ -139,46 +140,63 @@ const DashboardManager = () => {
         from += batchSize;
       }
       
-      const employees = allEmployees;
-      
-      const { data: allDocs } = await supabase
+      // Get total counts using count only (faster)
+      const { count: totalDocs } = await supabase
         .from('compliance_documents')
-        .select('id');
+        .select('*', { count: 'exact', head: true });
       
-      const { data: allTrainings } = await supabase
+      const { count: totalTrainings } = await supabase
         .from('trainings')
-        .select('id');
+        .select('*', { count: 'exact', head: true });
       
-      const totalDocs = allDocs?.length || 0;
-      const totalTrainings = allTrainings?.length || 0;
+      const docsCount = totalDocs || 0;
+      const trainingsCount = totalTrainings || 0;
       
-      const employeesWithPendencies = await Promise.all(
-        employees.map(async (employee) => {
-          const { count: acceptedDocs } = await supabase
-            .from('document_acknowledgments')
-            .select('*', { count: 'exact', head: true })
-            .eq('employee_id', employee.id)
-            .eq('quiz_correct', true);
-          
-          const { count: completedTrainings } = await supabase
-            .from('training_participations')
-            .select('*', { count: 'exact', head: true })
-            .eq('employee_id', employee.id)
-            .eq('completed', true);
-          
-          const pendingDocs = totalDocs - (acceptedDocs || 0);
-          const pendingTrainings = totalTrainings - (completedTrainings || 0);
-          
-          return {
-            ...employee,
-            pendingDocs,
-            pendingTrainings,
-            totalPending: pendingDocs + pendingTrainings
-          };
-        })
-      );
+      // Fetch all acknowledgments and participations in one go
+      const { data: allAcknowledgments } = await supabase
+        .from('document_acknowledgments')
+        .select('employee_id')
+        .eq('quiz_correct', true);
       
-      return employeesWithPendencies.sort((a, b) => b.totalPending - a.totalPending);
+      const { data: allParticipations } = await supabase
+        .from('training_participations')
+        .select('employee_id')
+        .eq('completed', true);
+      
+      // Count by employee
+      const docsByEmployee = new Map<string, number>();
+      const trainingsByEmployee = new Map<string, number>();
+      
+      allAcknowledgments?.forEach(ack => {
+        docsByEmployee.set(ack.employee_id, (docsByEmployee.get(ack.employee_id) || 0) + 1);
+      });
+      
+      allParticipations?.forEach(part => {
+        trainingsByEmployee.set(part.employee_id, (trainingsByEmployee.get(part.employee_id) || 0) + 1);
+      });
+      
+      // Calculate pendencies
+      const employeesWithPendencies = allEmployees.map(employee => {
+        const acceptedDocs = docsByEmployee.get(employee.id) || 0;
+        const completedTrainings = trainingsByEmployee.get(employee.id) || 0;
+        const pendingDocs = docsCount - acceptedDocs;
+        const pendingTrainings = trainingsCount - completedTrainings;
+        
+        return {
+          ...employee,
+          pendingDocs,
+          pendingTrainings,
+          totalPending: pendingDocs + pendingTrainings
+        };
+      });
+      
+      // Sort by total pending (desc), then by name (asc)
+      return employeesWithPendencies.sort((a, b) => {
+        if (b.totalPending !== a.totalPending) {
+          return b.totalPending - a.totalPending;
+        }
+        return a.name.localeCompare(b.name);
+      });
     },
   });
 
