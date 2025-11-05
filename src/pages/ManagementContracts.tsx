@@ -11,6 +11,7 @@ import { Plus, FileText, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { ContractCandlestickChart } from "@/components/contracts/ContractCandlestickChart";
 
 const ManagementContracts = () => {
   const { toast } = useToast();
@@ -182,12 +183,19 @@ const ManagementContracts = () => {
         </Card>
 
         {selectedContract && (
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>{selectedContract.name}</CardTitle>
-              <p className="text-sm text-muted-foreground">{selectedContract.description}</p>
-            </CardHeader>
-            <CardContent>
+          <div className="lg:col-span-2 space-y-6">
+            <ContractCandlestickChart 
+              contractId={selectedContract.id}
+              contractName={selectedContract.name}
+              year={selectedYear}
+            />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>{selectedContract.name}</CardTitle>
+                <p className="text-sm text-muted-foreground">{selectedContract.description}</p>
+              </CardHeader>
+              <CardContent>
               <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
                 <TabsList className="grid grid-cols-5 mb-4">
                   {years.map((year) => (
@@ -256,6 +264,7 @@ const ManagementContracts = () => {
               </Tabs>
             </CardContent>
           </Card>
+          </div>
         )}
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Users, FileCheck, GraduationCap, Building2, AlertCircle } from "lucide-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ComplianceCharts } from "./ComplianceCharts";
 
 const DashboardManager = () => {
   const { data: stats } = useQuery({
@@ -177,6 +178,12 @@ const DashboardManager = () => {
           variant="primary"
         />
       </div>
+
+      <ComplianceCharts 
+        documentAcceptance={documentAcceptance}
+        trainingCompletion={trainingCompletion}
+        totalEmployees={stats?.totalEmployees || 0}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
