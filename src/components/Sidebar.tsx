@@ -22,7 +22,7 @@ interface SidebarProps {
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
-  { icon: FileText, label: "Documentos", path: "/documents", adminOnly: false },
+  { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
   { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
   { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
   { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
