@@ -71,7 +71,7 @@ const ManagementContracts = () => {
         .from('contract_renewals')
         .select('*')
         .eq('contract_id', editContract.id)
-        .order('renewal_date', { ascending: false });
+        .order('renewal_end_date', { ascending: false });
       if (error) throw error;
       return data;
     },
