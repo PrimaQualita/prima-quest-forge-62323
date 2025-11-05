@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Employees = () => {
   const { toast } = useToast();
@@ -24,6 +25,9 @@ const Employees = () => {
     phone: "",
     email: "",
     is_manager: false,
+    department: "",
+    management_contract_id: "",
+    job_title: "",
   });
 
   const { data: employees, isLoading } = useQuery({
@@ -31,8 +35,26 @@ const Employees = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('employees')
-        .select('*')
+        .select(`
+          *,
+          management_contracts:management_contract_id (
+            id,
+            name
+          )
+        `)
         .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: contracts } = useQuery({
+    queryKey: ['management_contracts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('management_contracts')
+        .select('*')
+        .order('name');
       if (error) throw error;
       return data;
     },
@@ -85,7 +107,17 @@ const Employees = () => {
         description: "Login: CPF | Senha: Data de nascimento (DDMMAAAA)"
       });
       setIsAddDialogOpen(false);
-      setNewEmployee({ name: "", cpf: "", birth_date: "", phone: "", email: "", is_manager: false });
+      setNewEmployee({ 
+        name: "", 
+        cpf: "", 
+        birth_date: "", 
+        phone: "", 
+        email: "", 
+        is_manager: false,
+        department: "",
+        management_contract_id: "",
+        job_title: ""
+      });
     },
     onError: (error: any) => {
       toast({ 
@@ -211,6 +243,43 @@ const Employees = () => {
                     placeholder="joao@primaqualita.com.br"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Departamento</Label>
+                  <Input
+                    id="department"
+                    value={newEmployee.department}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                    placeholder="Ex: Recursos Humanos"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job_title">Cargo/Função</Label>
+                  <Input
+                    id="job_title"
+                    value={newEmployee.job_title}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, job_title: e.target.value })}
+                    placeholder="Ex: Analista de Compliance"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contract">Contrato de Gestão</Label>
+                  <Select
+                    value={newEmployee.management_contract_id}
+                    onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um contrato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhum</SelectItem>
+                      {contracts?.map((contract) => (
+                        <SelectItem key={contract.id} value={contract.id}>
+                          {contract.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="is_manager"
@@ -262,8 +331,9 @@ const Employees = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>CPF</TableHead>
-                  <TableHead>Data de Nascimento</TableHead>
-                  <TableHead>Telefone</TableHead>
+                  <TableHead>Departamento</TableHead>
+                  <TableHead>Cargo/Função</TableHead>
+                  <TableHead>Contrato de Gestão</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Tipo</TableHead>
                 </TableRow>
@@ -273,8 +343,11 @@ const Employees = () => {
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell>{employee.cpf}</TableCell>
-                    <TableCell>{new Date(employee.birth_date).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>{employee.phone}</TableCell>
+                    <TableCell>{employee.department || "-"}</TableCell>
+                    <TableCell>{employee.job_title || "-"}</TableCell>
+                    <TableCell>
+                      {employee.management_contracts?.name || "-"}
+                    </TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>
                       {employee.is_manager ? (

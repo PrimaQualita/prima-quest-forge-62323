@@ -238,9 +238,12 @@ export type Database = {
           birth_date: string
           cpf: string
           created_at: string | null
+          department: string | null
           email: string
           id: string
           is_manager: boolean | null
+          job_title: string | null
+          management_contract_id: string | null
           name: string
           phone: string | null
           updated_at: string | null
@@ -250,9 +253,12 @@ export type Database = {
           birth_date: string
           cpf: string
           created_at?: string | null
+          department?: string | null
           email: string
           id?: string
           is_manager?: boolean | null
+          job_title?: string | null
+          management_contract_id?: string | null
           name: string
           phone?: string | null
           updated_at?: string | null
@@ -262,15 +268,25 @@ export type Database = {
           birth_date?: string
           cpf?: string
           created_at?: string | null
+          department?: string | null
           email?: string
           id?: string
           is_manager?: boolean | null
+          job_title?: string | null
+          management_contract_id?: string | null
           name?: string
           phone?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "employees_management_contract_id_fkey"
+            columns: ["management_contract_id"]
+            isOneToOne: false
+            referencedRelation: "management_contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "employees_user_id_fkey"
             columns: ["user_id"]
