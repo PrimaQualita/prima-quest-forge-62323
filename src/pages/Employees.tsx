@@ -318,21 +318,48 @@ const Employees = () => {
       }));
 
       // Use upsert to insert or update based on CPF
-      const { error } = await supabase
+      const { data: upsertedEmployees, error } = await supabase
         .from('employees')
         .upsert(employeesWithPermissions, { 
           onConflict: 'cpf',
           ignoreDuplicates: false
-        });
+        })
+        .select();
 
       if (error) throw error;
 
+      // Create user accounts for all employees via edge function
+      let userCreationErrors = 0;
+      for (const employee of upsertedEmployees || []) {
+        try {
+          const { error: userError } = await supabase.functions.invoke('create-employee-user', {
+            body: { employee }
+          });
+          
+          if (userError) {
+            console.error(`Error creating user for ${employee.name}:`, userError);
+            userCreationErrors++;
+          }
+        } catch (err) {
+          console.error(`Failed to create user for ${employee.name}:`, err);
+          userCreationErrors++;
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       
-      toast({ 
-        title: "Planilha importada com sucesso!", 
-        description: `${employeesData.length} colaborador(es) processado(s) (novos ou atualizados). Permissões preservadas.`
-      });
+      if (userCreationErrors === 0) {
+        toast({ 
+          title: "Importação concluída com sucesso!", 
+          description: `${employeesData.length} colaborador(es) importado(s) com usuários criados. Login: CPF | Senha: DD/MM/AAAA`
+        });
+      } else {
+        toast({ 
+          title: "Importação parcialmente concluída", 
+          description: `${employeesData.length} colaborador(es) importado(s), mas ${userCreationErrors} erro(s) ao criar usuários.`,
+          variant: "destructive"
+        });
+      }
       
       setIsAnalysisDialogOpen(false);
       setCsvAnalysis(null);
