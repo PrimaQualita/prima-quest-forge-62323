@@ -21,7 +21,7 @@ export const ComplianceCharts = ({
     const notAccepted = totalEmployees - doc.accepted;
     return [
       {
-        name: doc.title,
+        name: `${doc.title} - Realizados`,
         value: doc.accepted,
         percentage: doc.percentage,
         fill: COLORS[index % COLORS.length]
@@ -40,7 +40,7 @@ export const ComplianceCharts = ({
     const notCompleted = totalEmployees - training.completed;
     return [
       {
-        name: training.title,
+        name: `${training.title} - Realizados`,
         value: training.completed,
         percentage: training.percentage,
         fill: COLORS[index % COLORS.length]
