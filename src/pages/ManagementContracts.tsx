@@ -383,15 +383,11 @@ const ManagementContracts = () => {
                       <div key={renewal.id} className="p-3 border rounded-lg bg-muted/50 group hover:bg-muted transition-colors">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium text-sm">
-                              Efetivada em: {new Date(renewal.renewal_date).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
                             <Badge variant="outline" className="text-xs">
                               Registrada em {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
                             </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <Button
                                 size="sm"
