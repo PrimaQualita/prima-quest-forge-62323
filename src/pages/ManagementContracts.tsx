@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText, Upload, Edit2, Calendar } from "lucide-react";
+import { Plus, FileText, Upload, Edit2, Calendar, RotateCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -18,11 +18,13 @@ const ManagementContracts = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [newContract, setNewContract] = useState({ name: "", description: "" });
   const [editContract, setEditContract] = useState<any>(null);
+  const [renewalData, setRenewalData] = useState({ renewal_date: "", notes: "" });
 
   const { data: contracts } = useQuery({
     queryKey: ['management_contracts'],
@@ -53,6 +55,21 @@ const ManagementContracts = () => {
     enabled: !!selectedContract,
   });
 
+  const { data: renewals } = useQuery({
+    queryKey: ['contract_renewals', editContract?.id],
+    queryFn: async () => {
+      if (!editContract?.id) return [];
+      const { data, error } = await supabase
+        .from('contract_renewals')
+        .select('*')
+        .eq('contract_id', editContract.id)
+        .order('renewal_date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!editContract?.id,
+  });
+
   const addContractMutation = useMutation({
     mutationFn: async (contract: typeof newContract) => {
       const { data, error } = await supabase
@@ -79,7 +96,6 @@ const ManagementContracts = () => {
           description: contract.description,
           start_date: contract.start_date,
           end_date: contract.end_date,
-          renewal_date: contract.renewal_date,
           is_active: contract.is_active,
         })
         .eq('id', contract.id)
@@ -92,6 +108,29 @@ const ManagementContracts = () => {
       toast({ title: "Contrato atualizado com sucesso!" });
       setIsEditDialogOpen(false);
       setEditContract(null);
+    },
+  });
+
+  const addRenewalMutation = useMutation({
+    mutationFn: async (renewal: { contract_id: string; renewal_date: string; notes: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('contract_renewals')
+        .insert([{
+          contract_id: renewal.contract_id,
+          renewal_date: renewal.renewal_date,
+          notes: renewal.notes,
+          created_by: user?.id
+        }])
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract_renewals'] });
+      toast({ title: "Renovação adicionada com sucesso!" });
+      setIsRenewalDialogOpen(false);
+      setRenewalData({ renewal_date: "", notes: "" });
     },
   });
 
@@ -250,32 +289,103 @@ const ManagementContracts = () => {
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-renewal-date">Data de Renovação (Opcional)</Label>
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="edit-renewal-date"
-                    type="date"
-                    value={editContract?.renewal_date || ""}
-                    onChange={(e) => setEditContract({ 
-                      ...editContract, 
-                      renewal_date: e.target.value
-                    })}
-                  />
+
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <Label>Renovações do Contrato</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsRenewalDialogOpen(true)}
+                  >
+                    <RotateCw className="w-4 h-4 mr-2" />
+                    Adicionar Renovação
+                  </Button>
                 </div>
-                {editContract?.renewal_date && (
-                  <p className="text-sm text-muted-foreground">
-                    Renovação agendada para: <span className="font-medium">{new Date(editContract.renewal_date).toLocaleDateString('pt-BR')}</span>
+                
+                {renewals && renewals.length > 0 && (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {renewals.map((renewal: any) => (
+                      <div key={renewal.id} className="p-3 border rounded-lg bg-muted/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">
+                              {new Date(renewal.renewal_date).toLocaleDateString('pt-BR')}
+                            </span>
+                          </div>
+                          <Badge variant="outline">
+                            {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
+                          </Badge>
+                        </div>
+                        {renewal.notes && (
+                          <p className="text-sm text-muted-foreground mt-2">{renewal.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {(!renewals || renewals.length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhuma renovação registrada
                   </p>
                 )}
               </div>
+
               <Button 
                 onClick={() => updateContractMutation.mutate(editContract)}
                 className="w-full"
                 disabled={updateContractMutation.isPending}
               >
                 Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar Renovação</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="renewal-date">Data de Renovação</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="renewal-date"
+                    type="date"
+                    value={renewalData.renewal_date}
+                    onChange={(e) => setRenewalData({ ...renewalData, renewal_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="renewal-notes">Observações (Opcional)</Label>
+                <Textarea
+                  id="renewal-notes"
+                  value={renewalData.notes}
+                  onChange={(e) => setRenewalData({ ...renewalData, notes: e.target.value })}
+                  placeholder="Adicione observações sobre esta renovação..."
+                  rows={3}
+                />
+              </div>
+              <Button 
+                onClick={() => {
+                  if (editContract?.id && renewalData.renewal_date) {
+                    addRenewalMutation.mutate({
+                      contract_id: editContract.id,
+                      renewal_date: renewalData.renewal_date,
+                      notes: renewalData.notes
+                    });
+                  }
+                }}
+                className="w-full"
+                disabled={!renewalData.renewal_date || addRenewalMutation.isPending}
+              >
+                Adicionar Renovação
               </Button>
             </div>
           </DialogContent>

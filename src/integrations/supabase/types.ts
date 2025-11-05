@@ -155,6 +155,41 @@ export type Database = {
           },
         ]
       }
+      contract_renewals: {
+        Row: {
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          renewal_date: string
+        }
+        Insert: {
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          renewal_date: string
+        }
+        Update: {
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          renewal_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_renewals_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "management_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_acknowledgments: {
         Row: {
           acknowledged_at: string | null
@@ -304,7 +339,6 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          renewal_date: string | null
           start_date: string | null
           updated_at: string | null
         }
@@ -315,7 +349,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          renewal_date?: string | null
           start_date?: string | null
           updated_at?: string | null
         }
@@ -326,7 +359,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          renewal_date?: string | null
           start_date?: string | null
           updated_at?: string | null
         }
