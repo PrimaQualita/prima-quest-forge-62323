@@ -304,6 +304,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          renewal_date: string | null
+          start_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -313,6 +315,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          renewal_date?: string | null
+          start_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -322,6 +326,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          renewal_date?: string | null
+          start_date?: string | null
           updated_at?: string | null
         }
         Relationships: []

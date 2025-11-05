@@ -77,7 +77,9 @@ const ManagementContracts = () => {
         .update({
           name: contract.name,
           description: contract.description,
+          start_date: contract.start_date,
           end_date: contract.end_date,
+          renewal_date: contract.renewal_date,
           is_active: contract.is_active,
         })
         .eq('id', contract.id)
@@ -209,6 +211,21 @@ const ManagementContracts = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="edit-start-date">Data de Início da Vigência (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-start-date"
+                    type="date"
+                    value={editContract?.start_date || ""}
+                    onChange={(e) => setEditContract({ 
+                      ...editContract, 
+                      start_date: e.target.value
+                    })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="edit-end-date">Data de Encerramento (Opcional)</Label>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -230,6 +247,26 @@ const ManagementContracts = () => {
                     ) : (
                       <span className="text-red-600 font-medium">Encerrado</span>
                     )}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-renewal-date">Data de Renovação (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-renewal-date"
+                    type="date"
+                    value={editContract?.renewal_date || ""}
+                    onChange={(e) => setEditContract({ 
+                      ...editContract, 
+                      renewal_date: e.target.value
+                    })}
+                  />
+                </div>
+                {editContract?.renewal_date && (
+                  <p className="text-sm text-muted-foreground">
+                    Renovação agendada para: <span className="font-medium">{new Date(editContract.renewal_date).toLocaleDateString('pt-BR')}</span>
                   </p>
                 )}
               </div>
