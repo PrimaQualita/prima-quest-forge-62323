@@ -30,8 +30,6 @@ const Trainings = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingTraining, setEditingTraining] = useState<any>(null);
   const [selectedTraining, setSelectedTraining] = useState<any>(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [isTrail, setIsTrail] = useState(false);
@@ -218,43 +216,6 @@ const Trainings = () => {
     },
   });
 
-  const updateTrainingMutation = useMutation({
-    mutationFn: async () => {
-      if (!editingTraining) throw new Error("Nenhum treinamento selecionado");
-
-      const { error: trainingError } = await supabase
-        .from('trainings')
-        .update({
-          title: formData.title,
-          category: formData.category,
-          description: formData.description,
-          duration_hours: formData.duration_hours,
-          is_trail: isTrail,
-        })
-        .eq('id', editingTraining.id);
-
-      if (trainingError) throw trainingError;
-
-      return editingTraining.id;
-    },
-    onSuccess: () => {
-      toast({ 
-        title: "Treinamento atualizado com sucesso!"
-      });
-      setIsEditDialogOpen(false);
-      setEditingTraining(null);
-      resetForm();
-      queryClient.invalidateQueries({ queryKey: ['trainings'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro ao atualizar treinamento",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const resetForm = () => {
     setFormData({
       title: "",
@@ -345,16 +306,8 @@ const Trainings = () => {
     return Math.round((completed / employees.length) * 100);
   };
 
-  const openEditDialog = (training: any) => {
-    setEditingTraining(training);
-    setFormData({
-      title: training.title,
-      category: training.category,
-      description: training.description,
-      duration_hours: training.duration_hours,
-    });
-    setIsTrail(training.is_trail);
-    setIsEditDialogOpen(true);
+  const openEditPage = (trainingId: string) => {
+    navigate(`/trainings/${trainingId}/edit`);
   };
 
   return (
@@ -611,84 +564,6 @@ const Trainings = () => {
         </Dialog>
       </div>
 
-      {/* Dialog de Edição */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Treinamento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="edit-is-trail">Tipo de Treinamento</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">{isTrail ? "Trilha (vários vídeos)" : "Simples (um vídeo)"}</span>
-                  <Switch
-                    id="edit-is-trail"
-                    checked={isTrail}
-                    onCheckedChange={setIsTrail}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Título *</Label>
-              <Input 
-                id="edit-title"
-                placeholder="Ex: LGPD e Proteção de Dados" 
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-category">Categoria *</Label>
-              <Input 
-                id="edit-category"
-                placeholder="Ex: Segurança da Informação" 
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-duration">Duração Total (horas) *</Label>
-              <Input 
-                id="edit-duration"
-                type="number" 
-                placeholder="4" 
-                value={formData.duration_hours || ""}
-                onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Descrição *</Label>
-              <Textarea 
-                id="edit-description"
-                placeholder="Descrição detalhada do treinamento..." 
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
-            <Button 
-              className="w-full"
-              onClick={() => updateTrainingMutation.mutate()}
-              disabled={
-                updateTrainingMutation.isPending || 
-                !formData.title || 
-                !formData.category
-              }
-            >
-              {updateTrainingMutation.isPending ? "Atualizando..." : "Atualizar Treinamento"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trainings?.map((training) => {
           const completionRate = getCompletionRate(training.id);
@@ -751,7 +626,7 @@ const Trainings = () => {
                   <Button 
                     variant="outline"
                     className="w-full"
-                    onClick={() => openEditDialog(training)}
+                    onClick={() => openEditPage(training.id)}
                   >
                     <Pencil className="w-4 h-4 mr-2" />
                     Editar

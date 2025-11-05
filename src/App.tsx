@@ -10,6 +10,7 @@ import Employees from "./pages/Employees";
 import Documents from "./pages/Documents";
 import Trainings from "./pages/Trainings";
 import TrainingView from "./pages/TrainingView";
+import TrainingEdit from "./pages/TrainingEdit";
 import Chatbot from "./pages/Chatbot";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
           <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
+          <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
           
           {/* Rotas apenas para gestores/admins */}
           <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />
