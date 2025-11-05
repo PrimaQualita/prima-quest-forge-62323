@@ -81,29 +81,37 @@ const Employees = () => {
     },
   });
 
-  // Query para buscar colaboradores sem user_id
+  // Query para buscar colaboradores sem user_id (buscar TODOS sem limite)
   const { data: employeesWithoutUsers } = useQuery({
     queryKey: ['employees-without-users'],
     queryFn: async () => {
-      // Buscar primeiro a contagem total
-      const { count } = await supabase
-        .from('employees')
-        .select('id', { count: 'exact', head: true })
-        .is('user_id', null)
-        .not('cpf', 'is', null)
-        .not('birth_date', 'is', null);
+      const allEmployees = [];
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
 
-      // Buscar todos os registros sem limite
-      const { data, error } = await supabase
-        .from('employees')
-        .select('id, name, cpf, birth_date, is_manager, email')
-        .is('user_id', null)
-        .not('cpf', 'is', null)
-        .not('birth_date', 'is', null)
-        .limit(count || 10000); // Usar a contagem exata ou um limite alto
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('id, name, cpf, birth_date, is_manager, email')
+          .is('user_id', null)
+          .not('cpf', 'is', null)
+          .not('birth_date', 'is', null)
+          .range(from, from + batchSize - 1)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allEmployees.push(...data);
+          from += batchSize;
+          hasMore = data.length === batchSize;
+        } else {
+          hasMore = false;
+        }
+      }
       
-      if (error) throw error;
-      return data || [];
+      return allEmployees;
     },
   });
 
