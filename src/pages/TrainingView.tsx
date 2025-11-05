@@ -219,7 +219,7 @@ const TrainingView = () => {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 pt-6">
       <div className="flex items-center gap-3 md:gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/trainings')}>
           <ArrowLeft className="w-4 h-4 mr-2" />

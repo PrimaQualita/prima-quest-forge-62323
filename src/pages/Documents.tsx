@@ -267,7 +267,7 @@ const Documents = () => {
   const categories = ["Código de Ética", "Política de Integridade", "Regulamento Interno", "LGPD", "Outro"];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground uppercase">REGULAMENTOS</h1>

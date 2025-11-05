@@ -111,7 +111,7 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <div className="h-[calc(100vh-8rem)] flex flex-col pt-6">
       <div className="mb-6 flex-shrink-0">
         <h1 className="text-4xl font-bold text-foreground uppercase">CHATBOT DE COMPLIANCE</h1>
         <p className="text-muted-foreground mt-1">Tire suas dúvidas sobre regulamentos e políticas</p>

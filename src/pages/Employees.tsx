@@ -192,7 +192,7 @@ const Employees = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>

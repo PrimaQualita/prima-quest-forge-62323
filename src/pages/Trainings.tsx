@@ -307,7 +307,7 @@ const Trainings = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-0">
         <div>
           <h1 className="text-2xl md:text-4xl font-bold text-foreground uppercase">TREINAMENTOS</h1>
