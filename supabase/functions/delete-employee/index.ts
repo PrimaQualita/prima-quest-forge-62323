@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Deletando ${employeeIds.length} colaborador(es)...`);
+    console.log('Iniciando processo de exclusão em cascata...');
 
     const deletionErrors: string[] = [];
 
