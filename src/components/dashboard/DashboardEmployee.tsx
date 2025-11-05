@@ -91,7 +91,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   const totalPending = (stats?.pendingDocs || 0) + (stats?.pendingTrainings || 0);
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 md:space-y-8 pt-6">
       <div>
         <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2 uppercase">DASHBOARD</h1>
         <p className="text-sm md:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>

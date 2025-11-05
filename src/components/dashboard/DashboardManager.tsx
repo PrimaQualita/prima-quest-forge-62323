@@ -142,7 +142,7 @@ const DashboardManager = () => {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-6">
       <div>
         <h1 className="text-4xl font-bold text-foreground mb-2 uppercase">DASHBOARD</h1>
         <p className="text-muted-foreground">Controle total de pendências e compliance</p>
