@@ -423,10 +423,10 @@ const ManagementContracts = () => {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <div>
-                            <span className="font-medium">Início da vigência:</span> {new Date(renewal.renewal_start_date).toLocaleDateString('pt-BR')}
+                            <span className="font-medium">Início da vigência:</span> {renewal.renewal_start_date.split('T')[0].split('-').reverse().join('/')}
                           </div>
                           <div>
-                            <span className="font-medium">Fim da vigência:</span> {new Date(renewal.renewal_end_date).toLocaleDateString('pt-BR')}
+                            <span className="font-medium">Fim da vigência:</span> {renewal.renewal_end_date.split('T')[0].split('-').reverse().join('/')}
                           </div>
                         </div>
                         {renewal.notes && (
