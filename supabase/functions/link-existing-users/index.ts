@@ -189,6 +189,10 @@ serve(async (req) => {
           results.success.push(result);
         } else {
           results.errors.push(result);
+          // Log primeiro erro de cada batch para diagnóstico
+          if (results.errors.length === 1 || results.errors.length % 100 === 0) {
+            console.error(`Erro exemplo #${results.errors.length}:`, result.error);
+          }
         }
       }
 
