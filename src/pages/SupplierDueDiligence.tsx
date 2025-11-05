@@ -325,86 +325,84 @@ const SupplierDueDiligence = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Perguntas Ativas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {questions?.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhuma pergunta cadastrada
-                </p>
-              ) : (
-                questions?.map((question, index) => (
-                  <div key={question.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium flex-shrink-0">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div 
-                        className="text-sm mb-2 prose prose-sm max-w-none"
-                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question) }}
-                      />
-                      <div className="flex gap-2 text-xs">
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          SIM: {question.yes_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
-                        </Badge>
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                          NÃO: {question.no_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingQuestion(question);
-                        setNewQuestion(question.question);
-                        setYesPoints(question.yes_points);
-                        setNoPoints(question.no_points);
-                        setIsQuestionDialogOpen(true);
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Link para Formulário</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={`${window.location.origin}/supplier-form`}
-                  readOnly
-                  className="flex-1"
-                />
-                <Button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/supplier-form`);
-                    toast({ title: "Link copiado!" });
-                  }}
-                >
-                  Copiar
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Compartilhe este link com fornecedores para preenchimento do formulário
+      <Card>
+        <CardHeader>
+          <CardTitle>Perguntas Ativas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {questions?.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma pergunta cadastrada
               </p>
+            ) : (
+              questions?.map((question, index) => (
+                <div key={question.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium flex-shrink-0">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="text-sm mb-2 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.question) }}
+                    />
+                    <div className="flex gap-2 text-xs">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        SIM: {question.yes_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
+                      </Badge>
+                      <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        NÃO: {question.no_points === 0 ? "0 pts (✓)" : "200 pts (✗)"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingQuestion(question);
+                      setNewQuestion(question.question);
+                      setYesPoints(question.yes_points);
+                      setNoPoints(question.no_points);
+                      setIsQuestionDialogOpen(true);
+                    }}
+                    className="flex-shrink-0"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Link para Formulário</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Input
+                value={`${window.location.origin}/supplier-form`}
+                readOnly
+                className="flex-1"
+              />
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/supplier-form`);
+                  toast({ title: "Link copiado!" });
+                }}
+              >
+                Copiar
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <p className="text-sm text-muted-foreground">
+              Compartilhe este link com fornecedores para preenchimento do formulário
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {suppliers && suppliers.length > 0 && (
         <Card>
