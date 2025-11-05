@@ -1,5 +1,5 @@
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Text, Environment } from '@react-three/drei';
 import { useRef, useState } from 'react';
 import * as THREE from 'three';
 
@@ -19,20 +19,33 @@ function PieSlice3D({
   endAngle, 
   color, 
   label, 
-  percentage 
+  percentage,
+  index 
 }: { 
   startAngle: number; 
   endAngle: number; 
   color: string; 
   label: string; 
   percentage: number;
+  index: number;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  const radius = 2;
-  const height = 0.5;
-  const segments = 64;
+  // Animação de entrada
+  useFrame((state) => {
+    if (meshRef.current) {
+      const targetScale = hovered ? 1.08 : 1;
+      meshRef.current.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        0.1
+      );
+    }
+  });
+
+  const radius = 2.5;
+  const height = 0.6;
+  const segments = 128;
 
   // Criar geometria do slice
   const shape = new THREE.Shape();
@@ -50,43 +63,53 @@ function PieSlice3D({
   const extrudeSettings = {
     depth: height,
     bevelEnabled: true,
-    bevelThickness: 0.05,
+    bevelThickness: 0.08,
     bevelSize: 0.05,
-    bevelSegments: 3,
+    bevelSegments: 5,
   };
 
-  const offsetZ = hovered ? 0.3 : 0;
-  const scale = hovered ? 1.05 : 1;
+  const offsetX = hovered ? Math.cos(midAngle) * 0.2 : 0;
+  const offsetY = hovered ? Math.sin(midAngle) * 0.2 : 0;
+  const offsetZ = hovered ? 0.2 : 0;
 
   return (
-    <group>
+    <group position={[offsetX, offsetY, offsetZ]}>
       <mesh
         ref={meshRef}
-        position={[0, 0, offsetZ]}
-        scale={scale}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
+        rotation={[0, 0, 0]}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = 'default';
+        }}
       >
         <extrudeGeometry args={[shape, extrudeSettings]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={0.3}
-          roughness={0.4}
+          metalness={0.2}
+          roughness={0.3}
+          emissive={hovered ? color : '#000000'}
+          emissiveIntensity={hovered ? 0.2 : 0}
         />
       </mesh>
-      {percentage > 5 && (
+      {percentage > 3 && (
         <Text
           position={[
-            Math.cos(midAngle) * (radius * 0.6),
-            Math.sin(midAngle) * (radius * 0.6),
-            height + 0.1
+            Math.cos(midAngle) * (radius * 0.65),
+            Math.sin(midAngle) * (radius * 0.65),
+            height + 0.15
           ]}
-          fontSize={0.25}
-          color="white"
+          fontSize={0.3}
+          color="#ffffff"
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.03}
-          outlineColor="black"
+          outlineWidth={0.04}
+          outlineColor="#000000"
+          fontWeight="bold"
         >
           {percentage}%
         </Text>
@@ -95,7 +118,16 @@ function PieSlice3D({
   );
 }
 
-export function PieChart3D({ data }: PieChart3DProps) {
+function Scene({ data }: { data: PieSlice[] }) {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  // Rotação suave automática
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.z += 0.001;
+    }
+  });
+
   const total = data.reduce((sum, item) => sum + item.value, 0);
   
   let currentAngle = 0;
@@ -113,34 +145,57 @@ export function PieChart3D({ data }: PieChart3DProps) {
   });
 
   return (
-    <div className="w-full h-[400px]">
+    <group ref={groupRef} rotation={[-Math.PI / 5, 0, 0]}>
+      {slices.map((slice, index) => (
+        <PieSlice3D
+          key={index}
+          index={index}
+          startAngle={slice.startAngle}
+          endAngle={slice.endAngle}
+          color={slice.fill}
+          label={slice.name}
+          percentage={slice.percentage}
+        />
+      ))}
+    </group>
+  );
+}
+
+export function PieChart3D({ data }: PieChart3DProps) {
+  return (
+    <div className="w-full h-[450px] rounded-lg overflow-hidden">
       <Canvas
-        camera={{ position: [0, 0, 8], fov: 45 }}
-        gl={{ antialias: true }}
+        camera={{ position: [0, 0, 10], fov: 50 }}
+        gl={{ antialias: true, alpha: true }}
+        shadows
       >
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
+        <color attach="background" args={['#f8fafc']} />
         
-        <group rotation={[-Math.PI / 6, 0, 0]}>
-          {slices.map((slice, index) => (
-            <PieSlice3D
-              key={index}
-              startAngle={slice.startAngle}
-              endAngle={slice.endAngle}
-              color={slice.fill}
-              label={slice.name}
-              percentage={slice.percentage}
-            />
-          ))}
-        </group>
+        <ambientLight intensity={0.6} />
+        <directionalLight 
+          position={[10, 10, 5]} 
+          intensity={0.8}
+          castShadow
+        />
+        <directionalLight 
+          position={[-10, -10, -5]} 
+          intensity={0.3}
+        />
+        <pointLight position={[0, 0, 10]} intensity={0.5} />
+        
+        <Scene data={data} />
         
         <OrbitControls 
           enableZoom={true}
           enablePan={false}
-          minDistance={5}
-          maxDistance={12}
+          minDistance={6}
+          maxDistance={15}
+          maxPolarAngle={Math.PI / 2}
+          minPolarAngle={0}
+          autoRotate={false}
         />
+        
+        <Environment preset="city" />
       </Canvas>
     </div>
   );
