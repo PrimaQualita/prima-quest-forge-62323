@@ -284,7 +284,7 @@ const ManagementContracts = () => {
                   className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
                     !contract.is_active 
                       ? 'bg-red-50/50 dark:bg-red-950/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]' 
-                      : ''
+                      : 'bg-green-50/50 dark:bg-green-950/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]'
                   }`}
                 >
                   <Button
@@ -294,7 +294,9 @@ const ManagementContracts = () => {
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     {contract.name}
-                    {!contract.is_active && (
+                    {contract.is_active ? (
+                      <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700">Vigente</Badge>
+                    ) : (
                       <Badge variant="destructive" className="ml-2">Encerrado</Badge>
                     )}
                   </Button>
