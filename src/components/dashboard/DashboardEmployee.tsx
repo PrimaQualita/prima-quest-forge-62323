@@ -130,32 +130,38 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard
-          title="Documentos Pendentes"
-          value={stats?.pendingDocs || 0}
-          icon={FileCheck}
-          trend={`${stats?.acceptedDocs || 0} de ${stats?.totalDocs || 0} aceitos`}
-          variant="secondary"
-        />
-        <StatCard
-          title="Treinamentos Pendentes"
-          value={stats?.pendingTrainings || 0}
-          icon={GraduationCap}
-          trend={`${stats?.completedTrainings || 0} de ${stats?.totalTrainings || 0} concluídos`}
-          variant="accent"
-        />
-        <StatCard
-          title="Total de Pendências"
-          value={totalPending}
-          icon={AlertTriangle}
-          trend={totalPending === 0 ? "Você está em dia!" : "Itens a resolver"}
-          variant={totalPending === 0 ? "primary" : "secondary"}
-        />
+        {(stats?.pendingDocs || 0) > 0 && (
+          <StatCard
+            title="Documentos Pendentes"
+            value={stats?.pendingDocs || 0}
+            icon={FileCheck}
+            trend={`${stats?.acceptedDocs || 0} de ${stats?.totalDocs || 0} aceitos`}
+            variant="secondary"
+          />
+        )}
+        {(stats?.pendingTrainings || 0) > 0 && (
+          <StatCard
+            title="Treinamentos Pendentes"
+            value={stats?.pendingTrainings || 0}
+            icon={GraduationCap}
+            trend={`${stats?.completedTrainings || 0} de ${stats?.totalTrainings || 0} concluídos`}
+            variant="accent"
+          />
+        )}
+        {totalPending > 0 && (
+          <StatCard
+            title="Total de Pendências"
+            value={totalPending}
+            icon={AlertTriangle}
+            trend="Itens a resolver"
+            variant="secondary"
+          />
+        )}
         <StatCard
           title="Taxa de Conformidade"
           value={`${stats?.complianceRate || 0}%`}
           icon={CheckCircle}
-          trend="Seu progresso"
+          trend={totalPending === 0 ? "Você está em dia!" : "Seu progresso"}
           variant="primary"
         />
       </div>
@@ -253,93 +259,79 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-base md:text-lg">
-                <FileCheck className="w-4 h-4 md:w-5 md:h-5" />
-                Documentos Pendentes
-              </span>
-              <Badge variant={pendingDocuments && pendingDocuments.length > 0 ? "destructive" : "default"}>
-                {pendingDocuments?.length || 0}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingDocuments && pendingDocuments.length > 0 ? (
-              <>
-                {pendingDocuments.map((doc) => (
-                  <div key={doc.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
-                      <h4 className="font-medium text-sm md:text-base">{doc.title}</h4>
-                      <Badge variant="outline" className="self-start">{doc.category}</Badge>
-                    </div>
-                    <div 
-                      className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={() => navigate('/documents')}
-                      className="w-full text-xs md:text-sm"
-                    >
-                      Ler e Aceitar
-                    </Button>
+        {pendingDocuments && pendingDocuments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-base md:text-lg">
+                  <FileCheck className="w-4 h-4 md:w-5 md:h-5" />
+                  Documentos Pendentes
+                </span>
+                <Badge variant="destructive">
+                  {pendingDocuments.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingDocuments.map((doc) => (
+                <div key={doc.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                    <h4 className="font-medium text-sm md:text-base">{doc.title}</h4>
+                    <Badge variant="outline" className="self-start">{doc.category}</Badge>
                   </div>
-                ))}
-              </>
-            ) : (
-              <div className="text-center py-6 md:py-8 text-muted-foreground">
-                <CheckCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-600" />
-                <p className="text-sm">Todos os documentos foram aceitos!</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <div 
+                    className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={() => navigate('/documents')}
+                    className="w-full text-xs md:text-sm"
+                  >
+                    Ler e Aceitar
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-base md:text-lg">
-                <GraduationCap className="w-4 h-4 md:w-5 md:h-5" />
-                Treinamentos Pendentes
-              </span>
-              <Badge variant={pendingTrainings && pendingTrainings.length > 0 ? "destructive" : "default"}>
-                {pendingTrainings?.length || 0}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingTrainings && pendingTrainings.length > 0 ? (
-              <>
-                {pendingTrainings.map((training) => (
-                  <div key={training.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
-                      <h4 className="font-medium text-sm md:text-base">{training.title}</h4>
-                      <Badge variant="outline" className="self-start">{training.category}</Badge>
-                    </div>
-                    <div 
-                      className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(training.description || "") }}
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={() => navigate('/trainings')}
-                      className="w-full text-xs md:text-sm"
-                    >
-                      Iniciar Treinamento
-                    </Button>
+        {pendingTrainings && pendingTrainings.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-base md:text-lg">
+                  <GraduationCap className="w-4 h-4 md:w-5 md:h-5" />
+                  Treinamentos Pendentes
+                </span>
+                <Badge variant="destructive">
+                  {pendingTrainings.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingTrainings.map((training) => (
+                <div key={training.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                    <h4 className="font-medium text-sm md:text-base">{training.title}</h4>
+                    <Badge variant="outline" className="self-start">{training.category}</Badge>
                   </div>
-                ))}
-              </>
-            ) : (
-              <div className="text-center py-6 md:py-8 text-muted-foreground">
-                <CheckCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-600" />
-                <p className="text-sm">Todos os treinamentos foram concluídos!</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <div 
+                    className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(training.description || "") }}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={() => navigate('/trainings')}
+                    className="w-full text-xs md:text-sm"
+                  >
+                    Iniciar Treinamento
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
