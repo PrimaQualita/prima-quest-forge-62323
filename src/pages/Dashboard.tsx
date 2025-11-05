@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import DashboardManager from "@/components/dashboard/DashboardManager";
 import DashboardEmployee from "@/components/dashboard/DashboardEmployee";
 import { Loader2 } from "lucide-react";
 
@@ -40,19 +39,8 @@ const Dashboard = () => {
     );
   }
 
-  // Use isAdmin from useAuth (based on user_roles table) as the source of truth
-  // This ensures proper role-based access control
-  const showManagerDashboard = isAdmin && employeeData.is_manager;
-
-  return (
-    <>
-      {showManagerDashboard ? (
-        <DashboardManager />
-      ) : (
-        <DashboardEmployee employeeId={employeeData.id} />
-      )}
-    </>
-  );
+  // Gestores também veem suas próprias pendências como colaboradores
+  return <DashboardEmployee employeeId={employeeData.id} />;
 };
 
 export default Dashboard;
