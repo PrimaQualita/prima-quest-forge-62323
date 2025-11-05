@@ -85,12 +85,22 @@ const Employees = () => {
   const { data: employeesWithoutUsers } = useQuery({
     queryKey: ['employees-without-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Buscar primeiro a contagem total
+      const { count } = await supabase
         .from('employees')
-        .select('id, name, cpf, birth_date')
+        .select('id', { count: 'exact', head: true })
         .is('user_id', null)
         .not('cpf', 'is', null)
         .not('birth_date', 'is', null);
+
+      // Buscar todos os registros sem limite
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, cpf, birth_date, is_manager, email')
+        .is('user_id', null)
+        .not('cpf', 'is', null)
+        .not('birth_date', 'is', null)
+        .limit(count || 10000); // Usar a contagem exata ou um limite alto
       
       if (error) throw error;
       return data || [];
