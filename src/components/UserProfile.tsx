@@ -112,10 +112,22 @@ export const UserProfile = () => {
 
   const formatJobTitle = (title: string | null) => {
     if (!title) return "";
+    const prepositions = ['de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o', 'as', 'os'];
     return title
       .toLowerCase()
       .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word, index) => {
+        // Primeira palavra sempre maiúscula
+        if (index === 0) {
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+        // Preposições em minúsculo
+        if (prepositions.includes(word)) {
+          return word;
+        }
+        // Outras palavras com primeira letra maiúscula
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
       .join(' ');
   };
 
