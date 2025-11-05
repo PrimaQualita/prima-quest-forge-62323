@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,8 @@ const Employees = () => {
   const [isValidatingCPFs, setIsValidatingCPFs] = useState(false);
   const [validationResults, setValidationResults] = useState<any>(null);
   const [isValidationDialogOpen, setIsValidationDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -1089,6 +1092,46 @@ const Employees = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o colaborador <strong>{employeeToDelete?.name}</strong>?
+              <br /><br />
+              Esta ação irá remover:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Todos os dados do colaborador</li>
+                <li>Progresso em treinamentos e vídeos</li>
+                <li>Avaliações e reconhecimentos</li>
+                <li>Conversas e mensagens</li>
+                <li>Conta de usuário e acesso ao sistema</li>
+              </ul>
+              <br />
+              <span className="text-destructive font-semibold">Esta ação não pode ser desfeita.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setEmployeeToDelete(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (employeeToDelete) {
+                  deleteEmployeesMutation.mutate([employeeToDelete.id]);
+                  setIsDeleteDialogOpen(false);
+                  setEmployeeToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir Colaborador
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Validation Results Dialog */}
       <Dialog open={isValidationDialogOpen} onOpenChange={setIsValidationDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -1297,7 +1340,10 @@ const Employees = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => deleteEmployeesMutation.mutate([employee.id])}
+                            onClick={() => {
+                              setEmployeeToDelete({ id: employee.id, name: employee.name });
+                              setIsDeleteDialogOpen(true);
+                            }}
                             disabled={deleteEmployeesMutation.isPending}
                           >
                             <Trash2 className="w-4 h-4" />
