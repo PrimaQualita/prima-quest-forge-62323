@@ -111,7 +111,7 @@ const ManagementContracts = () => {
   const years = [2024, 2025, 2026, 2027, 2028];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground uppercase">Contratos de Gestão</h1>
