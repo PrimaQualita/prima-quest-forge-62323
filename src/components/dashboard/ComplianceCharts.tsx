@@ -60,18 +60,42 @@ export const ComplianceCharts = ({
 
   const renderLegend = (props: any) => {
     const { payload } = props;
+    
+    // Separar realizados e não realizados
+    const realizados = payload.filter((entry: any) => entry.value.includes('Realizados') && !entry.value.includes('Não'));
+    const naoRealizados = payload.filter((entry: any) => entry.value.includes('Não Realizados'));
+    
     return (
-      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4">
-        {payload.map((entry: any, index: number) => (
-          <li key={`legend-${index}`} className="flex items-center gap-2">
-            <span 
-              className="w-3 h-3 rounded-sm" 
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-xs text-foreground">{entry.value}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="grid grid-cols-2 gap-4 mt-4 px-4">
+        <div>
+          <h4 className="text-xs font-semibold text-foreground mb-2">Realizados</h4>
+          <ul className="space-y-1">
+            {realizados.map((entry: any, index: number) => (
+              <li key={`realized-${index}`} className="flex items-center gap-2">
+                <span 
+                  className="w-3 h-3 rounded-sm flex-shrink-0" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs text-foreground">{entry.value.replace(' - Realizados', '')}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-xs font-semibold text-foreground mb-2">Não Realizados</h4>
+          <ul className="space-y-1">
+            {naoRealizados.map((entry: any, index: number) => (
+              <li key={`not-realized-${index}`} className="flex items-center gap-2">
+                <span 
+                  className="w-3 h-3 rounded-sm flex-shrink-0" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-xs text-foreground">{entry.value.replace(' - Não Realizados', '')}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     );
   };
 
