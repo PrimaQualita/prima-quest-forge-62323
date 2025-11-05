@@ -1,5 +1,5 @@
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart3D } from "./PieChart3D";
 
 interface ComplianceChartsProps {
   documentAcceptance?: any[];
@@ -106,7 +106,30 @@ export const ComplianceCharts = ({
           <CardTitle>Taxa de Aceite de Regulamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <PieChart3D data={documentData} />
+          <ResponsiveContainer width="100%" height={450}>
+            <PieChart>
+              <Pie
+                data={documentData}
+                cx="50%"
+                cy="45%"
+                labelLine={false}
+                label={renderCustomLabel}
+                outerRadius={110}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {documentData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value: any, name: any, props: any) => [
+                  `${value} colaboradores (${props.payload.percentage}%)`,
+                  props.payload.name
+                ]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
           {renderLegend({ payload: documentData.map(d => ({ value: d.name, color: d.fill })) })}
         </CardContent>
       </Card>
@@ -116,7 +139,30 @@ export const ComplianceCharts = ({
           <CardTitle>Taxa de Conclusão de Treinamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <PieChart3D data={trainingData} />
+          <ResponsiveContainer width="100%" height={450}>
+            <PieChart>
+              <Pie
+                data={trainingData}
+                cx="50%"
+                cy="45%"
+                labelLine={false}
+                label={renderCustomLabel}
+                outerRadius={110}
+                fill="#82ca9d"
+                dataKey="value"
+              >
+                {trainingData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value: any, name: any, props: any) => [
+                  `${value} colaboradores (${props.payload.percentage}%)`,
+                  props.payload.name
+                ]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
           {renderLegend({ payload: trainingData.map(d => ({ value: d.name, color: d.fill })) })}
         </CardContent>
       </Card>
