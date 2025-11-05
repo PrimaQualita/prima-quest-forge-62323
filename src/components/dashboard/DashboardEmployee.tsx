@@ -129,7 +129,11 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         <p className="text-sm md:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className={`grid grid-cols-1 gap-4 md:gap-6 ${
+        totalPending > 0 
+          ? 'sm:grid-cols-2 lg:grid-cols-4' 
+          : 'sm:grid-cols-1'
+      }`}>
         {(stats?.pendingDocs || 0) > 0 && (
           <StatCard
             title="Documentos Pendentes"
