@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText, Upload } from "lucide-react";
+import { Plus, FileText, Upload, Edit2, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -17,10 +17,12 @@ const ManagementContracts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [newContract, setNewContract] = useState({ name: "", description: "" });
+  const [editContract, setEditContract] = useState<any>(null);
 
   const { data: contracts } = useQuery({
     queryKey: ['management_contracts'],
@@ -65,6 +67,29 @@ const ManagementContracts = () => {
       toast({ title: "Contrato criado com sucesso!" });
       setIsAddDialogOpen(false);
       setNewContract({ name: "", description: "" });
+    },
+  });
+
+  const updateContractMutation = useMutation({
+    mutationFn: async (contract: any) => {
+      const { data, error } = await supabase
+        .from('management_contracts')
+        .update({
+          name: contract.name,
+          description: contract.description,
+          end_date: contract.end_date,
+          is_active: contract.is_active,
+        })
+        .eq('id', contract.id)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
+      toast({ title: "Contrato atualizado com sucesso!" });
+      setIsEditDialogOpen(false);
+      setEditContract(null);
     },
   });
 
@@ -157,6 +182,67 @@ const ManagementContracts = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Contrato</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nome do Contrato</Label>
+                <Input
+                  id="edit-name"
+                  value={editContract?.name || ""}
+                  onChange={(e) => setEditContract({ ...editContract, name: e.target.value })}
+                  placeholder="Ex: Contrato Hospital Municipal"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Descrição</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editContract?.description || ""}
+                  onChange={(e) => setEditContract({ ...editContract, description: e.target.value })}
+                  placeholder="Descrição do contrato..."
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-end-date">Data de Encerramento (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-end-date"
+                    type="date"
+                    value={editContract?.end_date || ""}
+                    onChange={(e) => setEditContract({ 
+                      ...editContract, 
+                      end_date: e.target.value,
+                      is_active: e.target.value ? new Date(e.target.value) > new Date() : true
+                    })}
+                  />
+                </div>
+                {editContract?.end_date && (
+                  <p className="text-sm text-muted-foreground">
+                    Status: {new Date(editContract.end_date) > new Date() ? (
+                      <span className="text-green-600 font-medium">Ativo</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Encerrado</span>
+                    )}
+                  </p>
+                )}
+              </div>
+              <Button 
+                onClick={() => updateContractMutation.mutate(editContract)}
+                className="w-full"
+                disabled={updateContractMutation.isPending}
+              >
+                Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Seção de Gráficos - Todos os Contratos */}
@@ -193,15 +279,29 @@ const ManagementContracts = () => {
           <CardContent>
             <div className="space-y-2">
               {contracts?.map((contract) => (
-                <Button
-                  key={contract.id}
-                  variant={selectedContract?.id === contract.id ? "default" : "outline"}
-                  className="w-full justify-start"
-                  onClick={() => setSelectedContract(contract)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  {contract.name}
-                </Button>
+                <div key={contract.id} className="flex items-center gap-2">
+                  <Button
+                    variant={selectedContract?.id === contract.id ? "default" : "outline"}
+                    className="flex-1 justify-start"
+                    onClick={() => setSelectedContract(contract)}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    {contract.name}
+                    {!contract.is_active && (
+                      <Badge variant="secondary" className="ml-2">Encerrado</Badge>
+                    )}
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditContract(contract);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </div>
               ))}
             </div>
           </CardContent>
