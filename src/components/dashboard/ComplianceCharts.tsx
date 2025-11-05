@@ -7,7 +7,8 @@ interface ComplianceChartsProps {
   totalEmployees: number;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#f87171'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const NOT_COMPLETED_COLORS = ['#93c5fd', '#86efac', '#fde68a', '#fca5a5', '#c7d2fe'];
 
 export const ComplianceCharts = ({ 
   documentAcceptance = [], 
@@ -23,13 +24,13 @@ export const ComplianceCharts = ({
         name: doc.title,
         value: doc.accepted,
         percentage: doc.percentage,
-        fill: COLORS[index % (COLORS.length - 1)]
+        fill: COLORS[index % COLORS.length]
       },
       {
         name: `${doc.title} - Não Realizados`,
         value: notAccepted,
         percentage: Math.round((notAccepted / totalEmployees) * 100),
-        fill: '#f87171'
+        fill: NOT_COMPLETED_COLORS[index % NOT_COMPLETED_COLORS.length]
       }
     ];
   }).flat();
@@ -42,13 +43,13 @@ export const ComplianceCharts = ({
         name: training.title,
         value: training.completed,
         percentage: training.percentage,
-        fill: COLORS[index % (COLORS.length - 1)]
+        fill: COLORS[index % COLORS.length]
       },
       {
         name: `${training.title} - Não Realizados`,
         value: notCompleted,
         percentage: Math.round((notCompleted / totalEmployees) * 100),
-        fill: '#f87171'
+        fill: NOT_COMPLETED_COLORS[index % NOT_COMPLETED_COLORS.length]
       }
     ];
   }).flat();
