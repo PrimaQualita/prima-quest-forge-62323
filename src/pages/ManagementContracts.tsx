@@ -26,7 +26,7 @@ const ManagementContracts = () => {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [newContract, setNewContract] = useState({ name: "", description: "" });
+  const [newContract, setNewContract] = useState({ name: "", description: "", start_date: "", end_date: "" });
   const [editContract, setEditContract] = useState<any>(null);
   const [renewalData, setRenewalData] = useState({ 
     renewal_start_date: "", 
@@ -82,7 +82,13 @@ const ManagementContracts = () => {
     mutationFn: async (contract: typeof newContract) => {
       const { data, error } = await supabase
         .from('management_contracts')
-        .insert([contract])
+        .insert([{
+          name: contract.name,
+          description: contract.description,
+          start_date: contract.start_date || null,
+          end_date: contract.end_date || null,
+          is_active: contract.end_date ? new Date(contract.end_date) > new Date() : true,
+        }])
         .select();
       if (error) throw error;
       return data;
@@ -91,7 +97,7 @@ const ManagementContracts = () => {
       queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
       toast({ title: "Contrato criado com sucesso!" });
       setIsAddDialogOpen(false);
-      setNewContract({ name: "", description: "" });
+      setNewContract({ name: "", description: "", start_date: "", end_date: "" });
     },
   });
 
@@ -275,6 +281,39 @@ const ManagementContracts = () => {
                   placeholder="Descrição do contrato..."
                   rows={4}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Data de Início da Vigência (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={newContract.start_date}
+                    onChange={(e) => setNewContract({ ...newContract, start_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">Data de Fim da Vigência (Opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={newContract.end_date}
+                    onChange={(e) => setNewContract({ ...newContract, end_date: e.target.value })}
+                  />
+                </div>
+                {newContract.end_date && (
+                  <p className="text-sm text-muted-foreground">
+                    Status: {new Date(newContract.end_date) > new Date() ? (
+                      <span className="text-green-600 font-medium">Ativo</span>
+                    ) : (
+                      <span className="text-red-600 font-medium">Encerrado</span>
+                    )}
+                  </p>
+                )}
               </div>
               <Button 
                 onClick={() => addContractMutation.mutate(newContract)}
