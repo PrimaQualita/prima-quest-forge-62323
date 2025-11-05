@@ -34,11 +34,24 @@ const DashboardManager = () => {
         .from('compliance_documents')
         .select('id, title, category');
       
-      const { data: employees } = await supabase
-        .from('employees')
-        .select('id');
+      // Fetch all employees (bypass 1000 limit)
+      let allEmployees: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
       
-      const totalEmployees = employees?.length || 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id')
+          .range(from, from + batchSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        allEmployees = [...allEmployees, ...batch];
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      const totalEmployees = allEmployees.length;
       
       const docsWithAcceptance = await Promise.all(
         (documents || []).map(async (doc) => {
@@ -67,11 +80,24 @@ const DashboardManager = () => {
         .from('trainings')
         .select('id, title, category');
       
-      const { data: employees } = await supabase
-        .from('employees')
-        .select('id');
+      // Fetch all employees (bypass 1000 limit)
+      let allEmployees: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
       
-      const totalEmployees = employees?.length || 0;
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id')
+          .range(from, from + batchSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        allEmployees = [...allEmployees, ...batch];
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      const totalEmployees = allEmployees.length;
       
       const trainingsWithCompletion = await Promise.all(
         (trainings || []).map(async (training) => {
@@ -96,9 +122,24 @@ const DashboardManager = () => {
   const { data: employeePendencies } = useQuery({
     queryKey: ['employee-pendencies'],
     queryFn: async () => {
-      const { data: employees } = await supabase
-        .from('employees')
-        .select('id, name, is_manager');
+      // Fetch all employees (bypass 1000 limit)
+      let allEmployees: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id, name, is_manager')
+          .range(from, from + batchSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        allEmployees = [...allEmployees, ...batch];
+        if (batch.length < batchSize) break;
+        from += batchSize;
+      }
+      
+      const employees = allEmployees;
       
       const { data: allDocs } = await supabase
         .from('compliance_documents')
@@ -112,7 +153,7 @@ const DashboardManager = () => {
       const totalTrainings = allTrainings?.length || 0;
       
       const employeesWithPendencies = await Promise.all(
-        (employees || []).map(async (employee) => {
+        employees.map(async (employee) => {
           const { count: acceptedDocs } = await supabase
             .from('document_acknowledgments')
             .select('*', { count: 'exact', head: true })
