@@ -115,7 +115,6 @@ const ManagementContracts = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold text-foreground uppercase">Contratos de Gestão</h1>
-          <p className="text-muted-foreground mt-1">Gerencie contratos e pareceres de compliance</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
