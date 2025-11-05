@@ -122,26 +122,28 @@ const Employees = () => {
     setIsProcessingUsers(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-employee-user', {
+      const { data, error } = await supabase.functions.invoke('link-existing-users', {
         body: { employees: employeesWithoutUsers }
       });
       
       if (error) throw error;
 
       const results = data.results;
+      const linked = results.success.filter((r: any) => r.action === 'linked').length;
+      const created = results.success.filter((r: any) => r.action === 'created').length;
       
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees-without-users'] });
 
       if (results.errors.length === 0) {
         toast({
-          title: "Usuários criados com sucesso!",
-          description: `${results.success.length} usuário(s) foram criados. Login: CPF | Senha: DDMMAAAA`
+          title: "Usuários processados com sucesso!",
+          description: `${linked} usuário(s) vinculado(s), ${created} criado(s). Login: CPF | Senha: DDMMAAAA`
         });
       } else {
         toast({
           title: "Processamento concluído",
-          description: `${results.success.length} usuários criados, ${results.errors.length} erro(s) encontrado(s).`,
+          description: `${linked} vinculados, ${created} criados, ${results.errors.length} erro(s).`,
           variant: results.success.length > 0 ? "default" : "destructive"
         });
       }
