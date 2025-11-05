@@ -110,6 +110,15 @@ export const UserProfile = () => {
     return name[0].toUpperCase();
   };
 
+  const formatJobTitle = (title: string | null) => {
+    if (!title) return "";
+    return title
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   return (
     <button 
       onClick={() => navigate('/profile')}
@@ -132,7 +141,7 @@ export const UserProfile = () => {
         </p>
         {profile?.job_title && (
           <p className="text-xs text-muted-foreground truncate">
-            {profile.job_title}
+            {formatJobTitle(profile.job_title)}
           </p>
         )}
       </div>
