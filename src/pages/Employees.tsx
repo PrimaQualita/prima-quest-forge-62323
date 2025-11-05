@@ -269,10 +269,13 @@ const Employees = () => {
       const employeesData = rows
         .filter(row => row.trim())
         .map(row => {
-          const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s.trim());
+          const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s?.trim() || '');
           
           // Clean CPF (remove non-numeric characters)
           const cleanedCpf = cpf.replace(/\D/g, '');
+          
+          // Validate and clean email
+          const cleanedEmail = email && email.includes('@') ? email : null;
           
           // Look up contract ID by name, or set to null if not found
           const management_contract_id = contract_name && contractMap.has(contract_name) 
@@ -280,17 +283,22 @@ const Employees = () => {
             : null;
           
           return { 
-            name, 
+            name: name || 'Nome não informado', 
             cpf: cleanedCpf, 
-            birth_date, 
+            birth_date: birth_date || '2000-01-01', 
             phone: phone || null, 
-            email: email || null,
+            email: cleanedEmail,
             department: department || null,
             job_title: job_title || null,
             management_contract_id
           };
         })
         .filter(emp => {
+          // Skip if CPF is invalid or empty
+          if (!emp.cpf || emp.cpf.length !== 11) {
+            return false;
+          }
+          
           // Skip duplicates within the file (keep only first occurrence)
           if (seenCpfs.has(emp.cpf)) {
             return false;
