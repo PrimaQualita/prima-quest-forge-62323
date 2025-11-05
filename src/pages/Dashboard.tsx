@@ -6,7 +6,7 @@ import DashboardEmployee from "@/components/dashboard/DashboardEmployee";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const { data: employeeData, isLoading } = useQuery({
     queryKey: ['employee-data', user?.id],
@@ -17,7 +17,7 @@ const Dashboard = () => {
         .from('employees')
         .select('id, is_manager')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       return data;
     },
@@ -40,9 +40,13 @@ const Dashboard = () => {
     );
   }
 
+  // Use isAdmin from useAuth (based on user_roles table) as the source of truth
+  // This ensures proper role-based access control
+  const showManagerDashboard = isAdmin && employeeData.is_manager;
+
   return (
     <>
-      {employeeData.is_manager ? (
+      {showManagerDashboard ? (
         <DashboardManager />
       ) : (
         <DashboardEmployee employeeId={employeeData.id} />
