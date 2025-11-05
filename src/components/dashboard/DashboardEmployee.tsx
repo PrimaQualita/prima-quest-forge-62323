@@ -258,7 +258,11 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      <div className={`grid grid-cols-1 gap-4 md:gap-6 ${
+        pendingDocuments && pendingDocuments.length > 0 && pendingTrainings && pendingTrainings.length > 0 
+          ? 'lg:grid-cols-2' 
+          : 'lg:grid-cols-1'
+      }`}>
         {pendingDocuments && pendingDocuments.length > 0 && (
           <Card>
             <CardHeader>
