@@ -752,6 +752,7 @@ const Employees = () => {
                     <TableHead>E-mail</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Gestor</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -783,6 +784,16 @@ const Employees = () => {
                             {employee.is_manager ? "Sim" : "Não"}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deleteEmployeesMutation.mutate([employee.id])}
+                          disabled={deleteEmployeesMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

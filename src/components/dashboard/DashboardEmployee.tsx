@@ -160,6 +160,22 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         />
       </div>
 
+      {totalPending > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Atenção: Você tem {totalPending} pendência(s)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Complete os documentos e treinamentos pendentes para manter sua conformidade em dia.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card>
           <CardHeader>
@@ -235,22 +251,6 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
           </CardContent>
         </Card>
       </div>
-
-      {totalPending > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="w-5 h-5" />
-              Atenção: Você tem {totalPending} pendência(s)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Complete os documentos e treinamentos pendentes para manter sua conformidade em dia.
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card>
