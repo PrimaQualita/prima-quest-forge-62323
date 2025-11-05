@@ -97,47 +97,45 @@ const Employees = () => {
     },
   });
 
-  // Processar colaboradores sem usuário automaticamente
+  // Processar colaboradores sem usuário automaticamente em lote
   const processEmployeesWithoutUsers = async () => {
     if (!employeesWithoutUsers || employeesWithoutUsers.length === 0) return;
     
     setIsProcessingUsers(true);
-    let successCount = 0;
-    let errorCount = 0;
 
-    for (const employee of employeesWithoutUsers) {
-      try {
-        const { error } = await supabase.functions.invoke('create-employee-user', {
-          body: { employee }
-        });
-        
-        if (error) {
-          console.error(`Erro ao criar usuário para ${employee.name}:`, error);
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      } catch (err) {
-        console.error(`Falha ao criar usuário para ${employee.name}:`, err);
-        errorCount++;
-      }
-    }
-
-    setIsProcessingUsers(false);
-    queryClient.invalidateQueries({ queryKey: ['employees'] });
-    queryClient.invalidateQueries({ queryKey: ['employees-without-users'] });
-
-    if (errorCount === 0) {
-      toast({
-        title: "Usuários criados com sucesso!",
-        description: `${successCount} usuário(s) foram criados automaticamente. Login: CPF | Senha: DDMMAAAA`
+    try {
+      const { data, error } = await supabase.functions.invoke('create-employee-user', {
+        body: { employees: employeesWithoutUsers }
       });
-    } else {
+      
+      if (error) throw error;
+
+      const results = data.results;
+      
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees-without-users'] });
+
+      if (results.errors.length === 0) {
+        toast({
+          title: "Usuários criados com sucesso!",
+          description: `${results.success.length} usuário(s) foram criados. Login: CPF | Senha: DDMMAAAA`
+        });
+      } else {
+        toast({
+          title: "Processamento concluído",
+          description: `${results.success.length} usuários criados, ${results.errors.length} erro(s) encontrado(s).`,
+          variant: results.success.length > 0 ? "default" : "destructive"
+        });
+      }
+    } catch (err) {
+      console.error('Falha ao criar usuários:', err);
       toast({
-        title: "Processamento concluído com erros",
-        description: `${successCount} usuários criados, ${errorCount} erro(s) encontrado(s).`,
+        title: "Erro ao processar usuários",
+        description: "Ocorreu um erro ao criar os usuários. Tente novamente.",
         variant: "destructive"
       });
+    } finally {
+      setIsProcessingUsers(false);
     }
   };
 
@@ -230,7 +228,7 @@ const Employees = () => {
       
       // Create user account via edge function
       const { error: userError } = await supabase.functions.invoke('create-employee-user', {
-        body: { employee: data }
+        body: { employees: [data] }
       });
       
       if (userError) {
@@ -708,14 +706,14 @@ const Employees = () => {
       </div>
 
       {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Colaboradores sem acesso ao sistema</AlertTitle>
-          <AlertDescription>
+        <Alert className="border-orange-500/50 bg-orange-500/10">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertTitle className="text-orange-900 dark:text-orange-100">Colaboradores sem acesso ao sistema</AlertTitle>
+          <AlertDescription className="text-orange-800 dark:text-orange-200">
             Existem {employeesWithoutUsers.length} colaborador(es) sem usuário criado. 
-            Clique no botão "Criar Usuários" acima para criar automaticamente os acessos.
+            Clique no botão "Criar {employeesWithoutUsers.length} Usuário(s)" acima para criar automaticamente os acessos.
             <br />
-            <span className="text-sm text-muted-foreground mt-1 block">
+            <span className="text-sm mt-1 block opacity-80">
               Login: CPF do colaborador | Senha: Data de nascimento (DDMMAAAA)
             </span>
           </AlertDescription>
