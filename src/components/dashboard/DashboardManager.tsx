@@ -249,7 +249,7 @@ const DashboardManager = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileCheck className="w-5 h-5" />
-              Aceite de Documentos por Política
+              Aceite de Regulamentos
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 max-h-96 overflow-y-auto">
