@@ -263,7 +263,7 @@ const Employees = () => {
       
       const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
       
-      // Track CPFs we've seen to skip duplicates
+      // Track CPFs we've seen to skip duplicates within file
       const seenCpfs = new Set<string>();
       
       const employeesData = rows
@@ -307,32 +307,43 @@ const Employees = () => {
           return true;
         });
 
-      // Check for existing CPFs in database
-      const { data: existingEmployees } = await supabase
-        .from('employees')
-        .select('cpf')
-        .in('cpf', employeesData.map(e => e.cpf));
-
-      // Filter out employees that already exist
-      const existingCpfs = new Set(existingEmployees?.map(e => e.cpf) || []);
-      const newEmployeesData = employeesData.filter(emp => !existingCpfs.has(emp.cpf));
-
-      if (newEmployeesData.length === 0) {
-        throw new Error('Todos os CPFs já estão cadastrados no sistema');
+      if (employeesData.length === 0) {
+        throw new Error('Nenhum registro válido encontrado na planilha');
       }
 
+      // Get existing employees to preserve their is_manager status
+      const { data: existingEmployees } = await supabase
+        .from('employees')
+        .select('cpf, is_manager, user_id')
+        .in('cpf', employeesData.map(e => e.cpf));
+
+      // Create a map of existing employees to preserve is_manager
+      const existingMap = new Map(
+        existingEmployees?.map(emp => [emp.cpf, { is_manager: emp.is_manager, user_id: emp.user_id }]) || []
+      );
+
+      // Add is_manager and user_id to data, preserving existing values
+      const employeesWithPermissions = employeesData.map(emp => ({
+        ...emp,
+        is_manager: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.is_manager : false,
+        user_id: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.user_id : null
+      }));
+
+      // Use upsert to insert or update based on CPF
       const { error } = await supabase
         .from('employees')
-        .insert(newEmployeesData);
+        .upsert(employeesWithPermissions, { 
+          onConflict: 'cpf',
+          ignoreDuplicates: false
+        });
 
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       
-      const skipped = employeesData.length - newEmployeesData.length;
       toast({ 
-        title: "Planilha importada!", 
-        description: `${newEmployeesData.length} colaborador(es) adicionado(s)${skipped > 0 ? `, ${skipped} ignorado(s) (já existentes)` : ''}`
+        title: "Planilha importada com sucesso!", 
+        description: `${employeesData.length} colaborador(es) processado(s) (novos ou atualizados). Permissões preservadas.`
       });
       
       setIsAnalysisDialogOpen(false);
