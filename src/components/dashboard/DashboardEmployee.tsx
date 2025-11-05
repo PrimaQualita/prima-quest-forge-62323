@@ -91,6 +91,22 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
 
   const totalPending = (stats?.pendingDocs || 0) + (stats?.pendingTrainings || 0);
 
+  const visibleCardsCount = 
+    ((stats?.pendingDocs || 0) > 0 ? 1 : 0) +
+    ((stats?.pendingTrainings || 0) > 0 ? 1 : 0) +
+    (totalPending > 0 ? 1 : 0) +
+    1; // Taxa de Conformidade sempre visível
+
+  const getGridCols = () => {
+    switch(visibleCardsCount) {
+      case 1: return 'sm:grid-cols-1';
+      case 2: return 'sm:grid-cols-2';
+      case 3: return 'sm:grid-cols-3';
+      case 4: return 'sm:grid-cols-2 lg:grid-cols-4';
+      default: return 'sm:grid-cols-2 lg:grid-cols-4';
+    }
+  };
+
   const documentChartData = [
     { name: 'Aceitos', value: stats?.acceptedDocs || 0, color: '#10b981' },
     { name: 'Pendentes', value: stats?.pendingDocs || 0, color: '#ef4444' }
@@ -129,11 +145,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         <p className="text-sm md:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
       </div>
 
-      <div className={`grid grid-cols-1 gap-4 md:gap-6 ${
-        totalPending > 0 
-          ? 'sm:grid-cols-2 lg:grid-cols-4' 
-          : 'sm:grid-cols-1'
-      }`}>
+      <div className={`grid grid-cols-1 gap-4 md:gap-6 ${getGridCols()}`}>
         {(stats?.pendingDocs || 0) > 0 && (
           <StatCard
             title="Documentos Pendentes"
