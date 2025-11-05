@@ -225,11 +225,11 @@ Deno.serve(async (req) => {
           }
         }
       } else {
-        // Se não conseguimos consultar a API, consideramos válido apenas pelo formato
-        // APIs públicas nem sempre têm 100% dos CPFs da Receita Federal
-        result.error = 'CPF não encontrado nas APIs públicas. Validado apenas formato.';
-        result.isValid = result.cpfFormatValid; // Permitir cadastro com formato válido
-        result.cpfExists = false; // Marca que não foi encontrado na API
+        // CRÍTICO: Bloquear cadastro se não conseguir validar na Receita Federal
+        // Não podemos verificar se a data de nascimento está correta sem a API
+        result.error = 'CPF não encontrado na Receita Federal. Não é possível validar a data de nascimento.';
+        result.isValid = false;
+        result.cpfExists = false;
       }
 
       console.log(`Resultado final - CPF ${cleanCPF} válido: ${result.isValid}`);
