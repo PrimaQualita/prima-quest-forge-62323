@@ -16,8 +16,8 @@ export const ComplianceCharts = ({
   totalEmployees 
 }: ComplianceChartsProps) => {
   
-  // Adicionar "Não Realizados" para cada documento/regulamento
-  const documentData = documentAcceptance.slice(0, 5).map((doc, index) => {
+  // Adicionar "Não Realizados" para cada documento/regulamento - TODOS os documentos
+  const documentData = documentAcceptance.map((doc, index) => {
     const notAccepted = totalEmployees - doc.accepted;
     const notAcceptedPercentage = totalEmployees > 0 
       ? Math.round((notAccepted / totalEmployees) * 10000) / 100 
@@ -39,8 +39,8 @@ export const ComplianceCharts = ({
     ];
   }).flat();
 
-  // Adicionar "Não Realizados" para cada treinamento
-  const trainingData = trainingCompletion.slice(0, 5).map((training, index) => {
+  // Adicionar "Não Realizados" para cada treinamento - TODOS os treinamentos
+  const trainingData = trainingCompletion.map((training, index) => {
     const notCompleted = totalEmployees - training.completed;
     const notCompletedPercentage = totalEmployees > 0 
       ? Math.round((notCompleted / totalEmployees) * 10000) / 100 
