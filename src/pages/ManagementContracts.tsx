@@ -160,6 +160,32 @@ const ManagementContracts = () => {
         </Dialog>
       </div>
 
+      {/* Seção de Gráficos - Todos os Contratos */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Documentos Mensais por Contrato</h2>
+          <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <TabsList>
+              {years.map((year) => (
+                <TabsTrigger key={year} value={year.toString()}>
+                  {year}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {contracts?.map((contract) => (
+            <ContractCandlestickChart 
+              key={contract.id}
+              contractId={contract.id}
+              contractName={contract.name}
+              year={selectedYear}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -184,12 +210,6 @@ const ManagementContracts = () => {
 
         {selectedContract && (
           <div className="lg:col-span-2 space-y-6">
-            <ContractCandlestickChart 
-              contractId={selectedContract.id}
-              contractName={selectedContract.name}
-              year={selectedYear}
-            />
-            
             <Card>
               <CardHeader>
                 <CardTitle>{selectedContract.name}</CardTitle>
