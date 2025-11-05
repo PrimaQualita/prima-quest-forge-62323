@@ -646,62 +646,60 @@ const ManagementContracts = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
+      <Card>
+        <CardHeader>
+          <CardTitle>Contratos de Gestão</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {contracts?.map((contract) => (
+              <div 
+                key={contract.id} 
+                className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
+                  selectedContract?.id === contract.id
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <button
+                  className="flex items-center gap-3 flex-1 text-left"
+                  onClick={() => setSelectedContract(contract)}
+                >
+                  <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium text-foreground">{contract.name}</span>
+                </button>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {contract.is_active ? (
+                    <Badge variant="default" className="bg-green-600 hover:bg-green-700">Vigente</Badge>
+                  ) : (
+                    <Badge variant="destructive">Encerrado</Badge>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => {
+                      setEditContract(contract);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedContract && (
+        <Card>
           <CardHeader>
-            <CardTitle>Contratos de Gestão</CardTitle>
+            <CardTitle>{selectedContract.name}</CardTitle>
+            <p className="text-sm text-muted-foreground">{selectedContract.description}</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {contracts?.map((contract) => (
-                <div 
-                  key={contract.id} 
-                  className={`flex items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
-                    selectedContract?.id === contract.id
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <button
-                    className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                    onClick={() => setSelectedContract(contract)}
-                  >
-                    <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <span className="font-medium text-foreground truncate">{contract.name}</span>
-                  </button>
-                  
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {contract.is_active ? (
-                      <Badge variant="default" className="bg-green-600 hover:bg-green-700">Vigente</Badge>
-                    ) : (
-                      <Badge variant="destructive">Encerrado</Badge>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8"
-                      onClick={() => {
-                        setEditContract(contract);
-                        setIsEditDialogOpen(true);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {selectedContract && (
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedContract.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{selectedContract.description}</p>
-              </CardHeader>
-              <CardContent>
               <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
                 <TabsList className="grid grid-cols-5 mb-4">
                   {years.map((year) => (
@@ -770,9 +768,7 @@ const ManagementContracts = () => {
               </Tabs>
             </CardContent>
           </Card>
-          </div>
         )}
-      </div>
     </div>
   );
 };
