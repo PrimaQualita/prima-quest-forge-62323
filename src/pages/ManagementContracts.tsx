@@ -620,32 +620,7 @@ const ManagementContracts = () => {
         </AlertDialog>
       </div>
 
-      {/* Seção de Gráficos - Todos os Contratos */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
-          <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
-            <TabsList>
-              {years.map((year) => (
-                <TabsTrigger key={year} value={year.toString()}>
-                  {year}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {contracts?.map((contract) => (
-            <ContractCandlestickChart 
-              key={contract.id}
-              contractId={contract.id}
-              contractName={contract.name}
-              year={selectedYear}
-            />
-          ))}
-        </div>
-      </div>
-
+      {/* Seção de Contratos */}
       <Card>
         <CardHeader>
           <CardTitle>Contratos de Gestão</CardTitle>
@@ -692,6 +667,32 @@ const ManagementContracts = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Seção de Gráficos - Todos os Contratos */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
+          <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <TabsList>
+              {years.map((year) => (
+                <TabsTrigger key={year} value={year.toString()}>
+                  {year}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {contracts?.map((contract) => (
+            <ContractCandlestickChart 
+              key={contract.id}
+              contractId={contract.id}
+              contractName={contract.name}
+              year={selectedYear}
+            />
+          ))}
+        </div>
+      </div>
 
       {selectedContract && (
         <Card>
