@@ -128,6 +128,18 @@ const Employees = () => {
     },
   });
 
+  const handleDownloadTemplate = () => {
+    const headers = ['name', 'cpf', 'birth_date', 'phone', 'email', 'department', 'job_title', 'management_contract_id'];
+    const csv = headers.join(',') + '\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'template_colaboradores.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -141,8 +153,17 @@ const Employees = () => {
         const employeesData = rows
           .filter(row => row.trim())
           .map(row => {
-            const [name, cpf, birth_date, phone, email] = row.split(',').map(s => s.trim());
-            return { name, cpf, birth_date, phone, email };
+            const [name, cpf, birth_date, phone, email, department, job_title, management_contract_id] = row.split(',').map(s => s.trim());
+            return { 
+              name, 
+              cpf, 
+              birth_date, 
+              phone, 
+              email,
+              department: department || null,
+              job_title: job_title || null,
+              management_contract_id: management_contract_id || null
+            };
           });
 
         const { error } = await supabase
@@ -178,6 +199,10 @@ const Employees = () => {
           <p className="text-muted-foreground mt-1">Gerencie os colaboradores e suas informações</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadTemplate}>
+            <Upload className="w-4 h-4 mr-2" />
+            Baixar Template CSV
+          </Button>
           <Button variant="outline" asChild>
             <label className="cursor-pointer">
               <Upload className="w-4 h-4 mr-2" />
@@ -331,9 +356,6 @@ const Employees = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>CPF</TableHead>
-                  <TableHead>Departamento</TableHead>
-                  <TableHead>Cargo/Função</TableHead>
-                  <TableHead>Contrato de Gestão</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Tipo</TableHead>
                 </TableRow>
@@ -343,11 +365,6 @@ const Employees = () => {
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell>{employee.cpf}</TableCell>
-                    <TableCell>{employee.department || "-"}</TableCell>
-                    <TableCell>{employee.job_title || "-"}</TableCell>
-                    <TableCell>
-                      {employee.management_contracts?.name || "-"}
-                    </TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>
                       {employee.is_manager ? (
