@@ -30,21 +30,63 @@ serve(async (req) => {
       }
     );
 
-    const results = {
+    interface SuccessResult {
+      employee_id: string;
+      employee_name: string;
+      user_id: string;
+      cpf: string;
+    }
+
+    interface ErrorResult {
+      employee_id?: string;
+      employee_name?: string;
+      error: string;
+    }
+
+    const results: {
+      success: SuccessResult[];
+      errors: ErrorResult[];
+      total: number;
+    } = {
       success: [],
       errors: [],
       total: employees.length
     };
 
-    // Process employees in batch
-    for (const employee of employees) {
+    // Get all existing users once (optimization)
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUsersMap = new Map(
+      existingUsers?.users?.map(u => [u.email, u.id]) || []
+    );
+
+    // Process employees in parallel batches
+    const BATCH_SIZE = 20; // Process 20 employees at a time
+    
+    interface ProcessSuccess {
+      type: 'success';
+      employee_id: string;
+      employee_name: string;
+      user_id: string;
+      cpf: string;
+    }
+
+    interface ProcessError {
+      type: 'error';
+      employee_id?: string;
+      employee_name?: string;
+      error: string;
+    }
+
+    type ProcessResult = ProcessSuccess | ProcessError;
+    
+    const processEmployee = async (employee: any): Promise<ProcessResult> => {
       try {
         if (!employee || !employee.cpf || !employee.birth_date) {
-          results.errors.push({
+          return {
+            type: 'error',
             employee_id: employee?.id,
             error: 'Dados incompletos (CPF ou data de nascimento ausente)'
-          });
-          continue;
+          };
         }
 
         // Clean CPF (remove any formatting)
@@ -60,14 +102,11 @@ serve(async (req) => {
         // Create a unique email using CPF (for auth system requirements)
         const authEmail = `${cpf}@primaqualita.local`;
 
-        // Try to get existing user first
-        const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-        const existingUser = existingUsers?.users?.find(u => u.email === authEmail);
-
         let userId: string;
 
-        if (existingUser) {
-          userId = existingUser.id;
+        // Check if user exists in our cached map
+        if (existingUsersMap.has(authEmail)) {
+          userId = existingUsersMap.get(authEmail)!;
         } else {
           // Create user in auth with CPF-based email
           const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
@@ -82,71 +121,100 @@ serve(async (req) => {
           });
 
           if (userError) {
-            results.errors.push({
+            return {
+              type: 'error',
               employee_id: employee.id,
               employee_name: employee.name,
               error: userError.message
-            });
-            continue;
+            };
           }
 
           userId = userData.user.id;
+          existingUsersMap.set(authEmail, userId); // Cache the new user
         }
 
-        // Create profile first (required by foreign key)
-        const { error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .upsert({
-            id: userId,
-            cpf: cpf,
-            birth_date: employee.birth_date,
-            first_login: true
-          }, { onConflict: 'id' });
+        // Create profile, update employee, and add role in parallel
+        const operations = [
+          supabaseAdmin
+            .from('profiles')
+            .upsert({
+              id: userId,
+              cpf: cpf,
+              birth_date: employee.birth_date,
+              first_login: true
+            }, { onConflict: 'id' }),
+          supabaseAdmin
+            .from('employees')
+            .update({ user_id: userId })
+            .eq('id', employee.id)
+        ];
 
-        if (profileError) {
-          results.errors.push({
-            employee_id: employee.id,
-            employee_name: employee.name,
-            error: `Erro ao criar perfil: ${profileError.message}`
-          });
-          continue;
-        }
-
-        // Update employee with user_id
-        const { error: updateError } = await supabaseAdmin
-          .from('employees')
-          .update({ user_id: userId })
-          .eq('id', employee.id);
-
-        if (updateError) {
-          results.errors.push({
-            employee_id: employee.id,
-            employee_name: employee.name,
-            error: `Erro ao atualizar colaborador: ${updateError.message}`
-          });
-          continue;
-        }
-
-        // If employee is a manager, add admin role
         if (employee.is_manager) {
-          await supabaseAdmin
-            .from('user_roles')
-            .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' });
+          operations.push(
+            supabaseAdmin
+              .from('user_roles')
+              .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
+          );
         }
 
-        results.success.push({
+        const [profileResult, updateResult] = await Promise.all(operations);
+
+        if (profileResult.error) {
+          return {
+            type: 'error',
+            employee_id: employee.id,
+            employee_name: employee.name,
+            error: `Erro ao criar perfil: ${profileResult.error.message}`
+          };
+        }
+
+        if (updateResult.error) {
+          return {
+            type: 'error',
+            employee_id: employee.id,
+            employee_name: employee.name,
+            error: `Erro ao atualizar colaborador: ${updateResult.error.message}`
+          };
+        }
+
+        return {
+          type: 'success',
           employee_id: employee.id,
           employee_name: employee.name,
           user_id: userId,
           cpf: cpf
-        });
+        };
 
       } catch (employeeError) {
-        results.errors.push({
+        return {
+          type: 'error',
           employee_id: employee?.id,
           employee_name: employee?.name,
           error: employeeError instanceof Error ? employeeError.message : 'Erro desconhecido'
-        });
+        };
+      }
+    };
+
+    // Process in parallel batches
+    for (let i = 0; i < employees.length; i += BATCH_SIZE) {
+      const batch = employees.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(batch.map(processEmployee));
+      
+      for (const result of batchResults) {
+        if (result.type === 'success') {
+          results.success.push({
+            employee_id: result.employee_id,
+            employee_name: result.employee_name,
+            user_id: result.user_id,
+            cpf: result.cpf
+          });
+        } else {
+          results.errors.push({
+            employee_id: result.employee_id,
+            employee_name: result.employee_name,
+            error: result.error
+          });
+        }
       }
     }
 
