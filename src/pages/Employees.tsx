@@ -405,16 +405,33 @@ const Employees = () => {
     setIsValidatingCPFs(true);
     
     try {
-      // Buscar todos os colaboradores
-      const { data: allEmployees, error } = await supabase
-        .from('employees')
-        .select('id, cpf, birth_date, name')
-        .not('cpf', 'is', null)
-        .not('birth_date', 'is', null);
+      // Buscar TODOS os colaboradores usando paginação
+      const allEmployees = [];
+      let from = 0;
+      const fetchBatchSize = 1000;
+      let hasMore = true;
 
-      if (error) throw error;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('id, cpf, birth_date, name')
+          .not('cpf', 'is', null)
+          .not('birth_date', 'is', null)
+          .range(from, from + fetchBatchSize - 1)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allEmployees.push(...data);
+          from += fetchBatchSize;
+          hasMore = data.length === fetchBatchSize;
+        } else {
+          hasMore = false;
+        }
+      }
 
-      if (!allEmployees || allEmployees.length === 0) {
+      if (allEmployees.length === 0) {
         toast({
           title: "Nenhum colaborador para validar",
           description: "Não há colaboradores cadastrados no sistema."
