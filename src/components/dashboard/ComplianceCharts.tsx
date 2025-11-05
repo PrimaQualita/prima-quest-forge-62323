@@ -111,10 +111,10 @@ export const ComplianceCharts = ({
               <Pie
                 data={documentData}
                 cx="50%"
-                cy="45%"
+                cy="40%"
                 labelLine={false}
                 label={renderCustomLabel}
-                outerRadius={110}
+                outerRadius={140}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -144,10 +144,10 @@ export const ComplianceCharts = ({
               <Pie
                 data={trainingData}
                 cx="50%"
-                cy="45%"
+                cy="40%"
                 labelLine={false}
                 label={renderCustomLabel}
-                outerRadius={110}
+                outerRadius={140}
                 fill="#82ca9d"
                 dataKey="value"
               >
