@@ -188,6 +188,9 @@ const Employees = () => {
           .map(row => {
             const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s.trim());
             
+            // Clean CPF (remove non-numeric characters)
+            const cleanedCpf = cpf.replace(/\D/g, '');
+            
             // Look up contract ID by name, or set to null if not found
             const management_contract_id = contract_name && contractMap.has(contract_name) 
               ? contractMap.get(contract_name) 
@@ -195,7 +198,7 @@ const Employees = () => {
             
             return { 
               name, 
-              cpf, 
+              cpf: cleanedCpf, 
               birth_date, 
               phone: phone || null, 
               email: email || null,
@@ -204,6 +207,31 @@ const Employees = () => {
               management_contract_id
             };
           });
+
+        // Check for duplicate CPFs in the file
+        const cpfSet = new Set();
+        const duplicatesInFile = [];
+        for (const emp of employeesData) {
+          if (cpfSet.has(emp.cpf)) {
+            duplicatesInFile.push(emp.cpf);
+          }
+          cpfSet.add(emp.cpf);
+        }
+
+        if (duplicatesInFile.length > 0) {
+          throw new Error(`CPFs duplicados na planilha: ${[...new Set(duplicatesInFile)].join(', ')}`);
+        }
+
+        // Check for existing CPFs in database
+        const { data: existingEmployees } = await supabase
+          .from('employees')
+          .select('cpf')
+          .in('cpf', employeesData.map(e => e.cpf));
+
+        if (existingEmployees && existingEmployees.length > 0) {
+          const existingCpfs = existingEmployees.map(e => e.cpf);
+          throw new Error(`CPFs já cadastrados no sistema: ${existingCpfs.join(', ')}`);
+        }
 
         const { error } = await supabase
           .from('employees')
