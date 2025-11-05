@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       deletionErrors.push(`Conversations: ${conversationsError.message}`);
     }
 
-    // 6. Buscar user_ids dos colaboradores
+    // 7. Buscar user_ids dos colaboradores
     console.log('Buscando user_ids dos colaboradores...');
     const { data: employeesData } = await supabase
       .from('employees')
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
 
     console.log(`Encontrados ${userIds.length} usuário(s) vinculado(s)`);
 
-    // 7. Deletar roles de usuários
+    // 8. Deletar roles de usuários ANTES de deletar os colaboradores
     if (userIds.length > 0) {
       console.log('Deletando roles de usuários...');
       const { error: rolesError } = await supabase
@@ -139,7 +139,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 8. Deletar perfis de usuários
+    // 9. Deletar colaboradores (isso libera a foreign key para profiles)
+    console.log('Deletando colaboradores...');
+    const { error: employeesError } = await supabase
+      .from('employees')
+      .delete()
+      .in('id', employeeIds);
+
+    if (employeesError) {
+      console.error('ERRO CRÍTICO ao deletar colaboradores:', employeesError);
+      throw new Error(`Falha ao deletar colaboradores: ${employeesError.message}`);
+    }
+
+    // 10. Agora podemos deletar perfis (já não há foreign key de employees)
     if (userIds.length > 0) {
       console.log('Deletando perfis de usuários...');
       const { error: profilesError } = await supabase
@@ -153,19 +165,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 9. Deletar colaboradores
-    console.log('Deletando colaboradores...');
-    const { error: employeesError } = await supabase
-      .from('employees')
-      .delete()
-      .in('id', employeeIds);
-
-    if (employeesError) {
-      console.error('ERRO CRÍTICO ao deletar colaboradores:', employeesError);
-      throw new Error(`Falha ao deletar colaboradores: ${employeesError.message}`);
-    }
-
-    // 10. Deletar usuários do auth
+    // 11. Deletar usuários do auth
     if (userIds.length > 0) {
       console.log('Deletando usuários do auth...');
       for (const userId of userIds) {
