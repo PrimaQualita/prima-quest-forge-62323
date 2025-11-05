@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText, Upload, Edit2, Calendar, RotateCw } from "lucide-react";
+import { Plus, FileText, Upload, Edit2, Calendar, RotateCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,9 @@ const ManagementContracts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
+  const [isEditRenewalDialogOpen, setIsEditRenewalDialogOpen] = useState(false);
+  const [renewalToDelete, setRenewalToDelete] = useState<any>(null);
+  const [renewalToEdit, setRenewalToEdit] = useState<any>(null);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -150,6 +154,52 @@ const ManagementContracts = () => {
         renewal_end_date: "", 
         notes: "" 
       });
+    },
+  });
+
+  const updateRenewalMutation = useMutation({
+    mutationFn: async (renewal: { 
+      id: string;
+      renewal_date: string; 
+      renewal_start_date: string; 
+      renewal_end_date: string; 
+      notes: string 
+    }) => {
+      const { data, error } = await supabase
+        .from('contract_renewals')
+        .update({
+          renewal_date: renewal.renewal_date,
+          renewal_start_date: renewal.renewal_start_date,
+          renewal_end_date: renewal.renewal_end_date,
+          notes: renewal.notes,
+        })
+        .eq('id', renewal.id)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract_renewals'] });
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
+      toast({ title: "Renovação atualizada com sucesso!" });
+      setIsEditRenewalDialogOpen(false);
+      setRenewalToEdit(null);
+    },
+  });
+
+  const deleteRenewalMutation = useMutation({
+    mutationFn: async (renewalId: string) => {
+      const { error } = await supabase
+        .from('contract_renewals')
+        .delete()
+        .eq('id', renewalId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract_renewals'] });
+      queryClient.invalidateQueries({ queryKey: ['management_contracts'] });
+      toast({ title: "Renovação removida com sucesso!" });
+      setRenewalToDelete(null);
     },
   });
 
@@ -336,7 +386,7 @@ const ManagementContracts = () => {
                 {renewals && renewals.length > 0 && (
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {renewals.map((renewal: any) => (
-                      <div key={renewal.id} className="p-3 border rounded-lg bg-muted/50">
+                      <div key={renewal.id} className="p-3 border rounded-lg bg-muted/50 group hover:bg-muted transition-colors">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -344,9 +394,32 @@ const ManagementContracts = () => {
                               Efetivada em: {new Date(renewal.renewal_date).toLocaleDateString('pt-BR')}
                             </span>
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            Registrada em {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              Registrada em {new Date(renewal.created_at).toLocaleDateString('pt-BR')}
+                            </Badge>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  setRenewalToEdit(renewal);
+                                  setIsEditRenewalDialogOpen(true);
+                                }}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                onClick={() => setRenewalToDelete(renewal)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                         <div className="text-sm text-muted-foreground">
                           <span className="font-medium">Período renovado:</span> {new Date(renewal.renewal_start_date).toLocaleDateString('pt-BR')} até {new Date(renewal.renewal_end_date).toLocaleDateString('pt-BR')}
@@ -449,6 +522,105 @@ const ManagementContracts = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de Editar Renovação */}
+        <Dialog open={isEditRenewalDialogOpen} onOpenChange={setIsEditRenewalDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Renovação</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-renewal-date">Data de Efetivação da Renovação</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-renewal-date"
+                    type="date"
+                    value={renewalToEdit?.renewal_date || ""}
+                    onChange={(e) => setRenewalToEdit({ ...renewalToEdit, renewal_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-renewal-start-date">Data de Início do Período Renovado</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-renewal-start-date"
+                    type="date"
+                    value={renewalToEdit?.renewal_start_date || ""}
+                    onChange={(e) => setRenewalToEdit({ ...renewalToEdit, renewal_start_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-renewal-end-date">Data de Fim do Período Renovado</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="edit-renewal-end-date"
+                    type="date"
+                    value={renewalToEdit?.renewal_end_date || ""}
+                    onChange={(e) => setRenewalToEdit({ ...renewalToEdit, renewal_end_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-renewal-notes">Observações (Opcional)</Label>
+                <Textarea
+                  id="edit-renewal-notes"
+                  value={renewalToEdit?.notes || ""}
+                  onChange={(e) => setRenewalToEdit({ ...renewalToEdit, notes: e.target.value })}
+                  placeholder="Adicione observações sobre esta renovação..."
+                  rows={3}
+                />
+              </div>
+              <Button 
+                onClick={() => {
+                  if (renewalToEdit?.id && renewalToEdit.renewal_date && renewalToEdit.renewal_start_date && renewalToEdit.renewal_end_date) {
+                    updateRenewalMutation.mutate({
+                      id: renewalToEdit.id,
+                      renewal_date: renewalToEdit.renewal_date,
+                      renewal_start_date: renewalToEdit.renewal_start_date,
+                      renewal_end_date: renewalToEdit.renewal_end_date,
+                      notes: renewalToEdit.notes || ""
+                    });
+                  }
+                }}
+                className="w-full"
+                disabled={!renewalToEdit?.renewal_date || !renewalToEdit?.renewal_start_date || !renewalToEdit?.renewal_end_date || updateRenewalMutation.isPending}
+              >
+                Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Alert Dialog de Confirmar Exclusão */}
+        <AlertDialog open={!!renewalToDelete} onOpenChange={(open) => !open && setRenewalToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover Renovação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover esta renovação? A data de vigência do contrato será recalculada automaticamente com base nas renovações restantes.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (renewalToDelete?.id) {
+                    deleteRenewalMutation.mutate(renewalToDelete.id);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Seção de Gráficos - Todos os Contratos */}
