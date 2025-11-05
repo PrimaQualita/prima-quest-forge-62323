@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText } from "lucide-react";
+import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ const Employees = () => {
   const [pendingCsvText, setPendingCsvText] = useState<string>("");
   const [page, setPage] = useState(0);
   const [pageSize] = useState(50);
+  const [isProcessingUsers, setIsProcessingUsers] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -79,6 +80,66 @@ const Employees = () => {
       return data;
     },
   });
+
+  // Query para buscar colaboradores sem user_id
+  const { data: employeesWithoutUsers } = useQuery({
+    queryKey: ['employees-without-users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, cpf, birth_date')
+        .is('user_id', null)
+        .not('cpf', 'is', null)
+        .not('birth_date', 'is', null);
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Processar colaboradores sem usuário automaticamente
+  const processEmployeesWithoutUsers = async () => {
+    if (!employeesWithoutUsers || employeesWithoutUsers.length === 0) return;
+    
+    setIsProcessingUsers(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const employee of employeesWithoutUsers) {
+      try {
+        const { error } = await supabase.functions.invoke('create-employee-user', {
+          body: { employee }
+        });
+        
+        if (error) {
+          console.error(`Erro ao criar usuário para ${employee.name}:`, error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Falha ao criar usuário para ${employee.name}:`, err);
+        errorCount++;
+      }
+    }
+
+    setIsProcessingUsers(false);
+    queryClient.invalidateQueries({ queryKey: ['employees'] });
+    queryClient.invalidateQueries({ queryKey: ['employees-without-users'] });
+
+    if (errorCount === 0) {
+      toast({
+        title: "Usuários criados com sucesso!",
+        description: `${successCount} usuário(s) foram criados automaticamente. Login: CPF | Senha: DDMMAAAA`
+      });
+    } else {
+      toast({
+        title: "Processamento concluído com erros",
+        description: `${successCount} usuários criados, ${errorCount} erro(s) encontrado(s).`,
+        variant: "destructive"
+      });
+    }
+  };
 
   const toggleManagerStatus = useMutation({
     mutationFn: async ({ employeeId, isManager }: { employeeId: string; isManager: boolean }) => {
@@ -401,6 +462,18 @@ const Employees = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
+            <Button 
+              variant="secondary" 
+              onClick={processEmployeesWithoutUsers}
+              disabled={isProcessingUsers}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              {isProcessingUsers 
+                ? "Processando..." 
+                : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
+            </Button>
+          )}
           <Button variant="outline" onClick={handleDownloadTemplate}>
             <Upload className="w-4 h-4 mr-2" />
             Baixar Template CSV
@@ -633,6 +706,21 @@ const Employees = () => {
           </Dialog>
         </div>
       </div>
+
+      {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Colaboradores sem acesso ao sistema</AlertTitle>
+          <AlertDescription>
+            Existem {employeesWithoutUsers.length} colaborador(es) sem usuário criado. 
+            Clique no botão "Criar Usuários" acima para criar automaticamente os acessos.
+            <br />
+            <span className="text-sm text-muted-foreground mt-1 block">
+              Login: CPF do colaborador | Senha: Data de nascimento (DDMMAAAA)
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>

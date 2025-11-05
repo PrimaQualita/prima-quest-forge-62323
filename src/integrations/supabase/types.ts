@@ -803,6 +803,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_employees_without_users: {
+        Args: never
+        Returns: {
+          cpf: string
+          employee_id: string
+          employee_name: string
+          needs_user_creation: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "employee"
