@@ -220,9 +220,9 @@ Deno.serve(async (req) => {
           result.error = 'Data de nascimento não confere com o CPF';
         }
       } else {
-        result.error = 'Não foi possível verificar o CPF na Receita Federal. Validação apenas de formato.';
-        // Se não conseguimos consultar a API, consideramos válido se o formato estiver correto
-        result.isValid = result.cpfFormatValid;
+        // Se não conseguimos consultar a API, NÃO podemos validar a data de nascimento
+        result.error = 'Não foi possível verificar o CPF na Receita Federal. Tente novamente em alguns instantes.';
+        result.isValid = false; // Bloquear cadastro quando não conseguimos validar
       }
 
       console.log(`Resultado final - CPF ${cleanCPF} válido: ${result.isValid}`);
