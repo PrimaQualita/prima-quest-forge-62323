@@ -226,6 +226,19 @@ const Profile = () => {
       setSaving(true);
       setErrors({});
 
+      console.log('Atualizando email para:', email);
+
+      // Verificar se o email é diferente do atual
+      if (email === user?.email) {
+        toast({
+          title: "Atenção",
+          description: "O novo email é igual ao email atual",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       const validation = emailSchema.safeParse({ email });
 
       if (!validation.success) {
@@ -236,10 +249,14 @@ const Profile = () => {
           }
         });
         setErrors(newErrors);
+        setSaving(false);
         return;
       }
 
-      const { error } = await supabase.auth.updateUser({ email });
+      console.log('Chamando supabase.auth.updateUser...');
+      const { data, error } = await supabase.auth.updateUser({ email });
+
+      console.log('Resposta:', { data, error });
 
       if (error) throw error;
 
@@ -248,9 +265,10 @@ const Profile = () => {
         description: "Email atualizado com sucesso! Verifique seu novo email para confirmar.",
       });
     } catch (error: any) {
+      console.error('Erro ao atualizar email:', error);
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Não foi possível atualizar o email",
         variant: "destructive",
       });
     } finally {
