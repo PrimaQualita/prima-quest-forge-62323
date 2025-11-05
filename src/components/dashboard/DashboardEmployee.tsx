@@ -91,13 +91,13 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   const totalPending = (stats?.pendingDocs || 0) + (stats?.pendingTrainings || 0);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 md:space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">Meu Dashboard de Compliance</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
+        <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2">Meu Dashboard de Compliance</h1>
+        <p className="text-sm md:text-base text-muted-foreground">Acompanhe suas pendências e progresso</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <StatCard
           title="Documentos Pendentes"
           value={stats?.pendingDocs || 0}
@@ -144,12 +144,12 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-base sm:text-lg">
-                <FileCheck className="w-4 h-4 sm:w-5 sm:h-5" />
+            <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-base md:text-lg">
+                <FileCheck className="w-4 h-4 md:w-5 md:h-5" />
                 Documentos Pendentes
               </span>
               <Badge variant={pendingDocuments && pendingDocuments.length > 0 ? "destructive" : "default"}>
@@ -161,19 +161,19 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
             {pendingDocuments && pendingDocuments.length > 0 ? (
               <>
                 {pendingDocuments.map((doc) => (
-                  <div key={doc.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
-                      <h4 className="font-medium text-sm sm:text-base">{doc.title}</h4>
+                  <div key={doc.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                      <h4 className="font-medium text-sm md:text-base">{doc.title}</h4>
                       <Badge variant="outline" className="self-start">{doc.category}</Badge>
                     </div>
                     <div 
-                      className="text-xs sm:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
+                      className="text-xs md:text-sm text-muted-foreground mb-3 prose prose-sm max-w-none"
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
                     />
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/documents')}
-                      className="w-full text-xs sm:text-sm"
+                      className="w-full text-xs md:text-sm"
                     >
                       Ler e Aceitar
                     </Button>
@@ -181,8 +181,8 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                 ))}
               </>
             ) : (
-              <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-green-600" />
+              <div className="text-center py-6 md:py-8 text-muted-foreground">
+                <CheckCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-600" />
                 <p className="text-sm">Todos os documentos foram aceitos!</p>
               </div>
             )}
@@ -191,9 +191,9 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="flex items-center gap-2 text-base sm:text-lg">
-                <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
+            <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <span className="flex items-center gap-2 text-base md:text-lg">
+                <GraduationCap className="w-4 h-4 md:w-5 md:h-5" />
                 Treinamentos Pendentes
               </span>
               <Badge variant={pendingTrainings && pendingTrainings.length > 0 ? "destructive" : "default"}>
@@ -205,16 +205,16 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
             {pendingTrainings && pendingTrainings.length > 0 ? (
               <>
                 {pendingTrainings.map((training) => (
-                  <div key={training.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-2">
-                      <h4 className="font-medium text-sm sm:text-base">{training.title}</h4>
+                  <div key={training.id} className="p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                      <h4 className="font-medium text-sm md:text-base">{training.title}</h4>
                       <Badge variant="outline" className="self-start">{training.category}</Badge>
                     </div>
-                    <p className="text-xs sm:text-sm text-muted-foreground mb-3">{training.description}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mb-3">{training.description}</p>
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/trainings')}
-                      className="w-full text-xs sm:text-sm"
+                      className="w-full text-xs md:text-sm"
                     >
                       Iniciar Treinamento
                     </Button>
@@ -222,8 +222,8 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
                 ))}
               </>
             ) : (
-              <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-green-600" />
+              <div className="text-center py-6 md:py-8 text-muted-foreground">
+                <CheckCircle className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-2 text-green-600" />
                 <p className="text-sm">Todos os treinamentos foram concluídos!</p>
               </div>
             )}

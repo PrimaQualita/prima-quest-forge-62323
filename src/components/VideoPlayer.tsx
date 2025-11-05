@@ -115,7 +115,7 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <div className="relative bg-black rounded-lg overflow-hidden">
         <video
           ref={videoRef}
@@ -130,34 +130,34 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
       </div>
       
       <div className="space-y-2">
-        <Progress value={progress} className="h-1.5 sm:h-2" />
+        <Progress value={progress} className="h-1.5 md:h-2" />
         
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 sm:h-10 sm:w-10"
+              className="h-8 w-8 md:h-10 md:w-10"
               onClick={togglePlay}
             >
-              {isPlaying ? <Pause className="h-3 w-3 sm:h-4 sm:w-4" /> : <Play className="h-3 w-3 sm:h-4 sm:w-4" />}
+              {isPlaying ? <Pause className="h-3 w-3 md:h-4 md:w-4" /> : <Play className="h-3 w-3 md:h-4 md:w-4" />}
             </Button>
             
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 sm:h-10 sm:w-10"
+              className="h-8 w-8 md:h-10 md:w-10"
               onClick={toggleMute}
             >
-              {isMuted ? <VolumeX className="h-3 w-3 sm:h-4 sm:w-4" /> : <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" />}
+              {isMuted ? <VolumeX className="h-3 w-3 md:h-4 md:w-4" /> : <Volume2 className="h-3 w-3 md:h-4 md:w-4" />}
             </Button>
 
-            <span className="text-xs sm:text-sm text-muted-foreground">
+            <span className="text-xs md:text-sm text-muted-foreground">
               {formatTime((progress / 100) * duration)} / {formatTime(duration)}
             </span>
           </div>
 
-          <span className="text-xs sm:text-sm font-medium">
+          <span className="text-xs md:text-sm font-medium">
             {progress >= 70 ? "✓ Concluído" : `${Math.floor(progress)}%`}
           </span>
         </div>
