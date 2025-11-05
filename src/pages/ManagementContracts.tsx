@@ -279,7 +279,14 @@ const ManagementContracts = () => {
           <CardContent>
             <div className="space-y-2">
               {contracts?.map((contract) => (
-                <div key={contract.id} className="flex items-center gap-2">
+                <div 
+                  key={contract.id} 
+                  className={`flex items-center gap-2 p-2 rounded-lg transition-all ${
+                    !contract.is_active 
+                      ? 'bg-red-50/50 dark:bg-red-950/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]' 
+                      : ''
+                  }`}
+                >
                   <Button
                     variant={selectedContract?.id === contract.id ? "default" : "outline"}
                     className="flex-1 justify-start"
@@ -288,7 +295,7 @@ const ManagementContracts = () => {
                     <FileText className="w-4 h-4 mr-2" />
                     {contract.name}
                     {!contract.is_active && (
-                      <Badge variant="secondary" className="ml-2">Encerrado</Badge>
+                      <Badge variant="destructive" className="ml-2">Encerrado</Badge>
                     )}
                   </Button>
                   <Button
