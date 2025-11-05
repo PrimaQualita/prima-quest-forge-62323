@@ -163,7 +163,7 @@ const ManagementContracts = () => {
       {/* Seção de Gráficos - Todos os Contratos */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">Análises de Processos</h2>
+          <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
           <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
             <TabsList>
               {years.map((year) => (
