@@ -11,7 +11,7 @@ export const UserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null; job_title: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export const UserProfile = () => {
   const fetchProfile = async () => {
     if (!user?.id) return;
 
-    const { data, error } = await supabase
+    const { data: profileData, error } = await supabase
       .from('profiles')
       .select('full_name, avatar_url')
       .eq('id', user.id)
@@ -34,7 +34,18 @@ export const UserProfile = () => {
       return;
     }
 
-    setProfile(data);
+    // Buscar job_title do employee
+    const { data: employeeData } = await supabase
+      .from('employees')
+      .select('job_title')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    setProfile({
+      full_name: profileData?.full_name || null,
+      avatar_url: profileData?.avatar_url || null,
+      job_title: employeeData?.job_title || null,
+    });
   };
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +130,11 @@ export const UserProfile = () => {
         <p className="text-sm font-medium text-sidebar-foreground truncate">
           {profile?.full_name || "Usuário"}
         </p>
+        {profile?.job_title && (
+          <p className="text-xs text-muted-foreground truncate">
+            {profile.job_title}
+          </p>
+        )}
       </div>
     </button>
   );
