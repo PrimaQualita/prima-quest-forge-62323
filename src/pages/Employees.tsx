@@ -191,12 +191,109 @@ const Employees = () => {
 
   const deleteEmployeesMutation = useMutation({
     mutationFn: async (employeeIds: string[]) => {
-      const { error } = await supabase
+      // Deletar em ordem: primeiro os registros relacionados, depois o colaborador
+      
+      // 1. Deletar progresso de vídeos
+      const { error: videoProgressError } = await supabase
+        .from('video_progress')
+        .delete()
+        .in('employee_id', employeeIds);
+      
+      if (videoProgressError) {
+        console.error('Erro ao deletar progresso de vídeos:', videoProgressError);
+      }
+
+      // 2. Deletar participações em treinamentos
+      const { error: participationsError } = await supabase
+        .from('training_participations')
+        .delete()
+        .in('employee_id', employeeIds);
+      
+      if (participationsError) {
+        console.error('Erro ao deletar participações:', participationsError);
+      }
+
+      // 3. Deletar avaliações de treinamento
+      const { error: assessmentsError } = await supabase
+        .from('training_assessments')
+        .delete()
+        .in('employee_id', employeeIds);
+      
+      if (assessmentsError) {
+        console.error('Erro ao deletar avaliações:', assessmentsError);
+      }
+
+      // 4. Deletar reconhecimentos de documentos
+      const { error: acknowledgementsError } = await supabase
+        .from('document_acknowledgments')
+        .delete()
+        .in('employee_id', employeeIds);
+      
+      if (acknowledgementsError) {
+        console.error('Erro ao deletar reconhecimentos:', acknowledgementsError);
+      }
+
+      // 5. Deletar mensagens de chat
+      const { data: conversations } = await supabase
+        .from('chat_conversations')
+        .select('id')
+        .in('employee_id', employeeIds);
+      
+      if (conversations && conversations.length > 0) {
+        const conversationIds = conversations.map(c => c.id);
+        
+        const { error: messagesError } = await supabase
+          .from('chat_messages')
+          .delete()
+          .in('conversation_id', conversationIds);
+        
+        if (messagesError) {
+          console.error('Erro ao deletar mensagens:', messagesError);
+        }
+      }
+
+      // 6. Deletar conversas de chat
+      const { error: conversationsError } = await supabase
+        .from('chat_conversations')
+        .delete()
+        .in('employee_id', employeeIds);
+      
+      if (conversationsError) {
+        console.error('Erro ao deletar conversas:', conversationsError);
+      }
+
+      // 7. Buscar user_ids dos colaboradores para deletar depois
+      const { data: employeesData } = await supabase
+        .from('employees')
+        .select('user_id')
+        .in('id', employeeIds);
+      
+      const userIds = employeesData
+        ?.map(e => e.user_id)
+        .filter(id => id !== null) || [];
+
+      // 8. Deletar colaboradores
+      const { error: employeesError } = await supabase
         .from('employees')
         .delete()
         .in('id', employeeIds);
 
-      if (error) throw error;
+      if (employeesError) throw employeesError;
+
+      // 9. Deletar roles de usuários (se houver)
+      if (userIds.length > 0) {
+        const { error: rolesError } = await supabase
+          .from('user_roles')
+          .delete()
+          .in('user_id', userIds);
+        
+        if (rolesError) {
+          console.error('Erro ao deletar roles:', rolesError);
+        }
+      }
+
+      // 10. Deletar usuários do auth (usando service role via edge function seria mais seguro)
+      // Por enquanto, deixamos o trigger fazer isso
     },
     onSuccess: (_, employeeIds) => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
