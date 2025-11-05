@@ -212,12 +212,17 @@ Deno.serve(async (req) => {
           console.log(`Nome confere: ${result.nameMatches}`);
         }
 
-        // CPF é válido se existe e a data de nascimento confere (quando disponível)
-        result.isValid = result.cpfExists && 
-          (result.birthDateMatches === null || result.birthDateMatches === true);
-        
-        if (!result.isValid && result.birthDateMatches === false) {
-          result.error = 'Data de nascimento não confere com o CPF';
+        // CPF é válido se existe E a data de nascimento confere
+        // Se a API retornou data mas não confere, bloquear
+        if (result.birthDateMatches === false) {
+          result.isValid = false;
+          result.error = 'Data de nascimento não confere com o CPF na Receita Federal';
+        } else {
+          result.isValid = result.cpfExists && result.birthDateMatches === true;
+          if (result.birthDateMatches === null) {
+            result.error = 'CPF encontrado mas data de nascimento não disponível na API';
+            result.isValid = false; // Bloquear se não conseguiu verificar a data
+          }
         }
       } else {
         // Se não conseguimos consultar a API, consideramos válido apenas pelo formato
