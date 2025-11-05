@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, UserPlus, Search } from "lucide-react";
+import { Upload, UserPlus, Search, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -13,12 +13,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Employees = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isCleanupDialogOpen, setIsCleanupDialogOpen] = useState(false);
+  const [selectedForDeletion, setSelectedForDeletion] = useState<string[]>([]);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -85,6 +88,57 @@ const Employees = () => {
       });
     },
   });
+
+  const deleteEmployeesMutation = useMutation({
+    mutationFn: async (employeeIds: string[]) => {
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .in('id', employeeIds);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, employeeIds) => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({ 
+        title: "Colaboradores removidos!", 
+        description: `${employeeIds.length} colaborador(es) foram removidos com sucesso.`
+      });
+      setSelectedForDeletion([]);
+      setIsCleanupDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Erro ao remover colaboradores", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Detect duplicates and inactive employees
+  const problemEmployees = employees?.reduce((acc, emp) => {
+    // Find duplicates by CPF
+    const duplicates = employees.filter(e => e.cpf === emp.cpf);
+    if (duplicates.length > 1 && !acc.find(e => e.id === emp.id)) {
+      acc.push({
+        ...emp,
+        issue: 'duplicate',
+        issueDescription: `CPF duplicado (${duplicates.length} registros)`
+      });
+    }
+    
+    // Find inactive (no user account)
+    if (!emp.user_id && !acc.find(e => e.id === emp.id)) {
+      acc.push({
+        ...emp,
+        issue: 'inactive',
+        issueDescription: 'Sem conta de acesso'
+      });
+    }
+    
+    return acc;
+  }, [] as any[]) || [];
 
   const addEmployeeMutation = useMutation({
     mutationFn: async (employee: typeof newEmployee) => {
@@ -277,6 +331,85 @@ const Employees = () => {
               <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
             </label>
           </Button>
+          {problemEmployees.length > 0 && (
+            <Dialog open={isCleanupDialogOpen} onOpenChange={setIsCleanupDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10">
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Limpar Duplicados ({problemEmployees.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Colaboradores Duplicados ou Inativos</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Foram encontrados {problemEmployees.length} colaborador(es) com problemas. 
+                      Selecione os que deseja remover permanentemente.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="space-y-2">
+                    {problemEmployees.map((emp) => (
+                      <div key={emp.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                        <Checkbox
+                          checked={selectedForDeletion.includes(emp.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedForDeletion([...selectedForDeletion, emp.id]);
+                            } else {
+                              setSelectedForDeletion(selectedForDeletion.filter(id => id !== emp.id));
+                            }
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{emp.name}</span>
+                            <Badge variant={emp.issue === 'duplicate' ? 'destructive' : 'secondary'}>
+                              {emp.issue === 'duplicate' ? 'Duplicado' : 'Inativo'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            CPF: {emp.cpf} • {emp.issueDescription}
+                          </p>
+                          {emp.email && (
+                            <p className="text-sm text-muted-foreground">
+                              Email: {emp.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedForDeletion([]);
+                        setIsCleanupDialogOpen(false);
+                      }}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => deleteEmployeesMutation.mutate(selectedForDeletion)}
+                      disabled={selectedForDeletion.length === 0 || deleteEmployeesMutation.isPending}
+                      className="flex-1"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remover Selecionados ({selectedForDeletion.length})
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
