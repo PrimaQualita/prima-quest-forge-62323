@@ -523,40 +523,162 @@ const Employees = () => {
               Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
             </p>
           </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
-            <Button 
-              variant="secondary" 
-              onClick={processEmployeesWithoutUsers}
-              disabled={isProcessingUsers}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              {isProcessingUsers 
-                ? "Processando..." 
-                : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
-            </Button>
-          )}
-          <Button variant="outline" onClick={handleDownloadTemplate}>
-            <Upload className="w-4 h-4 mr-2" />
-            Baixar Template CSV
-          </Button>
-          <Button variant="outline" asChild>
-            <label className="cursor-pointer">
-              <Upload className="w-4 h-4 mr-2" />
-              Importar CSV
-              <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-            </label>
-          </Button>
-          
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Novo Colaborador
+          <div className="flex gap-2">
+            {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
+              <Button 
+                variant="secondary" 
+                onClick={processEmployeesWithoutUsers}
+                disabled={isProcessingUsers}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                {isProcessingUsers 
+                  ? "Processando..." 
+                  : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
               </Button>
-            </DialogTrigger>
-          </Dialog>
+            )}
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Upload className="w-4 h-4 mr-2" />
+              Baixar Template CSV
+            </Button>
+            <Button variant="outline" asChild>
+              <label className="cursor-pointer">
+                <Upload className="w-4 h-4 mr-2" />
+                Importar CSV
+                <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+              </label>
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Novo Colaborador
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
+                  <DialogDescription>
+                    Preencha os dados do colaborador. Um usuário será criado automaticamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome Completo *</Label>
+                    <Input
+                      id="name"
+                      value={newEmployee.name}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
+                      placeholder="Nome completo"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF *</Label>
+                    <Input
+                      id="cpf"
+                      value={newEmployee.cpf}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, cpf: e.target.value })}
+                      placeholder="000.000.000-00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birth-date">Data de Nascimento *</Label>
+                    <Input
+                      id="birth-date"
+                      type="date"
+                      value={newEmployee.birth_date}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, birth_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={newEmployee.phone}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, phone: e.target.value })}
+                      placeholder="(11) 99999-9999"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newEmployee.email}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                      placeholder="joao@primaqualita.com.br"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Departamento</Label>
+                    <Input
+                      id="department"
+                      value={newEmployee.department}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                      placeholder="Ex: Recursos Humanos"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="job-title">Cargo/Função</Label>
+                    <Input
+                      id="job-title"
+                      value={newEmployee.job_title}
+                      onChange={(e) => setNewEmployee({ ...newEmployee, job_title: e.target.value })}
+                      placeholder="Ex: Analista de Compliance"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contract">Contrato de Gestão (opcional)</Label>
+                    <Select
+                      value={newEmployee.management_contract_id}
+                      onValueChange={(value) => setNewEmployee({ ...newEmployee, management_contract_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nenhum contrato selecionado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contracts?.map((contract) => (
+                          <SelectItem key={contract.id} value={contract.id}>
+                            {contract.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="is-manager"
+                      checked={newEmployee.is_manager}
+                      onCheckedChange={(checked) => 
+                        setNewEmployee({ ...newEmployee, is_manager: checked as boolean })
+                      }
+                    />
+                    <Label htmlFor="is-manager" className="font-normal cursor-pointer">
+                      Este colaborador é um gestor
+                    </Label>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
+                      ℹ️ Credenciais de Acesso
+                    </p>
+                    <p className="text-xs text-blue-800 dark:text-blue-200">
+                      <strong>Login:</strong> CPF do colaborador<br />
+                      <strong>Senha:</strong> Data de nascimento (formato DDMMAAAA)
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => addEmployeeMutation.mutate(newEmployee)}
+                    className="w-full"
+                    disabled={addEmployeeMutation.isPending || !newEmployee.name || !newEmployee.cpf || !newEmployee.birth_date}
+                  >
+                    {addEmployeeMutation.isPending ? "Adicionando..." : "Adicionar Colaborador"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
       
@@ -572,222 +694,207 @@ const Employees = () => {
           {csvAnalysis && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-4">
-      
-      {/* CSV Analysis Dialog */}
-      <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Análise da Planilha</DialogTitle>
-                <DialogDescription>
-                  Verifique as informações antes de importar
-                </DialogDescription>
-              </DialogHeader>
-              {csvAnalysis && (
-                <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-2xl font-bold">{csvAnalysis.totalRows}</div>
-                        <p className="text-sm text-muted-foreground">Total de linhas</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-2xl font-bold">{csvAnalysis.uniqueCpfs}</div>
-                        <p className="text-sm text-muted-foreground">CPFs únicos</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-6">
-                        <div className="text-2xl font-bold text-destructive">{csvAnalysis.duplicates.length}</div>
-                        <p className="text-sm text-muted-foreground">CPFs duplicados</p>
-                      </CardContent>
-                    </Card>
-                  </div>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{csvAnalysis.totalRows}</div>
+                    <p className="text-sm text-muted-foreground">Total de linhas</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{csvAnalysis.uniqueCpfs}</div>
+                    <p className="text-sm text-muted-foreground">CPFs únicos</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-destructive">{csvAnalysis.duplicates.length}</div>
+                    <p className="text-sm text-muted-foreground">CPFs duplicados</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                  {csvAnalysis.duplicates.length > 0 && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>CPFs Duplicados Encontrados</AlertTitle>
-                      <AlertDescription>
-                        A planilha contém {csvAnalysis.duplicates.length} CPF(s) duplicado(s). 
-                        Apenas a primeira ocorrência de cada CPF será importada.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+              {csvAnalysis.duplicates.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>CPFs Duplicados Encontrados</AlertTitle>
+                  <AlertDescription>
+                    A planilha contém {csvAnalysis.duplicates.length} CPF(s) duplicado(s). 
+                    Apenas a primeira ocorrência de cada CPF será importada.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-                  {csvAnalysis.duplicates.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Detalhes dos CPFs Duplicados:</h4>
-                      <div className="max-h-60 overflow-y-auto space-y-2">
-                        {csvAnalysis.duplicates.slice(0, 20).map((dup: any, index: number) => (
-                          <div key={index} className="p-3 border rounded-lg bg-destructive/5">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-mono font-bold">CPF: {dup.cpf}</span>
-                              <Badge variant="destructive">{dup.count}x duplicado</Badge>
+              {csvAnalysis.duplicates.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Detalhes dos CPFs Duplicados:</h4>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {csvAnalysis.duplicates.slice(0, 20).map((dup: any, index: number) => (
+                      <div key={index} className="p-3 border rounded-lg bg-destructive/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-mono font-bold">CPF: {dup.cpf}</span>
+                          <Badge variant="destructive">{dup.count}x duplicado</Badge>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          {dup.names.map((name: string, i: number) => (
+                            <div key={i} className="text-muted-foreground">
+                              • Linha {dup.lines[i]}: {name}
                             </div>
-                            <div className="text-sm space-y-1">
-                              {dup.names.map((name: string, i: number) => (
-                                <div key={i} className="text-muted-foreground">
-                                  • Linha {dup.lines[i]}: {name}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        {csvAnalysis.duplicates.length > 20 && (
-                          <p className="text-sm text-muted-foreground text-center py-2">
-                            ... e mais {csvAnalysis.duplicates.length - 20} CPF(s) duplicado(s)
-                          </p>
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setIsAnalysisDialogOpen(false);
-                        setCsvAnalysis(null);
-                        setPendingCsvText("");
-                      }}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      onClick={handleConfirmImport}
-                      className="flex-1"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {csvAnalysis.duplicates.length > 0 
-                        ? `Importar ${csvAnalysis.uniqueCpfs} CPFs Únicos` 
-                        : 'Confirmar Importação'}
-                    </Button>
+                    ))}
+                    {csvAnalysis.duplicates.length > 20 && (
+                      <p className="text-sm text-muted-foreground text-center py-2">
+                        ... e mais {csvAnalysis.duplicates.length - 20} CPF(s) duplicado(s)
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
-            </DialogContent>
-          </Dialog>
 
-          {/* Edit Employee Dialog */}
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Editar Colaborador</DialogTitle>
-                <DialogDescription>
-                  Atualize as informações do colaborador. CPF, data de nascimento e credenciais de acesso não podem ser alterados.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name">Nome Completo *</Label>
-                  <Input
-                    id="edit-name"
-                    value={editingEmployee?.name || ""}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
-                    placeholder="Nome completo"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-cpf">CPF *</Label>
-                  <Input
-                    id="edit-cpf"
-                    value={editingEmployee?.cpf || ""}
-                    disabled
-                    className="bg-muted cursor-not-allowed"
-                  />
-                  <p className="text-xs text-muted-foreground">CPF não pode ser alterado</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-birth-date">Data de Nascimento *</Label>
-                  <Input
-                    id="edit-birth-date"
-                    type="date"
-                    value={editingEmployee?.birth_date || ""}
-                    disabled
-                    className="bg-muted cursor-not-allowed"
-                  />
-                  <p className="text-xs text-muted-foreground">Data de nascimento não pode ser alterada</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-phone">Telefone</Label>
-                  <Input
-                    id="edit-phone"
-                    value={editingEmployee?.phone || ""}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-email">E-mail</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={editingEmployee?.email || ""}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
-                    placeholder="joao@primaqualita.com.br"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-department">Departamento</Label>
-                  <Input
-                    id="edit-department"
-                    value={editingEmployee?.department || ""}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
-                    placeholder="Ex: Recursos Humanos"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-job-title">Cargo/Função</Label>
-                  <Input
-                    id="edit-job-title"
-                    value={editingEmployee?.job_title || ""}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, job_title: e.target.value })}
-                    placeholder="Ex: Analista de Compliance"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-contract">Contrato de Gestão (opcional)</Label>
-                  <Select
-                    value={editingEmployee?.management_contract_id || undefined}
-                    onValueChange={(value) => setEditingEmployee({ ...editingEmployee, management_contract_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nenhum contrato selecionado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {contracts?.map((contract) => (
-                        <SelectItem key={contract.id} value={contract.id}>
-                          {contract.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
-                    ℹ️ Informações de Acesso
-                  </p>
-                  <p className="text-xs text-blue-800 dark:text-blue-200">
-                    Para alterar o status de gestor, use o switch na tabela de colaboradores.
-                    Usuário e senha não podem ser alterados por segurança.
-                  </p>
-                </div>
+              <div className="flex gap-2 pt-4">
                 <Button
-                  onClick={() => editEmployeeMutation.mutate(editingEmployee)}
-                  className="w-full"
-                  disabled={editEmployeeMutation.isPending || !editingEmployee?.name}
+                  variant="outline"
+                  onClick={() => {
+                    setIsAnalysisDialogOpen(false);
+                    setCsvAnalysis(null);
+                    setPendingCsvText("");
+                  }}
+                  className="flex-1"
                 >
-                  {editEmployeeMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmImport}
+                  className="flex-1"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  {csvAnalysis.duplicates.length > 0 
+                    ? `Importar ${csvAnalysis.uniqueCpfs} CPFs Únicos` 
+                    : 'Confirmar Importação'}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Employee Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Colaborador</DialogTitle>
+            <DialogDescription>
+              Atualize as informações do colaborador. CPF, data de nascimento e credenciais de acesso não podem ser alterados.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome Completo *</Label>
+              <Input
+                id="edit-name"
+                value={editingEmployee?.name || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                placeholder="Nome completo"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cpf">CPF *</Label>
+              <Input
+                id="edit-cpf"
+                value={editingEmployee?.cpf || ""}
+                disabled
+                className="bg-muted cursor-not-allowed"
+              />
+              <p className="text-xs text-muted-foreground">CPF não pode ser alterado</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-birth-date">Data de Nascimento *</Label>
+              <Input
+                id="edit-birth-date"
+                type="date"
+                value={editingEmployee?.birth_date || ""}
+                disabled
+                className="bg-muted cursor-not-allowed"
+              />
+              <p className="text-xs text-muted-foreground">Data de nascimento não pode ser alterada</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Telefone</Label>
+              <Input
+                id="edit-phone"
+                value={editingEmployee?.phone || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, phone: e.target.value })}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editingEmployee?.email || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                placeholder="joao@primaqualita.com.br"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-department">Departamento</Label>
+              <Input
+                id="edit-department"
+                value={editingEmployee?.department || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, department: e.target.value })}
+                placeholder="Ex: Recursos Humanos"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-job-title">Cargo/Função</Label>
+              <Input
+                id="edit-job-title"
+                value={editingEmployee?.job_title || ""}
+                onChange={(e) => setEditingEmployee({ ...editingEmployee, job_title: e.target.value })}
+                placeholder="Ex: Analista de Compliance"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-contract">Contrato de Gestão (opcional)</Label>
+              <Select
+                value={editingEmployee?.management_contract_id || undefined}
+                onValueChange={(value) => setEditingEmployee({ ...editingEmployee, management_contract_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhum contrato selecionado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {contracts?.map((contract) => (
+                    <SelectItem key={contract.id} value={contract.id}>
+                      {contract.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium mb-2">
+                ℹ️ Informações de Acesso
+              </p>
+              <p className="text-xs text-blue-800 dark:text-blue-200">
+                Para alterar o status de gestor, use o switch na tabela de colaboradores.
+                Usuário e senha não podem ser alterados por segurança.
+              </p>
+            </div>
+            <Button
+              onClick={() => editEmployeeMutation.mutate(editingEmployee)}
+              className="w-full"
+              disabled={editEmployeeMutation.isPending || !editingEmployee?.name}
+            >
+              {editEmployeeMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
         <Alert className="border-orange-500/50 bg-orange-500/10">
