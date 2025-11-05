@@ -31,6 +31,9 @@ const Employees = () => {
   const [pageSize] = useState(50);
   const [isProcessingUsers, setIsProcessingUsers] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [isValidatingCPFs, setIsValidatingCPFs] = useState(false);
+  const [validationResults, setValidationResults] = useState<any>(null);
+  const [isValidationDialogOpen, setIsValidationDialogOpen] = useState(false);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -273,6 +276,36 @@ const Employees = () => {
         throw new Error('Este CPF já está cadastrado no sistema');
       }
 
+      // Validar CPF junto à Receita Federal
+      toast({
+        title: "Validando CPF...",
+        description: "Verificando CPF junto à Receita Federal"
+      });
+
+      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
+        body: { 
+          cpfs: [{ 
+            cpf: cpfNumbers, 
+            birthDate: employee.birth_date,
+            name: employee.name 
+          }] 
+        }
+      });
+
+      if (validationError) {
+        console.error('Erro na validação:', validationError);
+        throw new Error('Erro ao validar CPF. Tente novamente.');
+      }
+
+      const validation = validationData.results[0];
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'CPF inválido ou dados inconsistentes');
+      }
+
+      if (validation.birthDateMatches === false) {
+        throw new Error('Data de nascimento não confere com o CPF informado');
+      }
+
       // Normalize email to lowercase
       const normalizedEmployee = {
         ...employee,
@@ -368,6 +401,92 @@ const Employees = () => {
     reader.readAsText(file);
   };
 
+  const validateAllExistingEmployees = async () => {
+    setIsValidatingCPFs(true);
+    
+    try {
+      // Buscar todos os colaboradores
+      const { data: allEmployees, error } = await supabase
+        .from('employees')
+        .select('id, cpf, birth_date, name')
+        .not('cpf', 'is', null)
+        .not('birth_date', 'is', null);
+
+      if (error) throw error;
+
+      if (!allEmployees || allEmployees.length === 0) {
+        toast({
+          title: "Nenhum colaborador para validar",
+          description: "Não há colaboradores cadastrados no sistema."
+        });
+        setIsValidatingCPFs(false);
+        return;
+      }
+
+      toast({
+        title: "Validação iniciada",
+        description: `Validando ${allEmployees.length} colaborador(es). Isso pode levar alguns minutos...`
+      });
+
+      // Validar em lotes de 10 para não sobrecarregar a API
+      const batchSize = 10;
+      const allResults = [];
+
+      for (let i = 0; i < allEmployees.length; i += batchSize) {
+        const batch = allEmployees.slice(i, i + batchSize);
+        
+        const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
+          body: { 
+            cpfs: batch.map(emp => ({
+              cpf: emp.cpf,
+              birthDate: emp.birth_date,
+              name: emp.name
+            }))
+          }
+        });
+
+        if (validationError) {
+          console.error('Erro na validação do lote:', validationError);
+          continue;
+        }
+
+        // Adicionar ID do colaborador aos resultados
+        validationData.results.forEach((result: any, index: number) => {
+          allResults.push({
+            ...result,
+            employeeId: batch[index].id,
+            employeeName: batch[index].name
+          });
+        });
+
+        // Aguardar um pouco entre lotes
+        if (i + batchSize < allEmployees.length) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      setValidationResults(allResults);
+      setIsValidationDialogOpen(true);
+
+      const invalidCount = allResults.filter((r: any) => !r.isValid).length;
+      toast({
+        title: "Validação concluída!",
+        description: `${allResults.length - invalidCount} CPFs válidos, ${invalidCount} com problemas.`,
+        variant: invalidCount > 0 ? "destructive" : "default"
+      });
+
+    } catch (error: any) {
+      console.error('Erro na validação:', error);
+      toast({
+        title: "Erro ao validar CPFs",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsValidatingCPFs(false);
+    }
+  };
+
   const handleConfirmImport = async () => {
     try {
       const text = pendingCsvText;
@@ -428,11 +547,56 @@ const Employees = () => {
         throw new Error('Nenhum registro válido encontrado na planilha');
       }
 
+      // Validar CPFs junto à Receita Federal antes de importar
+      toast({
+        title: "Validando CPFs...",
+        description: `Verificando ${employeesData.length} CPF(s) junto à Receita Federal. Isso pode levar alguns minutos...`
+      });
+
+      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
+        body: { 
+          cpfs: employeesData.map(emp => ({
+            cpf: emp.cpf,
+            birthDate: emp.birth_date,
+            name: emp.name
+          }))
+        }
+      });
+
+      if (validationError) {
+        console.error('Erro na validação:', validationError);
+        throw new Error('Erro ao validar CPFs. Tente novamente.');
+      }
+
+      // Filtrar apenas colaboradores com CPF válido
+      const validCpfs = new Set(
+        validationData.results
+          .filter((r: any) => r.isValid)
+          .map((r: any) => r.cpf)
+      );
+
+      const invalidResults = validationData.results.filter((r: any) => !r.isValid);
+      
+      if (invalidResults.length > 0) {
+        console.warn(`${invalidResults.length} CPF(s) inválido(s) encontrado(s):`, invalidResults);
+        toast({
+          title: "CPFs Inválidos Detectados",
+          description: `${invalidResults.length} CPF(s) com problemas foram ignorados. ${validCpfs.size} serão importados.`,
+          variant: "destructive"
+        });
+      }
+
+      const validEmployeesData = employeesData.filter(emp => validCpfs.has(emp.cpf));
+
+      if (validEmployeesData.length === 0) {
+        throw new Error('Nenhum colaborador com CPF válido para importar');
+      }
+
       // Get existing employees to preserve their is_manager status
       const { data: existingEmployees } = await supabase
         .from('employees')
         .select('cpf, is_manager, user_id')
-        .in('cpf', employeesData.map(e => e.cpf));
+        .in('cpf', validEmployeesData.map(e => e.cpf));
 
       // Create a map of existing employees to preserve is_manager
       const existingMap = new Map(
@@ -440,7 +604,7 @@ const Employees = () => {
       );
 
       // Add is_manager and user_id to data, preserving existing values
-      const employeesWithPermissions = employeesData.map(emp => ({
+      const employeesWithPermissions = validEmployeesData.map(emp => ({
         ...emp,
         is_manager: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.is_manager : false,
         user_id: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.user_id : null
@@ -489,12 +653,12 @@ const Employees = () => {
       if (userCreationErrors === 0) {
         toast({ 
           title: "Importação concluída com sucesso!", 
-          description: `${employeesData.length} colaborador(es) importado(s). ${usersCreated} novos usuários criados. Login: CPF | Senha: DD/MM/AAAA`
+          description: `${validEmployeesData.length} colaborador(es) importado(s) com CPF válido. ${usersCreated} novos usuários criados. Login: CPF | Senha: DDMMAAAA`
         });
       } else {
         toast({ 
           title: "Importação parcialmente concluída", 
-          description: `${employeesData.length} colaborador(es) importado(s). ${usersCreated} usuários criados, ${userCreationErrors} erro(s).`,
+          description: `${validEmployeesData.length} colaborador(es) importado(s). ${usersCreated} usuários criados, ${userCreationErrors} erro(s).`,
           variant: "destructive"
         });
       }
@@ -536,6 +700,14 @@ const Employees = () => {
                   : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
               </Button>
             )}
+            <Button 
+              variant="outline" 
+              onClick={validateAllExistingEmployees}
+              disabled={isValidatingCPFs}
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              {isValidatingCPFs ? "Validando..." : "Validar CPFs"}
+            </Button>
             <Button variant="outline" onClick={handleDownloadTemplate}>
               <Upload className="w-4 h-4 mr-2" />
               Baixar Template CSV
@@ -893,6 +1065,112 @@ const Employees = () => {
               {editEmployeeMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Validation Results Dialog */}
+      <Dialog open={isValidationDialogOpen} onOpenChange={setIsValidationDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Resultados da Validação de CPFs</DialogTitle>
+            <DialogDescription>
+              Resultado da verificação junto à Receita Federal
+            </DialogDescription>
+          </DialogHeader>
+          {validationResults && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-green-600">
+                      {validationResults.filter((r: any) => r.isValid).length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">CPFs Válidos</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold text-destructive">
+                      {validationResults.filter((r: any) => !r.isValid).length}
+                    </div>
+                    <p className="text-sm text-muted-foreground">CPFs Inválidos</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-2xl font-bold">{validationResults.length}</div>
+                    <p className="text-sm text-muted-foreground">Total Validado</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {validationResults.filter((r: any) => !r.isValid).length > 0 && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>CPFs com Problemas Encontrados</AlertTitle>
+                  <AlertDescription>
+                    Alguns colaboradores possuem CPFs inválidos ou com dados inconsistentes.
+                    Revise os dados abaixo.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <h4 className="font-semibold">Detalhes da Validação:</h4>
+                <div className="max-h-96 overflow-y-auto space-y-2">
+                  {validationResults
+                    .filter((r: any) => !r.isValid)
+                    .map((result: any, index: number) => (
+                      <div key={index} className="p-3 border rounded-lg bg-destructive/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <span className="font-semibold">{result.employeeName}</span>
+                            <span className="font-mono text-sm ml-2">{result.cpf}</span>
+                          </div>
+                          <Badge variant="destructive">Inválido</Badge>
+                        </div>
+                        <div className="text-sm space-y-1">
+                          {result.error && (
+                            <div className="text-destructive">
+                              ❌ {result.error}
+                            </div>
+                          )}
+                          {!result.cpfFormatValid && (
+                            <div className="text-muted-foreground">
+                              • Formato ou dígitos verificadores inválidos
+                            </div>
+                          )}
+                          {result.birthDateMatches === false && (
+                            <div className="text-muted-foreground">
+                              • Data de nascimento não confere com CPF
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  {validationResults.filter((r: any) => r.isValid).length > 0 && (
+                    <div className="p-3 border rounded-lg bg-green-50 dark:bg-green-950/20">
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-green-600">✓</Badge>
+                        <span className="text-sm font-medium">
+                          {validationResults.filter((r: any) => r.isValid).length} colaborador(es) 
+                          com CPF válido e verificado
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => setIsValidationDialogOpen(false)}
+                className="w-full"
+              >
+                Fechar
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
