@@ -705,46 +705,46 @@ const Employees = () => {
   return (
     <div className="space-y-6 pt-6">
       <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
-              <Button 
-                variant="secondary" 
-                onClick={processEmployeesWithoutUsers}
-                disabled={isProcessingUsers}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                {isProcessingUsers 
-                  ? "Processando..." 
-                  : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
-              </Button>
-            )}
+        <div>
+          <h1 className="text-4xl font-bold text-foreground uppercase">GESTÃO DE COLABORADORES</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie os colaboradores e suas informações • {totalEmployees.toLocaleString()} total
+          </p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {employeesWithoutUsers && employeesWithoutUsers.length > 0 && (
             <Button 
-              variant="outline" 
-              onClick={validateAllExistingEmployees}
-              disabled={isValidatingCPFs}
+              variant="secondary" 
+              onClick={processEmployeesWithoutUsers}
+              disabled={isProcessingUsers}
             >
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              {isValidatingCPFs ? "Validando..." : "Validar CPFs"}
+              <Users className="w-4 h-4 mr-2" />
+              {isProcessingUsers 
+                ? "Processando..." 
+                : `Criar ${employeesWithoutUsers.length} Usuário(s)`}
             </Button>
-            <Button variant="outline" onClick={handleDownloadTemplate}>
+          )}
+          <Button 
+            variant="outline" 
+            onClick={validateAllExistingEmployees}
+            disabled={isValidatingCPFs}
+          >
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            {isValidatingCPFs ? "Validando..." : "Validar CPFs"}
+          </Button>
+          <Button variant="outline" onClick={handleDownloadTemplate}>
+            <Upload className="w-4 h-4 mr-2" />
+            Baixar Template CSV
+          </Button>
+          <Button variant="outline" asChild>
+            <label className="cursor-pointer">
               <Upload className="w-4 h-4 mr-2" />
-              Baixar Template CSV
-            </Button>
-            <Button variant="outline" asChild>
-              <label className="cursor-pointer">
-                <Upload className="w-4 h-4 mr-2" />
-                Importar CSV
-                <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
-              </label>
-            </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              Importar CSV
+              <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+            </label>
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -875,7 +875,6 @@ const Employees = () => {
                 </div>
               </DialogContent>
             </Dialog>
-          </div>
         </div>
       </div>
       
