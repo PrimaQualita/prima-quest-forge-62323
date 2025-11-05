@@ -8,7 +8,7 @@ interface ComplianceChartsProps {
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-const NOT_COMPLETED_COLORS = ['#93c5fd', '#86efac', '#fde68a', '#fca5a5', '#c7d2fe'];
+const NOT_COMPLETED_COLORS = ['#e0f2fe', '#dcfce7', '#fef9c3', '#ffe4e6', '#ede9fe'];
 
 export const ComplianceCharts = ({ 
   documentAcceptance = [], 
@@ -82,15 +82,15 @@ export const ComplianceCharts = ({
           <CardTitle>Taxa de Aceite de Regulamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={450}>
             <PieChart>
               <Pie
                 data={documentData}
                 cx="50%"
-                cy="50%"
+                cy="45%"
                 labelLine={false}
                 label={renderCustomLabel}
-                outerRadius={80}
+                outerRadius={110}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -115,15 +115,15 @@ export const ComplianceCharts = ({
           <CardTitle>Taxa de Conclusão de Treinamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={350}>
+          <ResponsiveContainer width="100%" height={450}>
             <PieChart>
               <Pie
                 data={trainingData}
                 cx="50%"
-                cy="50%"
+                cy="45%"
                 labelLine={false}
                 label={renderCustomLabel}
-                outerRadius={80}
+                outerRadius={110}
                 fill="#82ca9d"
                 dataKey="value"
               >
