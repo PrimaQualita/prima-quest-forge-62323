@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Upload, Loader2, ArrowLeft, RotateCcw } from "lucide-react";
+import { Upload, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -39,7 +38,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
   
   const [profile, setProfile] = useState({
     full_name: "",
@@ -335,49 +333,6 @@ const Profile = () => {
     }
   };
 
-  const handleResetPasswordToBirthDate = async () => {
-    try {
-      setResettingPassword(true);
-
-      if (!profile.cpf) {
-        toast({
-          title: "Erro",
-          description: "CPF não encontrado no perfil",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('reset-user-password', {
-        body: { cpf: profile.cpf }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        toast({
-          title: "Sucesso",
-          description: "Senha resetada para a data de nascimento (formato DDMMAAAA). Você será deslogado.",
-        });
-
-        // Deslogar usuário após 2 segundos
-        setTimeout(async () => {
-          await supabase.auth.signOut();
-          navigate('/auth');
-        }, 2000);
-      }
-    } catch (error: any) {
-      console.error('Erro ao resetar senha:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível resetar a senha",
-        variant: "destructive",
-      });
-    } finally {
-      setResettingPassword(false);
-    }
-  };
-
   const getInitials = (name: string) => {
     if (!name) return "U";
     const parts = name.split(' ');
@@ -601,26 +556,6 @@ const Profile = () => {
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Alterar Senha
               </Button>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-medium mb-1">Resetar Senha</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Sua senha será resetada para sua data de nascimento no formato DDMMAAAA
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleResetPasswordToBirthDate} 
-                  disabled={resettingPassword}
-                  variant="secondary"
-                >
-                  {resettingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {!resettingPassword && <RotateCcw className="mr-2 h-4 w-4" />}
-                  Resetar Senha para Data de Nascimento
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

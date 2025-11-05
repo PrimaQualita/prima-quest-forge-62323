@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users, Pencil } from "lucide-react";
+import { Upload, UserPlus, Search, Trash2, AlertTriangle, FileText, Users, Pencil, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -38,6 +38,7 @@ const Employees = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isCleaningOrphans, setIsCleaningOrphans] = useState(false);
+  const [resettingPasswordFor, setResettingPasswordFor] = useState<string | null>(null);
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -392,6 +393,33 @@ const Employees = () => {
       });
     } finally {
       setIsCleaningOrphans(false);
+    }
+  };
+
+  const handleResetPassword = async (cpf: string, employeeName: string) => {
+    setResettingPasswordFor(cpf);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { cpf }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Senha resetada com sucesso!",
+          description: `A senha de ${employeeName} foi resetada para a data de nascimento (formato DDMMAAAA).`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao resetar senha:', error);
+      toast({
+        title: "Erro ao resetar senha",
+        description: error.message || "Não foi possível resetar a senha",
+        variant: "destructive",
+      });
+    } finally {
+      setResettingPasswordFor(null);
     }
   };
 
@@ -1369,6 +1397,15 @@ const Employees = () => {
                             }}
                           >
                             <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleResetPassword(employee.cpf, employee.name)}
+                            disabled={resettingPasswordFor === employee.cpf}
+                            title="Resetar senha para data de nascimento"
+                          >
+                            <RotateCcw className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="destructive"
