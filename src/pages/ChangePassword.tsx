@@ -48,10 +48,14 @@ const ChangePassword = () => {
       // Atualizar first_login para false
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("profiles")
           .update({ first_login: false })
           .eq("id", user.id);
+
+        if (updateError) {
+          console.error("Erro ao atualizar perfil:", updateError);
+        }
       }
 
       toast({
@@ -59,7 +63,10 @@ const ChangePassword = () => {
         description: "Sua senha foi alterada com sucesso!",
       });
 
-      navigate("/");
+      // Aguardar um pouco para garantir que o banco foi atualizado
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     } catch (error: any) {
       toast({
         title: "Erro ao alterar senha",
