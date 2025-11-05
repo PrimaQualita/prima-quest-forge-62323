@@ -87,6 +87,23 @@ const Documents = () => {
     },
   });
 
+  const { data: acknowledgments } = useQuery({
+    queryKey: ['acknowledgments', currentEmployee?.id],
+    queryFn: async () => {
+      if (!currentEmployee) return [];
+      
+      const { data, error } = await supabase
+        .from('document_acknowledgments')
+        .select('*')
+        .eq('employee_id', currentEmployee.id)
+        .eq('quiz_correct', true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentEmployee,
+  });
+
   const updateDocumentMutation = useMutation({
     mutationFn: async () => {
       if (!editingDoc) return;
@@ -488,68 +505,81 @@ const Documents = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {documents?.map((doc) => (
-          <Card key={doc.id} className="hover:shadow-elevated transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <FileText className="w-8 h-8 text-primary" />
-                <div className="flex items-center gap-2">
+        {documents?.map((doc) => {
+          const isAccepted = acknowledgments?.some(ack => ack.document_id === doc.id);
+          
+          return (
+            <Card key={doc.id} className="hover:shadow-elevated transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <FileText className="w-8 h-8 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditDoc(doc)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="secondary">{doc.category}</Badge>
+                  </div>
+                </div>
+                <CardTitle className="mt-4">{doc.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="text-sm text-muted-foreground mb-4" 
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
+                />
+                {doc.file_path && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleEditDoc(doc)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Badge variant="secondary">{doc.category}</Badge>
-                </div>
-              </div>
-              <CardTitle className="mt-4">{doc.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div 
-                className="text-sm text-muted-foreground mb-4" 
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.description || "") }}
-              />
-              {doc.file_path && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mb-2 w-full"
-                  onClick={async () => {
-                    const { data } = supabase.storage
-                      .from('compliance-documents')
-                      .getPublicUrl(doc.file_path);
-                    window.open(data.publicUrl, '_blank');
-                  }}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Baixar Arquivo
-                </Button>
-              )}
-              <Dialog open={selectedDoc?.id === doc.id} onOpenChange={(open) => {
-                if (!open) {
-                  setSelectedDoc(null);
-                  setQuizAnswer("");
-                  setQuizResult(null);
-                  setCurrentQuiz(null);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => {
-                      setSelectedDoc(doc);
-                      setCurrentQuiz(null);
-                      setQuizResult(null);
-                      setQuizAnswer("");
+                    className="mb-2 w-full"
+                    onClick={async () => {
+                      const { data } = supabase.storage
+                        .from('compliance-documents')
+                        .getPublicUrl(doc.file_path);
+                      window.open(data.publicUrl, '_blank');
                     }}
                   >
-                    Ler e Aceitar
+                    <FileText className="w-4 h-4 mr-2" />
+                    Baixar Arquivo
                   </Button>
-                </DialogTrigger>
+                )}
+                {isAccepted ? (
+                  <Button 
+                    variant="default" 
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    disabled
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Documento Aceito
+                  </Button>
+                ) : (
+                  <Dialog open={selectedDoc?.id === doc.id} onOpenChange={(open) => {
+                    if (!open) {
+                      setSelectedDoc(null);
+                      setQuizAnswer("");
+                      setQuizResult(null);
+                      setCurrentQuiz(null);
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => {
+                          setSelectedDoc(doc);
+                          setCurrentQuiz(null);
+                          setQuizResult(null);
+                          setQuizAnswer("");
+                        }}
+                      >
+                        Ler e Aceitar
+                      </Button>
+                    </DialogTrigger>
                 <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{doc.title}</DialogTitle>
@@ -667,9 +697,11 @@ const Documents = () => {
                   </div>
                 </DialogContent>
               </Dialog>
+                )}
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
