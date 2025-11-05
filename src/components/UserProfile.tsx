@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Upload, User as UserIcon } from "lucide-react";
+import { Upload, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 export const UserProfile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -98,7 +100,10 @@ export const UserProfile = () => {
   };
 
   return (
-    <div className="flex items-center gap-3 p-4 border-t border-sidebar-border">
+    <button 
+      onClick={() => navigate('/profile')}
+      className="flex items-center gap-3 p-4 border-t border-sidebar-border hover:bg-sidebar-accent/50 transition-colors w-full text-left"
+    >
       <div className="relative">
         <Avatar className="h-10 w-10">
           <AvatarImage src={profile?.avatar_url || undefined} />
@@ -106,28 +111,15 @@ export const UserProfile = () => {
             {getInitials(profile?.full_name)}
           </AvatarFallback>
         </Avatar>
-        <label htmlFor="avatar-upload" className="absolute -bottom-1 -right-1 cursor-pointer">
-          <div className="bg-primary text-primary-foreground rounded-full p-1 hover:bg-primary/90 transition-colors">
-            <Upload className="h-3 w-3" />
-          </div>
-          <input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={uploadAvatar}
-            disabled={uploading}
-          />
-        </label>
+        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1">
+          <Settings className="h-3 w-3" />
+        </div>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-sidebar-foreground truncate">
-          {profile?.full_name || user?.email || "Usuário"}
-        </p>
-        <p className="text-xs text-sidebar-foreground/60 truncate">
-          {user?.email}
+          {profile?.full_name || "Usuário"}
         </p>
       </div>
-    </div>
+    </button>
   );
 };

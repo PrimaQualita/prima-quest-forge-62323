@@ -19,6 +19,7 @@ import ManagementContracts from "./pages/ManagementContracts";
 import SupplierDueDiligence from "./pages/SupplierDueDiligence";
 import SupplierForm from "./pages/SupplierForm";
 import SupplierPortal from "./pages/SupplierPortal";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
           
           {/* Rotas acessíveis a todos os usuários autenticados */}
           <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
           <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
