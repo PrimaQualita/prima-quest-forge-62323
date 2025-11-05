@@ -19,6 +19,10 @@ export const ComplianceCharts = ({
   // Adicionar "Não Realizados" para cada documento/regulamento
   const documentData = documentAcceptance.slice(0, 5).map((doc, index) => {
     const notAccepted = totalEmployees - doc.accepted;
+    const notAcceptedPercentage = totalEmployees > 0 
+      ? Math.round((notAccepted / totalEmployees) * 10000) / 100 
+      : 0;
+    
     return [
       {
         name: `${doc.title} - Realizados`,
@@ -29,7 +33,7 @@ export const ComplianceCharts = ({
       {
         name: `${doc.title} - Não Realizados`,
         value: notAccepted,
-        percentage: Math.round((notAccepted / totalEmployees) * 100),
+        percentage: notAcceptedPercentage,
         fill: NOT_COMPLETED_COLORS[index % NOT_COMPLETED_COLORS.length]
       }
     ];
@@ -38,6 +42,10 @@ export const ComplianceCharts = ({
   // Adicionar "Não Realizados" para cada treinamento
   const trainingData = trainingCompletion.slice(0, 5).map((training, index) => {
     const notCompleted = totalEmployees - training.completed;
+    const notCompletedPercentage = totalEmployees > 0 
+      ? Math.round((notCompleted / totalEmployees) * 10000) / 100 
+      : 0;
+    
     return [
       {
         name: `${training.title} - Realizados`,
@@ -48,14 +56,19 @@ export const ComplianceCharts = ({
       {
         name: `${training.title} - Não Realizados`,
         value: notCompleted,
-        percentage: Math.round((notCompleted / totalEmployees) * 100),
+        percentage: notCompletedPercentage,
         fill: NOT_COMPLETED_COLORS[index % NOT_COMPLETED_COLORS.length]
       }
     ];
   }).flat();
 
   const renderCustomLabel = (entry: any) => {
-    return entry.value > 0 ? `${entry.percentage}%` : '';
+    // Sempre mostrar label se houver valor, formatando com vírgula para português
+    if (entry.value > 0) {
+      const percentFormatted = entry.percentage.toFixed(2).replace('.', ',');
+      return `${percentFormatted}%`;
+    }
+    return '';
   };
 
   const renderLegend = (props: any) => {
@@ -123,10 +136,13 @@ export const ComplianceCharts = ({
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: any, name: any, props: any) => [
-                  `${value} colaboradores (${props.payload.percentage}%)`,
-                  props.payload.name
-                ]}
+                formatter={(value: any, name: any, props: any) => {
+                  const percentFormatted = props.payload.percentage.toFixed(2).replace('.', ',');
+                  return [
+                    `${value} colaboradores (${percentFormatted}%)`,
+                    props.payload.name
+                  ];
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -156,10 +172,13 @@ export const ComplianceCharts = ({
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: any, name: any, props: any) => [
-                  `${value} colaboradores (${props.payload.percentage}%)`,
-                  props.payload.name
-                ]}
+                formatter={(value: any, name: any, props: any) => {
+                  const percentFormatted = props.payload.percentage.toFixed(2).replace('.', ',');
+                  return [
+                    `${value} colaboradores (${percentFormatted}%)`,
+                    props.payload.name
+                  ];
+                }}
               />
             </PieChart>
           </ResponsiveContainer>

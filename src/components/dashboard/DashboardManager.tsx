@@ -61,9 +61,11 @@ const DashboardManager = () => {
             .eq('document_id', doc.id)
             .eq('quiz_correct', true);
           
-          const accepted = count || 0;
+           const accepted = count || 0;
           const pending = totalEmployees - accepted;
-          const percentage = totalEmployees > 0 ? Math.round((accepted / totalEmployees) * 100) : 0;
+          const percentage = totalEmployees > 0 
+            ? Math.round((accepted / totalEmployees) * 10000) / 100  // Duas casas decimais
+            : 0;
           
           return { ...doc, accepted, pending, percentage };
         })
@@ -107,9 +109,11 @@ const DashboardManager = () => {
             .eq('training_id', training.id)
             .eq('completed', true);
           
-          const completed = count || 0;
+           const completed = count || 0;
           const pending = totalEmployees - completed;
-          const percentage = totalEmployees > 0 ? Math.round((completed / totalEmployees) * 100) : 0;
+          const percentage = totalEmployees > 0 
+            ? Math.round((completed / totalEmployees) * 10000) / 100  // Duas casas decimais
+            : 0;
           
           return { ...training, completed, pending, percentage };
         })
