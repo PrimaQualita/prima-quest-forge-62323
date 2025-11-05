@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Trash2, MoveUp, MoveDown, Video, FileText, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 interface VideoData {
   id?: string;
@@ -381,11 +381,10 @@ const TrainingEdit = () => {
 
             <div className="space-y-2">
               <Label htmlFor="description">Descrição *</Label>
-              <Textarea 
-                id="description"
-                rows={4}
+              <RichTextEditor
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, description: value })}
+                placeholder="Descreva o treinamento..."
               />
             </div>
           </div>
@@ -509,11 +508,11 @@ const TrainingEdit = () => {
 
                   <div className="space-y-2">
                     <Label>Descrição</Label>
-                    <Textarea 
-                      placeholder="Descrição do vídeo..." 
-                      rows={2}
+                    <RichTextEditor
                       value={video.description}
-                      onChange={(e) => updateVideo(index, 'description', e.target.value)}
+                      onChange={(value) => updateVideo(index, 'description', value)}
+                      placeholder="Descrição do vídeo..."
+                      className="min-h-[80px]"
                     />
                   </div>
 
