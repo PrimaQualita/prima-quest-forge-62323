@@ -101,8 +101,8 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
           ref={videoRef}
           src={url}
           className="w-full aspect-video"
-          controlsList="nodownload nofullscreen noremoteplayback"
-          disablePictureInPicture
+          controls
+          controlsList="nodownload"
           playsInline
           onPlay={() => setIsPlaying(true)}
           onPause={() => setIsPlaying(false)}
