@@ -126,7 +126,7 @@ export const generateTrainingCertificate = async ({
   doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
 
   // Assinatura - com espaçamento aumentado
-  const signatureY = yPositionScore + 26;
+  const signatureY = yPositionScore + 32;
   
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
