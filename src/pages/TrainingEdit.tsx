@@ -656,9 +656,11 @@ const TrainingEdit = () => {
                 onChange={(value) => setFormData({ ...formData, documentContent: value })}
               />
               {formData.documentContent && formData.documentContent.length > 0 && (
-                <div className="text-sm text-success">
-                  ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length} palavras • 
-                  {formData.documentContent.length} caracteres
+                <div className={`text-sm ${formData.documentContent.length > 50000 ? 'text-destructive' : formData.documentContent.length > 40000 ? 'text-warning' : 'text-success'}`}>
+                  {formData.documentContent.length > 50000 ? '⚠️' : '✓'} {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
+                  {formData.documentContent.length.toLocaleString()} caracteres
+                  {formData.documentContent.length > 50000 && ' (muito grande! reduza para no máximo 50.000)'}
+                  {formData.documentContent.length > 40000 && formData.documentContent.length <= 50000 && ' (perto do limite máximo de 50.000)'}
                 </div>
               )}
             </div>
@@ -676,12 +678,23 @@ const TrainingEdit = () => {
                   });
                   return;
                 }
+
+                // Limitar tamanho do conteúdo para evitar timeout
+                const maxChars = 50000; // ~10.000 palavras
+                if (formData.documentContent.length > maxChars) {
+                  toast({
+                    title: "Conteúdo muito grande",
+                    description: `O texto tem ${formData.documentContent.length.toLocaleString()} caracteres. Por favor, reduza para no máximo ${maxChars.toLocaleString()} caracteres (aproximadamente as primeiras 20-25 páginas do documento).`,
+                    variant: "destructive"
+                  });
+                  return;
+                }
                 
                 setIsGeneratingQuestions(true);
                 
                 toast({
                   title: "Gerando questões...",
-                  description: "Isso pode levar alguns minutos. Aguarde."
+                  description: "Isso pode levar 1-2 minutos. Aguarde."
                 });
                 
                 try {
@@ -691,12 +704,19 @@ const TrainingEdit = () => {
                     .delete()
                     .eq('training_id', id);
 
-                  const response = await supabase.functions.invoke('generate-questions-from-text', {
+                  // Timeout de 3 minutos para processamento
+                  const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Tempo limite excedido. Tente com um documento menor.')), 180000)
+                  );
+
+                  const responsePromise = supabase.functions.invoke('generate-questions-from-text', {
                     body: { 
                       trainingId: id, 
                       documentContent: formData.documentContent 
                     }
                   });
+
+                  const response = await Promise.race([responsePromise, timeoutPromise]) as any;
                   
                   if (response.error) {
                     console.error('Erro na resposta:', response.error);

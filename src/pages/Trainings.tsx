@@ -177,8 +177,19 @@ const Trainings = () => {
         }
       }
 
-      // Gerar questões: prioriza texto digitado, senão usa arquivo PDF
+      // Gerar questões: usar texto digitado se disponível
       if (formData.documentContent && formData.documentContent.trim().length > 0) {
+        // Validar tamanho do conteúdo
+        const maxChars = 50000;
+        if (formData.documentContent.length > maxChars) {
+          toast({
+            title: "Conteúdo muito grande",
+            description: `O texto tem ${formData.documentContent.length.toLocaleString()} caracteres. Por favor, reduza para no máximo ${maxChars.toLocaleString()} caracteres.`,
+            variant: "destructive"
+          });
+          throw new Error("Conteúdo do documento muito grande");
+        }
+
         // Usar texto digitado para gerar questões
         setIsGeneratingQuestions(true);
         supabase.functions.invoke('generate-questions-from-text', {
@@ -199,7 +210,7 @@ const Trainings = () => {
           setIsGeneratingQuestions(false);
           toast({
             title: "Erro ao gerar questões",
-            description: "Não foi possível gerar as questões automaticamente.",
+            description: err.message || "Não foi possível gerar as questões automaticamente.",
             variant: "destructive"
           });
         });
@@ -410,9 +421,11 @@ const Trainings = () => {
                     onChange={(value) => setFormData({ ...formData, documentContent: value })}
                   />
                   {formData.documentContent && formData.documentContent.length > 0 && (
-                    <div className="text-sm text-success">
-                      ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length} palavras • 
-                      {formData.documentContent.length} caracteres
+                    <div className={`text-sm ${formData.documentContent.length > 50000 ? 'text-destructive' : formData.documentContent.length > 40000 ? 'text-warning' : 'text-success'}`}>
+                      {formData.documentContent.length > 50000 ? '⚠️' : '✓'} {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
+                      {formData.documentContent.length.toLocaleString()} caracteres
+                      {formData.documentContent.length > 50000 && ' (muito grande! reduza para no máximo 50.000)'}
+                      {formData.documentContent.length > 40000 && formData.documentContent.length <= 50000 && ' (perto do limite máximo de 50.000)'}
                     </div>
                   )}
                 </div>
