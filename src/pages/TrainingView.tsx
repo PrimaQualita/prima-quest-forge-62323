@@ -516,28 +516,37 @@ const TrainingView = () => {
               </Card>
             ) : (
               <>
-                {assessment.training_questions.map((q: any, index: number) => (
-                  <Card key={q.id}>
-                    <CardContent className="pt-6 space-y-4">
-                      <Label className="text-base font-medium">
-                        {index + 1}. {q.question}
-                      </Label>
-                      <RadioGroup
-                        value={answers[q.id] || ""}
-                        onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
-                      >
-                        {q.options?.map((option: string, optIndex: number) => (
-                          <div key={optIndex} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`${q.id}-${optIndex}`} />
-                            <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
-                    </CardContent>
-                  </Card>
-                ))}
+                {assessment.training_questions.map((q: any, index: number) => {
+                  // Handle options as object or array
+                  const optionsArray = Array.isArray(q.options) 
+                    ? q.options 
+                    : (q.options && typeof q.options === 'object' 
+                        ? Object.keys(q.options) 
+                        : []);
+                  
+                  return (
+                    <Card key={q.id}>
+                      <CardContent className="pt-6 space-y-4">
+                        <Label className="text-base font-medium">
+                          {index + 1}. {q.question}
+                        </Label>
+                        <RadioGroup
+                          value={answers[q.id] || ""}
+                          onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
+                        >
+                          {optionsArray.map((option: string, optIndex: number) => (
+                            <div key={optIndex} className="flex items-center space-x-2">
+                              <RadioGroupItem value={option} id={`${q.id}-${optIndex}`} />
+                              <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
+                                {option}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
                 
                 <Button 
                   className="w-full"
