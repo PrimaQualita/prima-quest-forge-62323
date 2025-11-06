@@ -618,7 +618,7 @@ const TrainingView = () => {
                   return (
                     <Card key={q.id}>
                       <CardContent className="pt-6 space-y-4">
-                        <Label className="text-base font-medium">
+                        <Label className="text-base font-medium text-justify block">
                           {index + 1}. {q.question}
                         </Label>
                         {optionsArray.length > 0 ? (
@@ -627,9 +627,9 @@ const TrainingView = () => {
                             onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
                           >
                             {optionsArray.map((option, optIndex: number) => (
-                              <div key={optIndex} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option.key} id={`${q.id}-${optIndex}`} />
-                                <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
+                              <div key={optIndex} className="flex items-start space-x-2">
+                                <RadioGroupItem value={option.key} id={`${q.id}-${optIndex}`} className="mt-1" />
+                                <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer text-justify flex-1">
                                   {option.value}
                                 </Label>
                               </div>
