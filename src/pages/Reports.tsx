@@ -103,13 +103,29 @@ const Reports = () => {
       
       const trainingsWithCompletion = await Promise.all(
         (trainings || []).map(async (training) => {
-          const { count } = await supabase
-            .from('training_participations')
-            .select('*', { count: 'exact', head: true })
-            .eq('training_id', training.id)
-            .eq('completed', true);
+          // Get completions from both sources
+          const [{ data: participations }, { data: assessments }] = await Promise.all([
+            supabase
+              .from('training_participations')
+              .select('employee_id')
+              .eq('training_id', training.id)
+              .eq('completed', true)
+              .not('employee_id', 'is', null),
+            supabase
+              .from('training_assessments')
+              .select('employee_id')
+              .eq('training_id', training.id)
+              .eq('passed', true)
+              .not('employee_id', 'is', null)
+          ]);
           
-          const completed = count || 0;
+          // Combine and deduplicate employee IDs
+          const completedEmployees = new Set([
+            ...(participations?.map(p => p.employee_id) || []),
+            ...(assessments?.map(a => a.employee_id) || [])
+          ]);
+          
+          const completed = completedEmployees.size;
           const pending = totalEmployees - completed;
           const percentage = totalEmployees > 0 
             ? Math.round((completed / totalEmployees) * 10000) / 100
