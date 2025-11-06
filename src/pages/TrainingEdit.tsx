@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Plus, Trash2, MoveUp, MoveDown, Video, FileText, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -42,6 +43,7 @@ const TrainingEdit = () => {
     category: "",
     description: "",
     duration_hours: 0,
+    documentContent: "",
   });
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -74,6 +76,7 @@ const TrainingEdit = () => {
         category: training.category,
         description: training.description || "",
         duration_hours: training.duration_hours || 0,
+        documentContent: "",
       });
       setIsTrail(training.is_trail || false);
       
@@ -637,68 +640,108 @@ const TrainingEdit = () => {
         <Card className="p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-lg">Documentos do Treinamento</Label>
-              {documents.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    if (!id) return;
-                    setIsGeneratingQuestions(true);
-                    
-                    toast({
-                      title: "Regenerando questões...",
-                      description: "Isso pode levar alguns minutos. Aguarde."
-                    });
-                    
-                    try {
-                      for (const doc of documents) {
-                        console.log(`Processando ${doc.file_name}...`);
-                        
-                        const response = await Promise.race([
-                          supabase.functions.invoke('parse-pdf-and-generate-questions', {
-                            body: { 
-                              trainingId: id, 
-                              filePath: doc.file_path 
-                            }
-                          }),
-                          new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Timeout: Processamento demorou mais de 3 minutos')), 180000)
-                          )
-                        ]) as any;
-                        
-                        if (response.error) {
-                          console.error('Erro na resposta:', response.error);
-                          throw response.error;
-                        }
-                        
-                        if (response.data?.success) {
-                          toast({
-                            title: "Questões geradas!",
-                            description: `${response.data.questionsGenerated} questões criadas para ${doc.file_name}`
-                          });
-                        } else {
-                          throw new Error('Resposta inválida da função');
-                        }
-                      }
-                    } catch (err: any) {
-                      console.error('Erro ao regenerar questões:', err);
-                      toast({
-                        title: "Erro ao regenerar questões",
-                        description: err.message || "Não foi possível gerar as questões automaticamente.",
-                        variant: "destructive"
-                      });
-                    } finally {
-                      setIsGeneratingQuestions(false);
-                    }
-                  }}
-                  disabled={isGeneratingQuestions}
-                >
-                  {isGeneratingQuestions ? "Gerando..." : "🔄 Regenerar Questões"}
-                </Button>
+              <Label className="text-lg">Conteúdo do Documento</Label>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="documentContent">
+                📝 Texto do Documento (para gerar questões)
+              </Label>
+              <p className="text-sm text-muted-foreground mb-2">
+                Cole aqui o texto completo do documento. Clique em "Gerar Questões" para criar 50 questões baseadas neste conteúdo.
+              </p>
+              <Textarea 
+                id="documentContent"
+                placeholder="Cole aqui o conteúdo completo do documento (regulamento, procedimento, política, etc)..." 
+                rows={12}
+                className="font-mono text-sm"
+                value={formData.documentContent}
+                onChange={(e) => setFormData({ ...formData, documentContent: e.target.value })}
+              />
+              {formData.documentContent && formData.documentContent.length > 0 && (
+                <div className="text-sm text-success">
+                  ✓ {formData.documentContent.split(/\s+/).length} palavras • 
+                  {formData.documentContent.length} caracteres
+                </div>
               )}
             </div>
+
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              onClick={async () => {
+                if (!id || !formData.documentContent || formData.documentContent.trim().length < 100) {
+                  toast({
+                    title: "Conteúdo insuficiente",
+                    description: "Cole o texto do documento (mínimo 100 caracteres) antes de gerar questões.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                setIsGeneratingQuestions(true);
+                
+                toast({
+                  title: "Gerando questões...",
+                  description: "Isso pode levar alguns minutos. Aguarde."
+                });
+                
+                try {
+                  // Deletar questões antigas
+                  await supabase
+                    .from('training_questions')
+                    .delete()
+                    .eq('training_id', id);
+
+                  const response = await supabase.functions.invoke('generate-questions-from-text', {
+                    body: { 
+                      trainingId: id, 
+                      documentContent: formData.documentContent 
+                    }
+                  });
+                  
+                  if (response.error) {
+                    console.error('Erro na resposta:', response.error);
+                    throw response.error;
+                  }
+                  
+                  if (response.data?.success) {
+                    toast({
+                      title: "Questões geradas com sucesso!",
+                      description: `${response.data.questionsGenerated} questões criadas.`
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['training', id] });
+                  } else {
+                    throw new Error('Resposta inválida da função');
+                  }
+                } catch (err: any) {
+                  console.error('Erro ao gerar questões:', err);
+                  toast({
+                    title: "Erro ao gerar questões",
+                    description: err.message || "Não foi possível gerar as questões automaticamente.",
+                    variant: "destructive"
+                  });
+                } finally {
+                  setIsGeneratingQuestions(false);
+                }
+              }}
+              disabled={isGeneratingQuestions || !formData.documentContent || formData.documentContent.trim().length < 100}
+            >
+              {isGeneratingQuestions ? "Gerando..." : "✨ Gerar Questões"}
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-lg">Documentos (opcional - para download)</Label>
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              Estes arquivos ficarão disponíveis para download pelos colaboradores, mas NÃO serão usados para gerar questões.
+            </p>
             
             {documents.length > 0 && (
               <div className="space-y-2">
