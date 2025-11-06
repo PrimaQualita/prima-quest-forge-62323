@@ -12,10 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import DOMPurify from "dompurify";
+import { useAuth } from "@/hooks/useAuth";
 
 const Documents = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<any>(null);
@@ -355,13 +357,14 @@ const Documents = () => {
           <h1 className="text-4xl font-bold text-foreground uppercase">REGULAMENTOS</h1>
           <p className="text-muted-foreground mt-1">Gerencie políticas e regulamentos</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Documento
-            </Button>
-          </DialogTrigger>
+        {isAdmin && (
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Documento
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Adicionar Documento de Compliance</DialogTitle>
@@ -428,8 +431,9 @@ const Documents = () => {
             </div>
             </DialogContent>
         </Dialog>
+        )}
 
-        {/* Dialog de Edição */}
+        {isAdmin && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -500,8 +504,9 @@ const Documents = () => {
                 {isGeneratingQuiz ? "Gerando quiz com IA..." : updateDocumentMutation.isPending ? "Salvando..." : "Atualizar Documento"}
               </Button>
             </div>
-          </DialogContent>
+            </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

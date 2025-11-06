@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import DOMPurify from "dompurify";
 import { CertificateButton } from "@/components/training/CertificateButton";
+import { useAuth } from "@/hooks/useAuth";
 
 interface VideoData {
   title: string;
@@ -32,6 +33,7 @@ const Trainings = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isTrail, setIsTrail] = useState(false);
   const [formData, setFormData] = useState({
@@ -356,7 +358,7 @@ const Trainings = () => {
           <h1 className="text-2xl md:text-4xl font-bold text-foreground uppercase">TREINAMENTOS</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
         </div>
-        <div>
+        {isAdmin && (
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
@@ -629,7 +631,7 @@ const Trainings = () => {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
