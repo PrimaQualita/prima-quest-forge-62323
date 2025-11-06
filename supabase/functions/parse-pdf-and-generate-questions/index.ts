@@ -136,7 +136,20 @@ ${base64Doc}`;
     }
 
     const extractData = await extractResponse.json();
+    
+    console.log('Resposta da IA de extração:', JSON.stringify(extractData).substring(0, 500));
+    
+    if (!extractData.choices || !extractData.choices[0] || !extractData.choices[0].message) {
+      console.error('Estrutura de resposta inválida:', JSON.stringify(extractData));
+      throw new Error('Erro ao extrair texto: resposta inválida da IA');
+    }
+    
     const documentContent = extractData.choices[0].message.content;
+    
+    if (!documentContent) {
+      console.error('Nenhum conteúdo retornado pela IA');
+      throw new Error('Erro ao extrair texto: IA não retornou conteúdo');
+    }
     
     console.log('Texto extraído com sucesso');
     console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
