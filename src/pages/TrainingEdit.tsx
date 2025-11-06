@@ -212,25 +212,29 @@ const TrainingEdit = () => {
 
           if (docError) throw docError;
 
-          // Gerar questões via IA
-          const reader = new FileReader();
-          const content = await new Promise<string>((resolve, reject) => {
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.onerror = reject;
-            reader.readAsText(doc);
-          });
-
+          // Gerar questões via IA usando a nova função que extrai texto do PDF corretamente
           setIsGeneratingQuestions(true);
-          supabase.functions.invoke('generate-training-questions', {
+          supabase.functions.invoke('parse-pdf-and-generate-questions', {
             body: { 
               trainingId: id, 
-              documentContent: content 
+              filePath: fileName 
             }
-          }).then(() => {
+          }).then((response) => {
             setIsGeneratingQuestions(false);
+            if (response.data?.success) {
+              toast({
+                title: "Questões geradas com sucesso!",
+                description: `${response.data.questionsGenerated} questões criadas.`
+              });
+            }
           }).catch((err) => {
             console.error('Erro ao gerar questões:', err);
             setIsGeneratingQuestions(false);
+            toast({
+              title: "Erro ao gerar questões",
+              description: "Não foi possível gerar as questões automaticamente.",
+              variant: "destructive"
+            });
           });
         }
       }

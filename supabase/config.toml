@@ -1,10 +1,31 @@
 project_id = "todailzrkkjocufffbmi"
 
+[functions.cleanup-orphan-users]
+verify_jwt = true
+
+[functions.compliance-chatbot]
+verify_jwt = false
+
 [functions.create-employee-user]
 verify_jwt = false
 
 [functions.delete-employee]
 verify_jwt = true
 
-[functions.cleanup-orphan-users]
+[functions.generate-quiz]
+verify_jwt = true
+
+[functions.generate-training-questions]
+verify_jwt = true
+
+[functions.link-existing-users]
+verify_jwt = false
+
+[functions.parse-pdf-and-generate-questions]
+verify_jwt = true
+
+[functions.reset-user-password]
+verify_jwt = true
+
+[functions.validate-cpf]
 verify_jwt = true
