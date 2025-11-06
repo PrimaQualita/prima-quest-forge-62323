@@ -190,7 +190,9 @@ Por favor, verifique o arquivo e tente novamente.`);
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
-    Com base no CONTEÚDO REAL do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
+    TAREFA OBRIGATÓRIA: Gere EXATAMENTE 50 questões de múltipla escolha. NUNCA retorne menos de 50 questões.
+    
+    Com base no CONTEÚDO REAL do documento fornecido, você DEVE gerar 50 questões completas.
     
     IMPORTANTE - SOBRE O QUE PERGUNTAR:
     - Faça perguntas sobre o CONTEÚDO e INFORMAÇÕES apresentadas no documento
@@ -207,6 +209,8 @@ Por favor, verifique o arquivo e tente novamente.`);
     - Questões devem testar compreensão e aplicação prática, não apenas memorização
     - Varie os tópicos e conceitos abordados para garantir cobertura completa
     
+    CRÍTICO: Se o documento tiver menos conteúdo, repita conceitos-chave em diferentes formatos de pergunta para atingir 50 questões. NUNCA retorne um array vazio ou com menos de 50 questões.
+    
     EXEMPLO DE QUESTÕES CORRETAS (supondo um documento sobre LGPD):
     ✓ "Qual o prazo máximo para resposta a uma solicitação de titular de dados?"
     ✓ "Em qual situação é permitido o tratamento de dados sensíveis?"
@@ -215,7 +219,7 @@ Por favor, verifique o arquivo e tente novamente.`);
     ✗ "Qual o formato do arquivo que contém este documento?"
     ✗ "Como o documento foi convertido para processamento?"
     
-    Retorne as questões no seguinte formato JSON:
+    Retorne SEMPRE um objeto JSON com EXATAMENTE 50 questões no seguinte formato:
     {
       "questions": [
         {
@@ -238,12 +242,12 @@ Por favor, verifique o arquivo e tente novamente.`);
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { 
             role: "user", 
-            content: `Gere 50 questões baseadas neste documento:\n\n${documentContent}` 
+            content: `Gere EXATAMENTE 50 questões baseadas neste documento:\n\n${documentContent}` 
           }
         ],
         tools: [
