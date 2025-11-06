@@ -656,11 +656,14 @@ const TrainingEdit = () => {
                 onChange={(value) => setFormData({ ...formData, documentContent: value })}
               />
               {formData.documentContent && formData.documentContent.length > 0 && (
-                <div className={`text-sm ${formData.documentContent.length > 50000 ? 'text-destructive' : formData.documentContent.length > 40000 ? 'text-warning' : 'text-success'}`}>
-                  {formData.documentContent.length > 50000 ? '⚠️' : '✓'} {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
+                <div className="text-sm text-success">
+                  ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
                   {formData.documentContent.length.toLocaleString()} caracteres
-                  {formData.documentContent.length > 50000 && ' (muito grande! reduza para no máximo 50.000)'}
-                  {formData.documentContent.length > 40000 && formData.documentContent.length <= 50000 && ' (perto do limite máximo de 50.000)'}
+                  {formData.documentContent.length > 100000 && (
+                    <span className="block text-xs text-muted-foreground mt-1">
+                      📚 Documento grande será processado em partes (aproximadamente {Math.ceil(formData.documentContent.length / 40000)} partes)
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -678,23 +681,12 @@ const TrainingEdit = () => {
                   });
                   return;
                 }
-
-                // Limitar tamanho do conteúdo para evitar timeout
-                const maxChars = 50000; // ~10.000 palavras
-                if (formData.documentContent.length > maxChars) {
-                  toast({
-                    title: "Conteúdo muito grande",
-                    description: `O texto tem ${formData.documentContent.length.toLocaleString()} caracteres. Por favor, reduza para no máximo ${maxChars.toLocaleString()} caracteres (aproximadamente as primeiras 20-25 páginas do documento).`,
-                    variant: "destructive"
-                  });
-                  return;
-                }
                 
                 setIsGeneratingQuestions(true);
                 
                 toast({
                   title: "Gerando questões...",
-                  description: "Isso pode levar 1-2 minutos. Aguarde."
+                  description: "Processando documento. Isso pode levar alguns minutos para documentos grandes."
                 });
                 
                 try {
@@ -704,34 +696,74 @@ const TrainingEdit = () => {
                     .delete()
                     .eq('training_id', id);
 
-                  // Timeout de 3 minutos para processamento
-                  const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Tempo limite excedido. Tente com um documento menor.')), 180000)
-                  );
-
-                  const responsePromise = supabase.functions.invoke('generate-questions-from-text', {
-                    body: { 
-                      trainingId: id, 
-                      documentContent: formData.documentContent 
-                    }
-                  });
-
-                  const response = await Promise.race([responsePromise, timeoutPromise]) as any;
+                  const content = formData.documentContent;
+                  const chunkSize = 40000; // ~8000 palavras por chunk
+                  const chunks: string[] = [];
                   
-                  if (response.error) {
-                    console.error('Erro na resposta:', response.error);
-                    throw response.error;
-                  }
-                  
-                  if (response.data?.success) {
-                    toast({
-                      title: "Questões geradas com sucesso!",
-                      description: `${response.data.questionsGenerated} questões criadas.`
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['training', id] });
+                  // Dividir documento em chunks
+                  if (content.length <= chunkSize) {
+                    chunks.push(content);
                   } else {
-                    throw new Error('Resposta inválida da função');
+                    // Dividir mantendo parágrafos completos
+                    let currentChunk = '';
+                    const paragraphs = content.split('\n\n');
+                    
+                    for (const paragraph of paragraphs) {
+                      if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = paragraph;
+                      } else {
+                        currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+                      }
+                    }
+                    
+                    if (currentChunk.trim()) {
+                      chunks.push(currentChunk.trim());
+                    }
                   }
+
+                  console.log(`Documento dividido em ${chunks.length} parte(s)`);
+                  
+                  let totalQuestionsGenerated = 0;
+                  
+                  // Processar cada chunk
+                  for (let i = 0; i < chunks.length; i++) {
+                    console.log(`Processando parte ${i + 1}/${chunks.length}...`);
+                    
+                    toast({
+                      title: "Gerando questões...",
+                      description: `Processando parte ${i + 1} de ${chunks.length}. Aguarde...`
+                    });
+
+                    const response = await supabase.functions.invoke('generate-questions-from-text', {
+                      body: { 
+                        trainingId: id, 
+                        documentContent: chunks[i]
+                      }
+                    });
+                    
+                    if (response.error) {
+                      console.error(`Erro na parte ${i + 1}:`, response.error);
+                      throw new Error(`Erro ao processar parte ${i + 1}: ${response.error.message}`);
+                    }
+                    
+                    if (response.data?.success) {
+                      totalQuestionsGenerated += response.data.questionsGenerated;
+                      console.log(`Parte ${i + 1}: ${response.data.questionsGenerated} questões geradas`);
+                    }
+                    
+                    // Pequeno delay entre requisições para evitar rate limit
+                    if (i < chunks.length - 1) {
+                      await new Promise(resolve => setTimeout(resolve, 2000));
+                    }
+                  }
+
+                  toast({
+                    title: "Questões geradas com sucesso!",
+                    description: `${totalQuestionsGenerated} questões criadas a partir de ${chunks.length} parte(s) do documento.`
+                  });
+                  queryClient.invalidateQueries({ queryKey: ['training', id] });
+                  
                 } catch (err: any) {
                   console.error('Erro ao gerar questões:', err);
                   toast({

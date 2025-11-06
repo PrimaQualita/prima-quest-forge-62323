@@ -179,41 +179,69 @@ const Trainings = () => {
 
       // Gerar questões: usar texto digitado se disponível
       if (formData.documentContent && formData.documentContent.trim().length > 0) {
-        // Validar tamanho do conteúdo
-        const maxChars = 50000;
-        if (formData.documentContent.length > maxChars) {
-          toast({
-            title: "Conteúdo muito grande",
-            description: `O texto tem ${formData.documentContent.length.toLocaleString()} caracteres. Por favor, reduza para no máximo ${maxChars.toLocaleString()} caracteres.`,
-            variant: "destructive"
-          });
-          throw new Error("Conteúdo do documento muito grande");
+        // Dividir documento em chunks para processar documentos grandes
+        const content = formData.documentContent;
+        const chunkSize = 40000;
+        const chunks: string[] = [];
+        
+        if (content.length <= chunkSize) {
+          chunks.push(content);
+        } else {
+          let currentChunk = '';
+          const paragraphs = content.split('\n\n');
+          
+          for (const paragraph of paragraphs) {
+            if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
+              chunks.push(currentChunk.trim());
+              currentChunk = paragraph;
+            } else {
+              currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
+            }
+          }
+          
+          if (currentChunk.trim()) {
+            chunks.push(currentChunk.trim());
+          }
         }
 
-        // Usar texto digitado para gerar questões
+        console.log(`Documento dividido em ${chunks.length} parte(s) para processamento`);
+        
+        // Processar cada chunk sequencialmente
         setIsGeneratingQuestions(true);
-        supabase.functions.invoke('generate-questions-from-text', {
-          body: { 
-            trainingId: training.id, 
-            documentContent: formData.documentContent 
-          }
-        }).then((response) => {
-          setIsGeneratingQuestions(false);
-          if (response.data?.success) {
-            toast({
-              title: "Questões geradas com sucesso!",
-              description: `${response.data.questionsGenerated} questões criadas a partir do texto.`
+        
+        let totalQuestionsGenerated = 0;
+        
+        for (let i = 0; i < chunks.length; i++) {
+          try {
+            const response = await supabase.functions.invoke('generate-questions-from-text', {
+              body: { 
+                trainingId: training.id, 
+                documentContent: chunks[i]
+              }
             });
+            
+            if (response.data?.success) {
+              totalQuestionsGenerated += response.data.questionsGenerated;
+              console.log(`Parte ${i + 1}/${chunks.length}: ${response.data.questionsGenerated} questões geradas`);
+            }
+            
+            // Delay entre requisições
+            if (i < chunks.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } catch (err) {
+            console.error(`Erro ao processar parte ${i + 1}:`, err);
           }
-        }).catch((err) => {
-          console.error('Erro ao gerar questões:', err);
-          setIsGeneratingQuestions(false);
+        }
+        
+        setIsGeneratingQuestions(false);
+        
+        if (totalQuestionsGenerated > 0) {
           toast({
-            title: "Erro ao gerar questões",
-            description: err.message || "Não foi possível gerar as questões automaticamente.",
-            variant: "destructive"
+            title: "Questões geradas com sucesso!",
+            description: `${totalQuestionsGenerated} questões criadas a partir de ${chunks.length} parte(s) do documento.`
           });
-        });
+        }
       }
 
       return training;
@@ -421,11 +449,14 @@ const Trainings = () => {
                     onChange={(value) => setFormData({ ...formData, documentContent: value })}
                   />
                   {formData.documentContent && formData.documentContent.length > 0 && (
-                    <div className={`text-sm ${formData.documentContent.length > 50000 ? 'text-destructive' : formData.documentContent.length > 40000 ? 'text-warning' : 'text-success'}`}>
-                      {formData.documentContent.length > 50000 ? '⚠️' : '✓'} {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
+                    <div className="text-sm text-success">
+                      ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
                       {formData.documentContent.length.toLocaleString()} caracteres
-                      {formData.documentContent.length > 50000 && ' (muito grande! reduza para no máximo 50.000)'}
-                      {formData.documentContent.length > 40000 && formData.documentContent.length <= 50000 && ' (perto do limite máximo de 50.000)'}
+                      {formData.documentContent.length > 100000 && (
+                        <span className="block text-xs text-muted-foreground mt-1">
+                          📚 Documento grande será processado em partes (aproximadamente {Math.ceil(formData.documentContent.length / 40000)} partes)
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
