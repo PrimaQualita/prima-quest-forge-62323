@@ -42,7 +42,7 @@ serve(async (req) => {
       throw downloadError;
     }
 
-    console.log('Extraindo texto do PDF...');
+    console.log('Extraindo texto do documento...');
     
     // Verificar tamanho do arquivo
     const arrayBuffer = await fileData.arrayBuffer();
@@ -50,29 +50,21 @@ serve(async (req) => {
     console.log(`Tamanho do arquivo: ${fileSizeInMB.toFixed(2)} MB`);
     
     // Limitar processamento de arquivos muito grandes
-    if (fileSizeInMB > 5) {
-      throw new Error(`Arquivo muito grande (${fileSizeInMB.toFixed(2)}MB). Máximo permitido: 5MB`);
+    if (fileSizeInMB > 10) {
+      throw new Error(`Arquivo muito grande (${fileSizeInMB.toFixed(2)}MB). Máximo permitido: 10MB`);
     }
     
     // Converter para base64 de forma mais eficiente
     const uint8Array = new Uint8Array(arrayBuffer);
-    let base64Pdf = '';
+    let base64Doc = '';
     const chunkSize = 8192;
     
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-      base64Pdf += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+      base64Doc += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
     }
     
-    console.log(`PDF convertido para base64, tamanho: ${base64Pdf.length} caracteres`);
-    
-    // Limitar tamanho do base64 enviado (800KB = ~600KB de PDF)
-    const maxBase64Length = 800000;
-    const base64ToSend = base64Pdf.length > maxBase64Length 
-      ? base64Pdf.substring(0, maxBase64Length) 
-      : base64Pdf;
-    
-    console.log(`Enviando ${base64ToSend.length} caracteres (${Math.round(base64ToSend.length / 1000)}KB) para extração`);
+    console.log(`Documento convertido para base64, tamanho: ${base64Doc.length} caracteres`);
     
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -81,15 +73,27 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [
           { 
             role: "system",
-            content: "Extraia TODO o texto deste PDF de forma estruturada. Mantenha títulos, seções e parágrafos organizados."
+            content: `Você é um extrator de texto especializado. Sua única tarefa é extrair EXATAMENTE TODO O TEXTO do documento fornecido.
+
+INSTRUÇÕES CRÍTICAS:
+- Retorne APENAS o texto literal do documento, palavra por palavra
+- NÃO analise, NÃO resuma, NÃO descreva o documento
+- NÃO mencione metadados técnicos (base64, formato de arquivo, estrutura XML, etc)
+- Mantenha todos os títulos, seções, parágrafos e formatação hierárquica
+- Se o documento tiver tabelas, extraia o conteúdo delas também
+- Preserve numerações e bullets
+- O texto extraído deve ser compreensível e completo para criar questões sobre o conteúdo
+
+ERRADO: "Este documento contém informações sobre..."
+CORRETO: Copiar exatamente todo o texto que está no documento`
           },
           { 
             role: "user", 
-            content: `Documento PDF em base64:\n${base64ToSend}`
+            content: base64Doc
           }
         ]
       }),
@@ -114,36 +118,75 @@ serve(async (req) => {
     
     console.log('Texto extraído com sucesso');
     console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
-    console.log('Preview do conteúdo:', documentContent.substring(0, 300));
+    console.log('Preview do conteúdo:', documentContent.substring(0, 500));
     
-    // Validar conteúdo extraído
-    if (!documentContent || documentContent.length < 100) {
-      throw new Error('PDF não contém texto suficiente para gerar questões. Verifique se o arquivo está correto.');
+    // Validações rigorosas de conteúdo
+    if (!documentContent || documentContent.length < 200) {
+      throw new Error('Documento não contém texto suficiente para gerar questões. Mínimo: 200 caracteres.');
     }
     
-    if (documentContent.toLowerCase().includes('log de atividades') || 
-        documentContent.toLowerCase().includes('conjunto de dados')) {
-      throw new Error('PDF parece conter apenas dados brutos. Use um documento com texto formatado.');
+    const contentLower = documentContent.toLowerCase();
+    
+    // Rejeitar se contém muitas menções técnicas que indicam metadados ao invés de conteúdo
+    const technicalTerms = [
+      'base64', 'pdf document converted', 'xml', 'content_types', 'document.xml',
+      'rels', 'footer1.xml', 'header1.xml', 'this is a pdf', 'this document appears',
+      'the content appears to be', 'structure and internal', 'microsoft word documents (.docx)'
+    ];
+    
+    const technicalTermCount = technicalTerms.filter(term => contentLower.includes(term)).length;
+    
+    if (technicalTermCount >= 3) {
+      console.error('Conteúdo extraído contém metadados técnicos:', documentContent.substring(0, 500));
+      throw new Error('Erro na extração: IA retornou metadados técnicos ao invés do conteúdo real. Tente novamente ou use outro formato de documento.');
     }
+    
+    // Rejeitar se for JSON estruturado (indica análise ao invés de texto puro)
+    if (contentLower.trim().startsWith('{') || contentLower.trim().startsWith('```json')) {
+      console.error('Conteúdo extraído é JSON estruturado:', documentContent.substring(0, 300));
+      throw new Error('Erro na extração: IA retornou estrutura JSON ao invés do texto. Por favor, tente novamente.');
+    }
+    
+    // Validar que tem conteúdo substantivo (não apenas lista de arquivos)
+    const words = documentContent.split(/\s+/).filter((w: string) => w.length > 3);
+    if (words.length < 50) {
+      throw new Error('Documento não contém texto suficiente. Mínimo: 50 palavras significativas.');
+    }
+    
+    console.log(`✓ Validação aprovada: ${words.length} palavras, ${documentContent.length} caracteres`);
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
-    Com base no conteúdo do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
+    Com base no CONTEÚDO REAL do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
     
-    IMPORTANTE:
+    IMPORTANTE - SOBRE O QUE PERGUNTAR:
+    - Faça perguntas sobre o CONTEÚDO e INFORMAÇÕES apresentadas no documento
+    - Pergunte sobre conceitos, procedimentos, normas, diretrizes mencionadas no texto
+    - NÃO pergunte sobre formato de arquivo, estrutura técnica, conversão, ou metadados
+    - NÃO mencione "PDF", "base64", "documento", "texto", "formato" nas questões
+    - Foque no TEMA e ASSUNTO que o documento aborda
+    
+    ESTRUTURA DAS QUESTÕES:
     - Cada questão deve ter 4 opções (A, B, C, D)
     - Apenas uma opção correta
     - Questões devem cobrir TODO o conteúdo do documento de forma abrangente
     - Misture questões fáceis (40%), médias (40%) e difíceis (20%)
     - Questões devem testar compreensão e aplicação prática, não apenas memorização
-    - As questões devem ser sobre o CONTEÚDO real do documento, não sobre metadados ou estrutura técnica
     - Varie os tópicos e conceitos abordados para garantir cobertura completa
+    
+    EXEMPLO DE QUESTÕES CORRETAS (supondo um documento sobre LGPD):
+    ✓ "Qual o prazo máximo para resposta a uma solicitação de titular de dados?"
+    ✓ "Em qual situação é permitido o tratamento de dados sensíveis?"
+    
+    EXEMPLO DE QUESTÕES ERRADAS:
+    ✗ "Qual o formato do arquivo que contém este documento?"
+    ✗ "Como o documento foi convertido para processamento?"
     
     Retorne as questões no seguinte formato JSON:
     {
       "questions": [
         {
-          "question": "Texto da pergunta sobre o conteúdo do documento",
+          "question": "Pergunta sobre o CONTEÚDO e TEMA do documento",
           "options": {
             "A": "Primeira alternativa completa",
             "B": "Segunda alternativa completa",
