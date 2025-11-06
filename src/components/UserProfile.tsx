@@ -49,6 +49,24 @@ export const UserProfile = () => {
         return;
       }
 
+      // Verificar se é fornecedor
+      const { data: supplierData } = await supabase
+        .from('supplier_due_diligence')
+        .select('company_name, status')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      if (supplierData) {
+        // É fornecedor - usar razão social
+        setProfile({
+          full_name: supplierData.company_name,
+          avatar_url: profileData?.avatar_url || null,
+          job_title: 'Fornecedor',
+        });
+        return;
+      }
+
       // Buscar name e job_title do employee - force fresh data
       const { data: employeeData } = await supabase
         .from('employees')
