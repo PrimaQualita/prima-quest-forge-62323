@@ -103,16 +103,30 @@ const DashboardManager = () => {
       
       const trainingsWithCompletion = await Promise.all(
         (trainings || []).map(async (training) => {
-          const { count } = await supabase
-            .from('training_participations')
-            .select('*', { count: 'exact', head: true })
-            .eq('training_id', training.id)
-            .eq('completed', true);
+          // Get completions from both sources
+          const [{ data: participations }, { data: assessments }] = await Promise.all([
+            supabase
+              .from('training_participations')
+              .select('employee_id')
+              .eq('training_id', training.id)
+              .eq('completed', true),
+            supabase
+              .from('training_assessments')
+              .select('employee_id')
+              .eq('training_id', training.id)
+              .eq('passed', true)
+          ]);
           
-           const completed = count || 0;
+          // Combine and deduplicate employee IDs
+          const completedEmployees = new Set([
+            ...(participations?.map(p => p.employee_id) || []),
+            ...(assessments?.map(a => a.employee_id) || [])
+          ]);
+          
+          const completed = completedEmployees.size;
           const pending = totalEmployees - completed;
           const percentage = totalEmployees > 0 
-            ? Math.round((completed / totalEmployees) * 10000) / 100  // Duas casas decimais
+            ? Math.round((completed / totalEmployees) * 10000) / 100
             : 0;
           
           return { ...training, completed, pending, percentage };
@@ -156,33 +170,49 @@ const DashboardManager = () => {
       const docsCount = totalDocs || 0;
       const trainingsCount = totalTrainings || 0;
       
-      // Fetch all acknowledgments and participations in one go
-      const { data: allAcknowledgments } = await supabase
-        .from('document_acknowledgments')
-        .select('employee_id')
-        .eq('quiz_correct', true);
-      
-      const { data: allParticipations } = await supabase
-        .from('training_participations')
-        .select('employee_id')
-        .eq('completed', true);
+      // Fetch all acknowledgments, participations and assessments in one go
+      const [{ data: allAcknowledgments }, { data: allParticipations }, { data: allAssessments }] = await Promise.all([
+        supabase
+          .from('document_acknowledgments')
+          .select('employee_id')
+          .eq('quiz_correct', true),
+        supabase
+          .from('training_participations')
+          .select('employee_id, training_id')
+          .eq('completed', true),
+        supabase
+          .from('training_assessments')
+          .select('employee_id, training_id')
+          .eq('passed', true)
+      ]);
       
       // Count by employee
       const docsByEmployee = new Map<string, number>();
-      const trainingsByEmployee = new Map<string, number>();
+      const trainingsByEmployee = new Map<string, Set<string>>();
       
       allAcknowledgments?.forEach(ack => {
         docsByEmployee.set(ack.employee_id, (docsByEmployee.get(ack.employee_id) || 0) + 1);
       });
       
+      // Combine participations and assessments (deduplicate by training_id)
       allParticipations?.forEach(part => {
-        trainingsByEmployee.set(part.employee_id, (trainingsByEmployee.get(part.employee_id) || 0) + 1);
+        if (!trainingsByEmployee.has(part.employee_id)) {
+          trainingsByEmployee.set(part.employee_id, new Set());
+        }
+        trainingsByEmployee.get(part.employee_id)?.add(part.training_id);
+      });
+      
+      allAssessments?.forEach(assessment => {
+        if (!trainingsByEmployee.has(assessment.employee_id)) {
+          trainingsByEmployee.set(assessment.employee_id, new Set());
+        }
+        trainingsByEmployee.get(assessment.employee_id)?.add(assessment.training_id);
       });
       
       // Calculate pendencies
       const employeesWithPendencies = allEmployees.map(employee => {
         const acceptedDocs = docsByEmployee.get(employee.id) || 0;
-        const completedTrainings = trainingsByEmployee.get(employee.id) || 0;
+        const completedTrainings = trainingsByEmployee.get(employee.id)?.size || 0;
         const pendingDocs = docsCount - acceptedDocs;
         const pendingTrainings = trainingsCount - completedTrainings;
         

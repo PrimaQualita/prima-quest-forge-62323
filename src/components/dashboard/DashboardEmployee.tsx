@@ -19,7 +19,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   const { data: stats } = useQuery({
     queryKey: ['employee-stats', employeeId],
     queryFn: async () => {
-      const [allDocs, allTrainings, acceptedDocs, completedTrainings] = await Promise.all([
+      const [allDocs, allTrainings, acceptedDocs, completedParticipations, passedAssessments] = await Promise.all([
         supabase.from('compliance_documents').select('*', { count: 'exact', head: true }),
         supabase.from('trainings').select('*', { count: 'exact', head: true }),
         supabase
@@ -29,15 +29,40 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
           .eq('quiz_correct', true),
         supabase
           .from('training_participations')
-          .select('*', { count: 'exact', head: true })
+          .select('training_id', { count: 'exact', head: true })
           .eq('employee_id', employeeId)
-          .eq('completed', true)
+          .eq('completed', true),
+        supabase
+          .from('training_assessments')
+          .select('training_id', { count: 'exact', head: true })
+          .eq('employee_id', employeeId)
+          .eq('passed', true)
       ]);
 
       const totalDocs = allDocs.count || 0;
       const totalTrainings = allTrainings.count || 0;
       const accepted = acceptedDocs.count || 0;
-      const completed = completedTrainings.count || 0;
+      
+      // Count completed trainings from both sources (participations and passed assessments)
+      const { data: participationIds } = await supabase
+        .from('training_participations')
+        .select('training_id')
+        .eq('employee_id', employeeId)
+        .eq('completed', true);
+      
+      const { data: assessmentIds } = await supabase
+        .from('training_assessments')
+        .select('training_id')
+        .eq('employee_id', employeeId)
+        .eq('passed', true);
+      
+      // Combine and deduplicate training IDs
+      const completedTrainingIds = new Set([
+        ...(participationIds?.map(p => p.training_id) || []),
+        ...(assessmentIds?.map(a => a.training_id) || [])
+      ]);
+      
+      const completed = completedTrainingIds.size;
 
       return {
         totalDocs,
@@ -78,14 +103,27 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         .from('trainings')
         .select('*');
       
-      const { data: completedTrainings } = await supabase
-        .from('training_participations')
-        .select('training_id')
-        .eq('employee_id', employeeId)
-        .eq('completed', true);
+      // Get completed trainings from both sources
+      const [{ data: participations }, { data: assessments }] = await Promise.all([
+        supabase
+          .from('training_participations')
+          .select('training_id')
+          .eq('employee_id', employeeId)
+          .eq('completed', true),
+        supabase
+          .from('training_assessments')
+          .select('training_id')
+          .eq('employee_id', employeeId)
+          .eq('passed', true)
+      ]);
       
-      const completedIds = completedTrainings?.map(t => t.training_id) || [];
-      return allTrainings?.filter(training => !completedIds.includes(training.id)) || [];
+      // Combine and deduplicate
+      const completedIds = new Set([
+        ...(participations?.map(p => p.training_id) || []),
+        ...(assessments?.map(a => a.training_id) || [])
+      ]);
+      
+      return allTrainings?.filter(training => !completedIds.has(training.id)) || [];
     },
   });
 
