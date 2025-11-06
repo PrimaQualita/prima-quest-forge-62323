@@ -121,16 +121,12 @@ const TrainingView = () => {
       
       // Fetch questions based on the question IDs in the assessment
       const questionIds = assessmentData.questions as string[];
-      console.log('Assessment question IDs:', questionIds);
       
       if (questionIds && questionIds.length > 0) {
-        const { data: questionsData, error: questionsError } = await supabase
+        const { data: questionsData } = await supabase
           .from('training_questions')
           .select('*')
           .in('id', questionIds);
-        
-        console.log('Fetched questions:', questionsData);
-        console.log('Questions error:', questionsError);
         
         return {
           ...assessmentData,
