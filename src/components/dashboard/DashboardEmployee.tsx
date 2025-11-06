@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardEmployeeProps {
   employeeId: string;
@@ -15,9 +16,26 @@ interface DashboardEmployeeProps {
 
 const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Verificar se é fornecedor
+  const { data: isSupplier } = useQuery({
+    queryKey: ['is-supplier-check', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from('supplier_due_diligence')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: stats } = useQuery({
-    queryKey: ['employee-stats', employeeId],
+    queryKey: ['employee-stats', employeeId, isSupplier],
     queryFn: async () => {
       const [allDocs, allTrainings, acceptedDocs, completedParticipations, passedAssessments] = await Promise.all([
         supabase.from('compliance_documents').select('*', { count: 'exact', head: true }),
@@ -25,17 +43,17 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         supabase
           .from('document_acknowledgments')
           .select('*', { count: 'exact', head: true })
-          .eq('employee_id', employeeId)
+          .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
           .eq('quiz_correct', true),
         supabase
           .from('training_participations')
           .select('training_id', { count: 'exact', head: true })
-          .eq('employee_id', employeeId)
+          .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
           .eq('completed', true),
         supabase
           .from('training_assessments')
           .select('training_id', { count: 'exact', head: true })
-          .eq('employee_id', employeeId)
+          .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
           .eq('passed', true)
       ]);
 
@@ -47,13 +65,13 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
       const { data: participationIds } = await supabase
         .from('training_participations')
         .select('training_id')
-        .eq('employee_id', employeeId)
+        .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
         .eq('completed', true);
       
       const { data: assessmentIds } = await supabase
         .from('training_assessments')
         .select('training_id')
-        .eq('employee_id', employeeId)
+        .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
         .eq('passed', true);
       
       // Combine and deduplicate training IDs
@@ -79,7 +97,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   });
 
   const { data: pendingDocuments } = useQuery({
-    queryKey: ['pending-documents', employeeId],
+    queryKey: ['pending-documents', employeeId, isSupplier],
     queryFn: async () => {
       const { data: allDocs } = await supabase
         .from('compliance_documents')
@@ -88,7 +106,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
       const { data: acceptedDocs } = await supabase
         .from('document_acknowledgments')
         .select('document_id')
-        .eq('employee_id', employeeId)
+        .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
         .eq('quiz_correct', true);
       
       const acceptedIds = acceptedDocs?.map(d => d.document_id) || [];
@@ -97,7 +115,7 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
   });
 
   const { data: pendingTrainings } = useQuery({
-    queryKey: ['pending-trainings', employeeId],
+    queryKey: ['pending-trainings', employeeId, isSupplier],
     queryFn: async () => {
       const { data: allTrainings } = await supabase
         .from('trainings')
@@ -108,12 +126,12 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         supabase
           .from('training_participations')
           .select('training_id')
-          .eq('employee_id', employeeId)
+          .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
           .eq('completed', true),
         supabase
           .from('training_assessments')
           .select('training_id')
-          .eq('employee_id', employeeId)
+          .eq(isSupplier ? 'supplier_id' : 'employee_id', employeeId)
           .eq('passed', true)
       ]);
       

@@ -12,13 +12,31 @@ const Dashboard = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
+      // Verificar se é fornecedor primeiro
+      const { data: supplierData } = await supabase
+        .from('supplier_due_diligence')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      if (supplierData) {
+        // Retornar dados do fornecedor como se fosse employee
+        return { 
+          id: supplierData.id, 
+          is_manager: false,
+          is_supplier: true 
+        };
+      }
+
+      // Buscar dados do colaborador
       const { data } = await supabase
         .from('employees')
         .select('id, is_manager')
         .eq('user_id', user.id)
         .maybeSingle();
       
-      return data;
+      return data ? { ...data, is_supplier: false } : null;
     },
     enabled: !!user?.id
   });
@@ -39,7 +57,7 @@ const Dashboard = () => {
     );
   }
 
-  // Gestores também veem suas próprias pendências como colaboradores
+  // Gestores e fornecedores também veem suas próprias pendências como colaboradores
   return <DashboardEmployee employeeId={employeeData.id} />;
 };
 

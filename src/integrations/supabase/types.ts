@@ -234,28 +234,31 @@ export type Database = {
           acknowledged_at: string | null
           created_at: string | null
           document_id: string
-          employee_id: string
+          employee_id: string | null
           id: string
           quiz_answered: boolean | null
           quiz_correct: boolean | null
+          supplier_id: string | null
         }
         Insert: {
           acknowledged_at?: string | null
           created_at?: string | null
           document_id: string
-          employee_id: string
+          employee_id?: string | null
           id?: string
           quiz_answered?: boolean | null
           quiz_correct?: boolean | null
+          supplier_id?: string | null
         }
         Update: {
           acknowledged_at?: string | null
           created_at?: string | null
           document_id?: string
-          employee_id?: string
+          employee_id?: string | null
           id?: string
           quiz_answered?: boolean | null
           quiz_correct?: boolean | null
+          supplier_id?: string | null
         }
         Relationships: [
           {
@@ -270,6 +273,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_acknowledgments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_due_diligence"
             referencedColumns: ["id"]
           },
         ]
@@ -547,12 +557,13 @@ export type Database = {
           completed: boolean | null
           completed_at: string | null
           created_at: string | null
-          employee_id: string
+          employee_id: string | null
           id: string
           last_attempt_at: string | null
           passed: boolean | null
           questions: Json
           score: number | null
+          supplier_id: string | null
           training_id: string
         }
         Insert: {
@@ -561,12 +572,13 @@ export type Database = {
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
-          employee_id: string
+          employee_id?: string | null
           id?: string
           last_attempt_at?: string | null
           passed?: boolean | null
           questions: Json
           score?: number | null
+          supplier_id?: string | null
           training_id: string
         }
         Update: {
@@ -575,12 +587,13 @@ export type Database = {
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
-          employee_id?: string
+          employee_id?: string | null
           id?: string
           last_attempt_at?: string | null
           passed?: boolean | null
           questions?: Json
           score?: number | null
+          supplier_id?: string | null
           training_id?: string
         }
         Relationships: [
@@ -589,6 +602,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assessments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_due_diligence"
             referencedColumns: ["id"]
           },
           {
@@ -640,24 +660,27 @@ export type Database = {
           completed: boolean | null
           completion_date: string | null
           created_at: string | null
-          employee_id: string
+          employee_id: string | null
           id: string
+          supplier_id: string | null
           training_id: string
         }
         Insert: {
           completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
-          employee_id: string
+          employee_id?: string | null
           id?: string
+          supplier_id?: string | null
           training_id: string
         }
         Update: {
           completed?: boolean | null
           completion_date?: string | null
           created_at?: string | null
-          employee_id?: string
+          employee_id?: string | null
           id?: string
+          supplier_id?: string | null
           training_id?: string
         }
         Relationships: [
@@ -666,6 +689,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_participations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_due_diligence"
             referencedColumns: ["id"]
           },
           {
@@ -820,30 +850,33 @@ export type Database = {
         Row: {
           completed: boolean
           created_at: string
-          employee_id: string
+          employee_id: string | null
           id: string
           last_watched_at: string | null
           progress_percentage: number
+          supplier_id: string | null
           training_id: string
           video_id: string
         }
         Insert: {
           completed?: boolean
           created_at?: string
-          employee_id: string
+          employee_id?: string | null
           id?: string
           last_watched_at?: string | null
           progress_percentage?: number
+          supplier_id?: string | null
           training_id: string
           video_id: string
         }
         Update: {
           completed?: boolean
           created_at?: string
-          employee_id?: string
+          employee_id?: string | null
           id?: string
           last_watched_at?: string | null
           progress_percentage?: number
+          supplier_id?: string | null
           training_id?: string
           video_id?: string
         }
@@ -867,6 +900,13 @@ export type Database = {
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "training_videos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_progress_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_due_diligence"
             referencedColumns: ["id"]
           },
         ]
