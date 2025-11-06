@@ -103,16 +103,15 @@ ${base64ToSend}`
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
-    Com base no conteúdo do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
+    Com base no conteúdo do documento fornecido, gere EXATAMENTE 20 questões de múltipla escolha.
     
     IMPORTANTE:
     - Cada questão deve ter 4 opções (A, B, C, D)
     - Apenas uma opção correta
-    - Questões devem cobrir TODO o conteúdo do documento de forma abrangente
+    - Questões devem cobrir os principais pontos do documento
     - Misture questões fáceis (40%), médias (40%) e difíceis (20%)
     - Questões devem testar compreensão e aplicação prática, não apenas memorização
     - As questões devem ser sobre o CONTEÚDO real do documento, não sobre metadados ou estrutura técnica
-    - Varie os tópicos e conceitos abordados para garantir cobertura completa
     
     Retorne as questões no seguinte formato JSON:
     {
@@ -137,12 +136,12 @@ ${base64ToSend}`
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { 
             role: "user", 
-            content: `Gere 50 questões baseadas neste documento:\n\n${documentContent}` 
+            content: `Gere 20 questões baseadas neste documento:\n\n${documentContent}` 
           }
         ],
         tools: [
@@ -212,8 +211,8 @@ ${base64ToSend}`
       throw new Error('Nenhuma questão foi gerada pela IA');
     }
     
-    if (questionsData.questions.length < 50) {
-      console.warn(`⚠️ IA gerou apenas ${questionsData.questions.length} questões, esperado 50`);
+    if (questionsData.questions.length < 20) {
+      console.warn(`⚠️ IA gerou apenas ${questionsData.questions.length} questões, esperado 20`);
     }
 
     console.log(`Inserindo ${questionsData.questions.length} questões no banco...`);
