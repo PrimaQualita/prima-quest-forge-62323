@@ -248,6 +248,7 @@ const TrainingView = () => {
     videoProgress?.find(vp => vp.video_id === video.id)?.completed
   ) ?? false;
 
+  const canAccessAssessment = allVideosCompleted;
   const canTakeAssessment = allVideosCompleted && !assessment?.completed && (assessment?.attempts || 0) < 5;
   const canRetakeAssessment = allVideosCompleted && assessment?.completed && !assessment?.passed && (assessment?.attempts || 0) < 5;
 
@@ -359,8 +360,8 @@ const TrainingView = () => {
             <FileText className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
             <span className="hidden md:inline">Materiais</span>
           </TabsTrigger>
-          <TabsTrigger value="assessment" disabled={!canTakeAssessment} className="text-xs md:text-sm">
-            {canTakeAssessment ? (
+          <TabsTrigger value="assessment" disabled={!canAccessAssessment} className="text-xs md:text-sm">
+            {canAccessAssessment ? (
               <CheckCircle className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
             ) : (
               <Lock className="w-3 h-3 md:w-4 md:h-4 md:mr-2" />
