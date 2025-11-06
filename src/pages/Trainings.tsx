@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import DOMPurify from "dompurify";
+import { CertificateButton } from "@/components/training/CertificateButton";
 
 interface VideoData {
   title: string;
@@ -88,6 +89,40 @@ const Trainings = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const { data: currentEmployee } = useQuery({
+    queryKey: ['current-employee'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) return null;
+      return data;
+    },
+  });
+
+  const { data: userAssessments } = useQuery({
+    queryKey: ['user-assessments', currentEmployee?.id],
+    queryFn: async () => {
+      if (!currentEmployee) return [];
+      
+      const { data, error } = await supabase
+        .from('training_assessments')
+        .select('*')
+        .eq('employee_id', currentEmployee.id)
+        .eq('passed', true);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentEmployee,
   });
 
   const addTrainingMutation = useMutation({
@@ -622,6 +657,9 @@ const Trainings = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trainings?.map((training) => {
           const completionRate = getCompletionRate(training.id);
+          const userPassedAssessment = userAssessments?.find(
+            a => a.training_id === training.id && a.passed
+          );
           
           return (
             <Card key={training.id} className="hover:shadow-elevated transition-shadow">
@@ -672,24 +710,41 @@ const Trainings = () => {
                   <Progress value={completionRate} className="h-2" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    className="w-full"
-                    onClick={() => navigate(`/trainings/${training.id}`)}
-                  >
-                    <Video className="w-4 h-4 mr-2" />
-                    Acessar
-                  </Button>
+                {userPassedAssessment && currentEmployee ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                        Treinamento Concluído
+                      </span>
+                    </div>
+                    <CertificateButton
+                      employeeName={currentEmployee.name}
+                      trainingTitle={training.title}
+                      completionDate={userPassedAssessment.completed_at || new Date().toISOString()}
+                      score={userPassedAssessment.score || 0}
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      className="w-full"
+                      onClick={() => navigate(`/trainings/${training.id}`)}
+                    >
+                      <Video className="w-4 h-4 mr-2" />
+                      Acessar
+                    </Button>
 
-                  <Button 
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openEditPage(training.id)}
-                  >
-                    <Pencil className="w-4 h-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => openEditPage(training.id)}
+                    >
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Editar
+                    </Button>
+                  </div>
+                )}
 
                 <Dialog>
                   <DialogTrigger asChild>
