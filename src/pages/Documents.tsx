@@ -493,10 +493,12 @@ const Documents = () => {
               </Button>
             </div>
             </DialogContent>
-        </Dialog>
+          </Dialog>
+          </div>
         )}
+      </div>
 
-        {isAdmin && (
+      {isAdmin && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -569,9 +571,7 @@ const Documents = () => {
             </div>
             </DialogContent>
         </Dialog>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {documents?.map((doc) => {
