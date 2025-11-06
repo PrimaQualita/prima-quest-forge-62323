@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import DOMPurify from "dompurify";
 
 interface VideoData {
@@ -402,18 +403,15 @@ const Trainings = () => {
                   </Label>
                   <p className="text-sm text-muted-foreground mb-2">
                     Cole aqui o texto completo do documento. A IA irá gerar 50 questões baseadas neste conteúdo.
+                    Você pode editar o texto a qualquer momento.
                   </p>
-                  <Textarea 
-                    id="documentContent"
-                    placeholder="Cole aqui o conteúdo completo do documento (regulamento, procedimento, política, etc)..." 
-                    rows={12}
-                    className="font-mono text-sm"
+                  <RichTextEditor
                     value={formData.documentContent}
-                    onChange={(e) => setFormData({ ...formData, documentContent: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, documentContent: value })}
                   />
                   {formData.documentContent && formData.documentContent.length > 0 && (
                     <div className="text-sm text-success">
-                      ✓ {formData.documentContent.split(/\s+/).length} palavras • 
+                      ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length} palavras • 
                       {formData.documentContent.length} caracteres
                     </div>
                   )}

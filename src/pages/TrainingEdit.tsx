@@ -649,18 +649,15 @@ const TrainingEdit = () => {
               </Label>
               <p className="text-sm text-muted-foreground mb-2">
                 Cole aqui o texto completo do documento. Clique em "Gerar Questões" para criar 50 questões baseadas neste conteúdo.
+                Você pode continuar editando o texto enquanto as questões estão sendo geradas.
               </p>
-              <Textarea 
-                id="documentContent"
-                placeholder="Cole aqui o conteúdo completo do documento (regulamento, procedimento, política, etc)..." 
-                rows={12}
-                className="font-mono text-sm"
+              <RichTextEditor
                 value={formData.documentContent}
-                onChange={(e) => setFormData({ ...formData, documentContent: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, documentContent: value })}
               />
               {formData.documentContent && formData.documentContent.length > 0 && (
                 <div className="text-sm text-success">
-                  ✓ {formData.documentContent.split(/\s+/).length} palavras • 
+                  ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length} palavras • 
                   {formData.documentContent.length} caracteres
                 </div>
               )}
