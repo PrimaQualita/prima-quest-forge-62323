@@ -518,11 +518,20 @@ const TrainingView = () => {
               <>
                 {assessment.training_questions.map((q: any, index: number) => {
                   // Handle options as object or array
-                  const optionsArray = Array.isArray(q.options) 
-                    ? q.options 
-                    : (q.options && typeof q.options === 'object' 
-                        ? Object.keys(q.options) 
-                        : []);
+                  let optionsArray: Array<{key: string, value: string}> = [];
+                  
+                  if (Array.isArray(q.options)) {
+                    optionsArray = q.options.map((opt: string) => ({
+                      key: opt,
+                      value: opt
+                    }));
+                  } else if (q.options && typeof q.options === 'object') {
+                    // Convert object {A: 0, B: 1} to array of display options
+                    optionsArray = Object.entries(q.options).map(([key, value]) => ({
+                      key,
+                      value: `${key}: ${value}`
+                    }));
+                  }
                   
                   return (
                     <Card key={q.id}>
@@ -530,19 +539,25 @@ const TrainingView = () => {
                         <Label className="text-base font-medium">
                           {index + 1}. {q.question}
                         </Label>
-                        <RadioGroup
-                          value={answers[q.id] || ""}
-                          onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
-                        >
-                          {optionsArray.map((option: string, optIndex: number) => (
-                            <div key={optIndex} className="flex items-center space-x-2">
-                              <RadioGroupItem value={option} id={`${q.id}-${optIndex}`} />
-                              <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
-                                {option}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
+                        {optionsArray.length > 0 ? (
+                          <RadioGroup
+                            value={answers[q.id] || ""}
+                            onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
+                          >
+                            {optionsArray.map((option, optIndex: number) => (
+                              <div key={optIndex} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option.key} id={`${q.id}-${optIndex}`} />
+                                <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
+                                  {option.value}
+                                </Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Opções não disponíveis para esta questão
+                          </p>
+                        )}
                       </CardContent>
                     </Card>
                   );
