@@ -84,19 +84,19 @@ export const generateTrainingCertificate = async ({
   // Texto de certificação
   doc.setFontSize(13);
   doc.setTextColor(40, 40, 40);
-  doc.text("Certificamos que", pageWidth / 2, 88, { align: "center" });
+  doc.text("Certificamos que", pageWidth / 2, 85, { align: "center" });
 
   // Nome do colaborador
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
-  doc.text(employeeName.toUpperCase(), pageWidth / 2, 103, { align: "center" });
+  doc.text(employeeName.toUpperCase(), pageWidth / 2, 99, { align: "center" });
 
   // Texto de conclusão - dividido em duas linhas
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text("Concluiu com êxito o treinamento", pageWidth / 2, 117, { align: "center" });
+  doc.text("Concluiu com êxito o treinamento", pageWidth / 2, 113, { align: "center" });
 
   // Nome do treinamento
   doc.setFontSize(15);
@@ -106,7 +106,7 @@ export const generateTrainingCertificate = async ({
   // Split training title if too long
   const maxWidth = pageWidth - 80;
   const titleLines = doc.splitTextToSize(trainingTitle, maxWidth);
-  const titleStartY = 128;
+  const titleStartY = 123;
   doc.text(titleLines, pageWidth / 2, titleStartY, { align: "center" });
 
   // Nota obtida - com espaçamento reduzido
@@ -114,16 +114,16 @@ export const generateTrainingCertificate = async ({
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
   const lineHeight = 5;
-  const yPositionScore = titleStartY + (titleLines.length * lineHeight) + 8;
+  const yPositionScore = titleStartY + (titleLines.length * lineHeight) + 7;
   doc.text("Com aproveitamento de " + score + "%", pageWidth / 2, yPositionScore, { align: "center" });
 
-  // Data de conclusão
+  // Data de conclusão - espaçamento reduzido
   const formattedDate = new Date(completionDate).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
-  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 10, { align: "center" });
+  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
 
   // Assinatura - com espaçamento aumentado
   const signatureY = yPositionScore + 26;
