@@ -133,10 +133,16 @@ export const UserProfile = () => {
   const formatJobTitle = (title: string | null) => {
     if (!title) return "";
     const prepositions = ['de', 'da', 'do', 'dos', 'das', 'e', 'a', 'o', 'as', 'os'];
+    const romanNumerals = /^(I|II|III|IV|V|VI|VII|VIII|IX|X)$/i;
+    
     return title
       .toLowerCase()
       .split(' ')
       .map((word, index) => {
+        // Algarismos romanos mantém maiúsculas
+        if (romanNumerals.test(word)) {
+          return word.toUpperCase();
+        }
         // Primeira palavra sempre maiúscula
         if (index === 0) {
           return word.charAt(0).toUpperCase() + word.slice(1);
