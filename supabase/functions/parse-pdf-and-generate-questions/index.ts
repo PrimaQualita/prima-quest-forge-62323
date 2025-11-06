@@ -17,6 +17,13 @@ serve(async (req) => {
     if (!trainingId || !filePath) {
       throw new Error('Training ID e caminho do arquivo são obrigatórios');
     }
+    
+    // Identificar tipo de arquivo
+    const fileExtension = filePath.split('.').pop()?.toLowerCase() || '';
+    const isDocx = fileExtension === 'docx' || fileExtension === 'doc';
+    const isPdf = fileExtension === 'pdf';
+    
+    console.log(`Processando arquivo: ${filePath} (tipo: ${fileExtension})`);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -29,9 +36,9 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Baixando arquivo PDF do storage...');
+    console.log('Baixando arquivo do storage...');
     
-    // Download the PDF from storage
+    // Download the file from storage
     const { data: fileData, error: downloadError } = await supabase
       .storage
       .from('compliance-documents')
@@ -41,6 +48,12 @@ serve(async (req) => {
       console.error('Erro ao baixar arquivo:', downloadError);
       throw downloadError;
     }
+    
+    if (!fileData) {
+      throw new Error('Arquivo não encontrado no storage');
+    }
+    
+    console.log(`✓ Arquivo baixado com sucesso (${fileData.size} bytes)`);
 
     console.log('Extraindo texto do documento...');
     
@@ -66,6 +79,31 @@ serve(async (req) => {
     
     console.log(`Documento convertido para base64, tamanho: ${base64Doc.length} caracteres`);
     
+    // Preparar mensagem baseada no tipo de arquivo
+    const extractionPrompt = isDocx 
+      ? `Este é um arquivo Microsoft Word (.docx) codificado em base64. 
+
+TAREFA CRÍTICA:
+1. Decodifique o arquivo DOCX
+2. Extraia TODO O TEXTO visível do documento
+3. Retorne APENAS o texto puro, sem análises, sem descrições, sem metadados
+4. Mantenha parágrafos, títulos, listas e estrutura do texto
+5. NÃO mencione que é um arquivo DOCX, base64, ou qualquer aspecto técnico
+6. Imagine que está copiando e colando todo o texto visível do Word
+
+O texto extraído será usado para criar questões de avaliação sobre o CONTEÚDO.
+
+Arquivo base64:
+${base64Doc}`
+      : `Este é um documento PDF codificado em base64.
+
+Extraia TODO O TEXTO do documento de forma clara e estruturada.
+Mantenha títulos, seções e parágrafos.
+Retorne apenas o texto, sem análises ou descrições.
+
+Arquivo base64:
+${base64Doc}`;
+    
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -76,24 +114,8 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { 
-            role: "system",
-            content: `Você é um extrator de texto especializado. Sua única tarefa é extrair EXATAMENTE TODO O TEXTO do documento fornecido.
-
-INSTRUÇÕES CRÍTICAS:
-- Retorne APENAS o texto literal do documento, palavra por palavra
-- NÃO analise, NÃO resuma, NÃO descreva o documento
-- NÃO mencione metadados técnicos (base64, formato de arquivo, estrutura XML, etc)
-- Mantenha todos os títulos, seções, parágrafos e formatação hierárquica
-- Se o documento tiver tabelas, extraia o conteúdo delas também
-- Preserve numerações e bullets
-- O texto extraído deve ser compreensível e completo para criar questões sobre o conteúdo
-
-ERRADO: "Este documento contém informações sobre..."
-CORRETO: Copiar exatamente todo o texto que está no documento`
-          },
-          { 
             role: "user", 
-            content: base64Doc
+            content: extractionPrompt
           }
         ]
       }),
@@ -118,11 +140,22 @@ CORRETO: Copiar exatamente todo o texto que está no documento`
     
     console.log('Texto extraído com sucesso');
     console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
-    console.log('Preview do conteúdo:', documentContent.substring(0, 500));
+    console.log('Preview completo do conteúdo extraído:');
+    console.log('=====================================');
+    console.log(documentContent.substring(0, 1000));
+    console.log('=====================================');
     
     // Validações rigorosas de conteúdo
     if (!documentContent || documentContent.length < 200) {
-      throw new Error('Documento não contém texto suficiente para gerar questões. Mínimo: 200 caracteres.');
+      console.error('❌ ERRO: Conteúdo muito curto:', documentContent);
+      throw new Error(`Falha na extração de texto. Extraído apenas ${documentContent?.length || 0} caracteres. 
+      
+Isso pode acontecer se:
+1. O arquivo está corrompido
+2. O arquivo não contém texto extraível
+3. O arquivo é uma imagem escaneada (tente usar OCR primeiro)
+
+Por favor, verifique o arquivo e tente novamente.`);
     }
     
     const contentLower = documentContent.toLowerCase();
