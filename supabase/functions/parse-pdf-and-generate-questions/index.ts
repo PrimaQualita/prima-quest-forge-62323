@@ -44,11 +44,21 @@ serve(async (req) => {
 
     console.log('Extraindo texto do PDF...');
     
-    // Converter para base64 em chunks para evitar stack overflow
+    // Verificar tamanho do arquivo
     const arrayBuffer = await fileData.arrayBuffer();
+    const fileSizeInMB = arrayBuffer.byteLength / (1024 * 1024);
+    console.log(`Tamanho do arquivo: ${fileSizeInMB.toFixed(2)} MB`);
+    
+    // Limitar processamento de arquivos muito grandes
+    if (fileSizeInMB > 5) {
+      throw new Error(`Arquivo muito grande (${fileSizeInMB.toFixed(2)}MB). Máximo permitido: 5MB`);
+    }
+    
+    // Converter para base64 de forma mais eficiente
     const uint8Array = new Uint8Array(arrayBuffer);
     let base64Pdf = '';
     const chunkSize = 8192;
+    
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
       base64Pdf += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
@@ -56,13 +66,13 @@ serve(async (req) => {
     
     console.log(`PDF convertido para base64, tamanho: ${base64Pdf.length} caracteres`);
     
-    // Usar Gemini para extrair texto - Aumentado para 1MB (aprox. 1.3M caracteres em base64)
-    const maxBase64Length = 1300000; // ~1MB de PDF original
+    // Limitar tamanho do base64 enviado (800KB = ~600KB de PDF)
+    const maxBase64Length = 800000;
     const base64ToSend = base64Pdf.length > maxBase64Length 
       ? base64Pdf.substring(0, maxBase64Length) 
       : base64Pdf;
     
-    console.log(`Enviando ${base64ToSend.length} caracteres para extração (${Math.round(base64ToSend.length / 1300000 * 100)}% do limite)`);
+    console.log(`Enviando ${base64ToSend.length} caracteres (${Math.round(base64ToSend.length / 1000)}KB) para extração`);
     
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -71,18 +81,15 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { 
             role: "system",
-            content: "Você é um especialista em extrair e estruturar texto de documentos PDF. Extraia TODO o texto mantendo a estrutura lógica, títulos, seções e conteúdo relevante."
+            content: "Extraia TODO o texto deste PDF de forma estruturada. Mantenha títulos, seções e parágrafos organizados."
           },
           { 
             role: "user", 
-            content: `Extraia todo o texto deste documento PDF. O documento está em base64. Retorne APENAS o texto extraído de forma estruturada, preservando títulos, parágrafos e listas. Foque no conteúdo relevante para treinamento corporativo.
-
-Base64 do PDF:
-${base64ToSend}`
+            content: `Documento PDF em base64:\n${base64ToSend}`
           }
         ]
       }),
@@ -91,6 +98,14 @@ ${base64ToSend}`
     if (!extractResponse.ok) {
       const error = await extractResponse.text();
       console.error("Erro ao extrair texto:", extractResponse.status, error);
+      
+      if (extractResponse.status === 429) {
+        throw new Error("Limite de requisições atingido. Aguarde alguns minutos e tente novamente.");
+      }
+      if (extractResponse.status === 402) {
+        throw new Error("Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage.");
+      }
+      
       throw new Error(`Erro ao extrair texto do PDF: ${extractResponse.status}`);
     }
 
@@ -100,6 +115,16 @@ ${base64ToSend}`
     console.log('Texto extraído com sucesso');
     console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
     console.log('Preview do conteúdo:', documentContent.substring(0, 300));
+    
+    // Validar conteúdo extraído
+    if (!documentContent || documentContent.length < 100) {
+      throw new Error('PDF não contém texto suficiente para gerar questões. Verifique se o arquivo está correto.');
+    }
+    
+    if (documentContent.toLowerCase().includes('log de atividades') || 
+        documentContent.toLowerCase().includes('conjunto de dados')) {
+      throw new Error('PDF parece conter apenas dados brutos. Use um documento com texto formatado.');
+    }
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
@@ -191,6 +216,14 @@ ${base64ToSend}`
     if (!response.ok) {
       const error = await response.text();
       console.error("Erro da IA ao gerar questões:", response.status, error);
+      
+      if (response.status === 429) {
+        throw new Error("Limite de requisições atingido. Aguarde alguns minutos.");
+      }
+      if (response.status === 402) {
+        throw new Error("Créditos insuficientes para gerar questões.");
+      }
+      
       throw new Error(`Erro ao gerar questões: ${response.status} - ${error.substring(0, 200)}`);
     }
 

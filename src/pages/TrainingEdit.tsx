@@ -562,20 +562,32 @@ const TrainingEdit = () => {
                     
                     try {
                       for (const doc of documents) {
-                        const response = await supabase.functions.invoke('parse-pdf-and-generate-questions', {
-                          body: { 
-                            trainingId: id, 
-                            filePath: doc.file_path 
-                          }
-                        });
+                        console.log(`Processando ${doc.file_name}...`);
                         
-                        if (response.error) throw response.error;
+                        const response = await Promise.race([
+                          supabase.functions.invoke('parse-pdf-and-generate-questions', {
+                            body: { 
+                              trainingId: id, 
+                              filePath: doc.file_path 
+                            }
+                          }),
+                          new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Timeout: Processamento demorou mais de 3 minutos')), 180000)
+                          )
+                        ]) as any;
+                        
+                        if (response.error) {
+                          console.error('Erro na resposta:', response.error);
+                          throw response.error;
+                        }
                         
                         if (response.data?.success) {
                           toast({
                             title: "Questões geradas!",
                             description: `${response.data.questionsGenerated} questões criadas para ${doc.file_name}`
                           });
+                        } else {
+                          throw new Error('Resposta inválida da função');
                         }
                       }
                     } catch (err: any) {
