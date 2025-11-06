@@ -11,20 +11,30 @@ const Reports = () => {
   const { data: stats } = useQuery({
     queryKey: ['compliance-stats'],
     queryFn: async () => {
-      const [employees, documents, trainings, acknowledgments, participations] = await Promise.all([
+      const [employees, documents, trainings, acknowledgments, participations, assessments] = await Promise.all([
         supabase.from('employees').select('*', { count: 'exact' }),
         supabase.from('compliance_documents').select('*', { count: 'exact' }),
         supabase.from('trainings').select('*', { count: 'exact' }),
         supabase.from('document_acknowledgments').select('*').eq('quiz_correct', true).not('employee_id', 'is', null),
-        supabase.from('training_participations').select('*').eq('completed', true).not('employee_id', 'is', null),
+        supabase.from('training_participations').select('employee_id, training_id').eq('completed', true).not('employee_id', 'is', null),
+        supabase.from('training_assessments').select('employee_id, training_id').eq('passed', true).not('employee_id', 'is', null),
       ]);
+
+      // Combinar e deduplificar completions de treinamento
+      const completedTrainingsSet = new Set<string>();
+      participations.data?.forEach(p => {
+        completedTrainingsSet.add(`${p.employee_id}-${p.training_id}`);
+      });
+      assessments.data?.forEach(a => {
+        completedTrainingsSet.add(`${a.employee_id}-${a.training_id}`);
+      });
 
       return {
         totalEmployees: employees.count || 0,
         totalDocuments: documents.count || 0,
         totalTrainings: trainings.count || 0,
         acknowledgedDocs: acknowledgments.data?.length || 0,
-        completedTrainings: participations.data?.length || 0,
+        completedTrainings: completedTrainingsSet.size,
       };
     },
   });
