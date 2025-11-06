@@ -56,7 +56,14 @@ serve(async (req) => {
     
     console.log(`PDF convertido para base64, tamanho: ${base64Pdf.length} caracteres`);
     
-    // Usar Gemini para extrair texto - com prompt específico para PDFs grandes
+    // Usar Gemini para extrair texto - Aumentado para 1MB (aprox. 1.3M caracteres em base64)
+    const maxBase64Length = 1300000; // ~1MB de PDF original
+    const base64ToSend = base64Pdf.length > maxBase64Length 
+      ? base64Pdf.substring(0, maxBase64Length) 
+      : base64Pdf;
+    
+    console.log(`Enviando ${base64ToSend.length} caracteres para extração (${Math.round(base64ToSend.length / 1300000 * 100)}% do limite)`);
+    
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -68,14 +75,14 @@ serve(async (req) => {
         messages: [
           { 
             role: "system",
-            content: "Você é um especialista em extrair e estruturar texto de documentos PDF. Extraia TODO o texto mantendo a estrutura lógica."
+            content: "Você é um especialista em extrair e estruturar texto de documentos PDF. Extraia TODO o texto mantendo a estrutura lógica, títulos, seções e conteúdo relevante."
           },
           { 
             role: "user", 
-            content: `Extraia todo o texto deste documento PDF. O documento está em base64. Retorne APENAS o texto extraído de forma estruturada, preservando títulos, parágrafos e listas.
+            content: `Extraia todo o texto deste documento PDF. O documento está em base64. Retorne APENAS o texto extraído de forma estruturada, preservando títulos, parágrafos e listas. Foque no conteúdo relevante para treinamento corporativo.
 
-Base64 do PDF (primeiros 100KB):
-${base64Pdf.substring(0, 100000)}`
+Base64 do PDF:
+${base64ToSend}`
           }
         ]
       }),
@@ -183,16 +190,18 @@ ${base64Pdf.substring(0, 100000)}`
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("Erro da IA:", response.status, error);
-      throw new Error(`Erro ao gerar questões: ${response.status}`);
+      console.error("Erro da IA ao gerar questões:", response.status, error);
+      throw new Error(`Erro ao gerar questões: ${response.status} - ${error.substring(0, 200)}`);
     }
 
     const aiResponse = await response.json();
     console.log('Resposta da IA recebida');
+    console.log('Estrutura da resposta:', JSON.stringify(aiResponse).substring(0, 500));
     
-    const toolCall = aiResponse.choices[0].message.tool_calls?.[0];
+    const toolCall = aiResponse.choices[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      throw new Error("IA não retornou questões no formato esperado");
+      console.error('Resposta completa da IA:', JSON.stringify(aiResponse, null, 2));
+      throw new Error("IA não retornou questões no formato esperado. Verifique os logs para detalhes.");
     }
 
     const questionsData = JSON.parse(toolCall.function.arguments);

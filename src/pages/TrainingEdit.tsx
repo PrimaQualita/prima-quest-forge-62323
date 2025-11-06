@@ -544,7 +544,57 @@ const TrainingEdit = () => {
 
         <Card className="p-6">
           <div className="space-y-4">
-            <Label className="text-lg">Documentos do Treinamento</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-lg">Documentos do Treinamento</Label>
+              {documents.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!id) return;
+                    setIsGeneratingQuestions(true);
+                    
+                    toast({
+                      title: "Regenerando questões...",
+                      description: "Isso pode levar alguns minutos. Aguarde."
+                    });
+                    
+                    try {
+                      for (const doc of documents) {
+                        const response = await supabase.functions.invoke('parse-pdf-and-generate-questions', {
+                          body: { 
+                            trainingId: id, 
+                            filePath: doc.file_path 
+                          }
+                        });
+                        
+                        if (response.error) throw response.error;
+                        
+                        if (response.data?.success) {
+                          toast({
+                            title: "Questões geradas!",
+                            description: `${response.data.questionsGenerated} questões criadas para ${doc.file_name}`
+                          });
+                        }
+                      }
+                    } catch (err: any) {
+                      console.error('Erro ao regenerar questões:', err);
+                      toast({
+                        title: "Erro ao regenerar questões",
+                        description: err.message || "Não foi possível gerar as questões automaticamente.",
+                        variant: "destructive"
+                      });
+                    } finally {
+                      setIsGeneratingQuestions(false);
+                    }
+                  }}
+                  disabled={isGeneratingQuestions}
+                >
+                  {isGeneratingQuestions ? "Gerando..." : "🔄 Regenerar Questões"}
+                </Button>
+              )}
+            </div>
             
             {documents.length > 0 && (
               <div className="space-y-2">
