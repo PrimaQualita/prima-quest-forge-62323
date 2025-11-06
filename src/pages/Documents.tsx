@@ -27,6 +27,7 @@ const Documents = () => {
   const [currentQuiz, setCurrentQuiz] = useState<any>(null);
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const [isGeneratingNewQuestion, setIsGeneratingNewQuestion] = useState(false);
+  const [isGeneratingAllQuestions, setIsGeneratingAllQuestions] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -267,6 +268,34 @@ const Documents = () => {
     },
   });
 
+  const generateAllQuestionsMutation = useMutation({
+    mutationFn: async () => {
+      setIsGeneratingAllQuestions(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-all-document-questions');
+        
+        if (error) throw error;
+        return data;
+      } finally {
+        setIsGeneratingAllQuestions(false);
+      }
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Questões geradas com sucesso!",
+        description: `${data.totalQuestionsGenerated} questões geradas para ${data.totalDocuments} documentos`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['compliance-documents'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao gerar questões",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
   const generateNewQuestionMutation = useMutation({
     mutationFn: async (docId: string) => {
       setIsGeneratingNewQuestion(true);
@@ -383,6 +412,15 @@ const Documents = () => {
           <p className="text-muted-foreground mt-1">Gerencie políticas e regulamentos</p>
         </div>
         {isAdmin && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => generateAllQuestionsMutation.mutate()}
+              disabled={isGeneratingAllQuestions}
+              variant="outline"
+            >
+              {isGeneratingAllQuestions && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Gerar 20 Perguntas para Todos
+            </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -531,6 +569,7 @@ const Documents = () => {
             </div>
             </DialogContent>
         </Dialog>
+          </div>
         )}
       </div>
 
