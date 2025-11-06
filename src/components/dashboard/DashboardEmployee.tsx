@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 
 interface DashboardEmployeeProps {
   employeeId: string;
@@ -107,36 +106,6 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
     }
   };
 
-  const documentChartData = [
-    { name: 'Aceitos', value: stats?.acceptedDocs || 0, color: '#10b981' },
-    { name: 'Pendentes', value: stats?.pendingDocs || 0, color: '#ef4444' }
-  ];
-
-  const trainingChartData = [
-    { name: 'Concluídos', value: stats?.completedTrainings || 0, color: '#3b82f6' },
-    { name: 'Pendentes', value: stats?.pendingTrainings || 0, color: '#f59e0b' }
-  ];
-
-  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
-    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
-
-    if (percent === 0) return null;
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        className="font-bold text-sm"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
 
   return (
     <div className="space-y-6 md:space-y-8 pt-6">
@@ -198,81 +167,6 @@ const DashboardEmployee = ({ employeeId }: DashboardEmployeeProps) => {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileCheck className="w-5 h-5 text-primary" />
-              Progresso de Regulamentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={documentChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={renderCustomLabel}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {documentChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="text-center mt-4">
-              <p className="text-2xl font-bold text-primary">
-                {stats?.totalDocs ? ((stats.acceptedDocs / stats.totalDocs) * 100).toFixed(2).replace('.', ',') : '0,00'}%
-              </p>
-              <p className="text-sm text-muted-foreground">Taxa de Conformidade</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-secondary" />
-              Progresso de Treinamentos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={trainingChartData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={renderCustomLabel}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {trainingChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="text-center mt-4">
-              <p className="text-2xl font-bold text-secondary">
-                {stats?.totalTrainings ? ((stats.completedTrainings / stats.totalTrainings) * 100).toFixed(2).replace('.', ',') : '0,00'}%
-              </p>
-              <p className="text-sm text-muted-foreground">Taxa de Conclusão</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       <div className={`grid grid-cols-1 gap-4 md:gap-6 ${
         pendingDocuments && pendingDocuments.length > 0 && pendingTrainings && pendingTrainings.length > 0 
