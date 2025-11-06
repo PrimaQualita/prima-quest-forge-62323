@@ -596,7 +596,7 @@ const Documents = () => {
                     <Badge variant="secondary">{doc.category}</Badge>
                   </div>
                 </div>
-                <CardTitle className="mt-4">{doc.title}</CardTitle>
+                <CardTitle className="mt-4 text-center leading-[1.5]">{doc.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div 

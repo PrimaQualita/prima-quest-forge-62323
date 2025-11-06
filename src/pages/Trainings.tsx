@@ -659,7 +659,7 @@ const Trainings = () => {
                     </Badge>
                   </div>
                 </div>
-                <CardTitle className="mt-4">{training.title}</CardTitle>
+                <CardTitle className="mt-4 text-center leading-[1.5]">{training.title}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div 
