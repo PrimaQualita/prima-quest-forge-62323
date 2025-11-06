@@ -13,6 +13,7 @@ import { ArrowLeft, Video, FileText, CheckCircle, Lock, Download } from "lucide-
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import DOMPurify from "dompurify";
+import { CertificateButton } from "@/components/training/CertificateButton";
 
 interface AssessmentWithQuestions {
   id: string;
@@ -552,7 +553,7 @@ const TrainingView = () => {
 
           {assessment?.passed && (
             <Card>
-              <CardContent className="pt-6 text-center">
+              <CardContent className="pt-6 text-center space-y-4">
                 <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Parabéns! Você foi aprovado!</h3>
                 <p className="text-muted-foreground">
@@ -561,6 +562,14 @@ const TrainingView = () => {
                 <p className="text-sm text-muted-foreground mt-1">
                   Tentativas utilizadas: {assessment.attempts} de 5
                 </p>
+                {currentEmployee && (
+                  <CertificateButton
+                    employeeName={currentEmployee.name}
+                    trainingTitle={training.title}
+                    completionDate={assessment.completed_at || new Date().toISOString()}
+                    score={assessment.score || 0}
+                  />
+                )}
               </CardContent>
             </Card>
           )}
