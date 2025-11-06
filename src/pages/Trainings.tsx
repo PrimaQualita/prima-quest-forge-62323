@@ -715,14 +715,16 @@ const Trainings = () => {
                       Acessar
                     </Button>
 
-                    <Button 
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => openEditPage(training.id)}
-                    >
-                      <Pencil className="w-4 h-4 mr-2" />
-                      Editar
-                    </Button>
+                    {isAdmin && (
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => openEditPage(training.id)}
+                      >
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>

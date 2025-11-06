@@ -583,14 +583,16 @@ const Documents = () => {
                 <div className="flex items-start justify-between">
                   <FileText className="w-8 h-8 text-primary" />
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditDoc(doc)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditDoc(doc)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Badge variant="secondary">{doc.category}</Badge>
                   </div>
                 </div>
