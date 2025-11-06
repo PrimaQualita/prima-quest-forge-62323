@@ -121,11 +121,16 @@ const TrainingView = () => {
       
       // Fetch questions based on the question IDs in the assessment
       const questionIds = assessmentData.questions as string[];
+      console.log('Assessment question IDs:', questionIds);
+      
       if (questionIds && questionIds.length > 0) {
-        const { data: questionsData } = await supabase
+        const { data: questionsData, error: questionsError } = await supabase
           .from('training_questions')
           .select('*')
           .in('id', questionIds);
+        
+        console.log('Fetched questions:', questionsData);
+        console.log('Questions error:', questionsError);
         
         return {
           ...assessmentData,
@@ -285,8 +290,8 @@ const TrainingView = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      refetchAssessment();
+    onSuccess: async () => {
+      await refetchAssessment();
       toast({
         title: "Avaliação criada!",
         description: "Você tem até 5 tentativas para atingir 60% de acertos.",
