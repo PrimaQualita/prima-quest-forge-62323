@@ -92,11 +92,6 @@ export const generateTrainingCertificate = async ({
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
   doc.text(employeeName.toUpperCase(), pageWidth / 2, 103, { align: "center" });
 
-  // Linha decorativa sob o nome
-  doc.setDrawColor(52, 152, 219);
-  doc.setLineWidth(0.5);
-  doc.line(pageWidth / 2 - 60, 106, pageWidth / 2 + 60, 106);
-
   // Texto de conclusão
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
