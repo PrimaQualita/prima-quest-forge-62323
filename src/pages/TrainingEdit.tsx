@@ -76,7 +76,7 @@ const TrainingEdit = () => {
         category: training.category,
         description: training.description || "",
         duration_hours: training.duration_hours || 0,
-        documentContent: "",
+        documentContent: training.document_content || "",
       });
       setIsTrail(training.is_trail || false);
       
@@ -116,6 +116,7 @@ const TrainingEdit = () => {
           description: formData.description,
           duration_hours: formData.duration_hours,
           is_trail: isTrail,
+          document_content: formData.documentContent,
         })
         .eq('id', id);
 

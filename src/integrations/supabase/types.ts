@@ -693,6 +693,7 @@ export type Database = {
           category: string
           created_at: string | null
           description: string | null
+          document_content: string | null
           duration_hours: number | null
           id: string
           is_trail: boolean | null
@@ -704,6 +705,7 @@ export type Database = {
           category: string
           created_at?: string | null
           description?: string | null
+          document_content?: string | null
           duration_hours?: number | null
           id?: string
           is_trail?: boolean | null
@@ -715,6 +717,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           description?: string | null
+          document_content?: string | null
           duration_hours?: number | null
           id?: string
           is_trail?: boolean | null
