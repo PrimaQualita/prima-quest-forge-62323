@@ -179,16 +179,21 @@ const Trainings = () => {
 
       // Gerar questões: usar texto digitado se disponível
       if (formData.documentContent && formData.documentContent.trim().length > 0) {
-        // Dividir documento em chunks para processar documentos grandes
-        const content = formData.documentContent;
-        const chunkSize = 40000;
+        // Limpar HTML/CSS do conteúdo antes de processar
+        const cleanContent = formData.documentContent
+          .replace(/<[^>]*>/g, '') // Remove tags HTML
+          .replace(/style="[^"]*"/g, '') // Remove atributos style inline
+          .replace(/\s+/g, ' ') // Normaliza espaços
+          .trim();
+        
+        const chunkSize = 150000; // ~30000 palavras por chunk
         const chunks: string[] = [];
         
-        if (content.length <= chunkSize) {
-          chunks.push(content);
+        if (cleanContent.length <= chunkSize) {
+          chunks.push(cleanContent);
         } else {
           let currentChunk = '';
-          const paragraphs = content.split('\n\n');
+          const paragraphs = cleanContent.split('\n\n');
           
           for (const paragraph of paragraphs) {
             if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {

@@ -659,9 +659,9 @@ const TrainingEdit = () => {
                 <div className="text-sm text-success">
                   ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
                   {formData.documentContent.length.toLocaleString()} caracteres
-                  {formData.documentContent.length > 100000 && (
+                  {formData.documentContent.length > 200000 && (
                     <span className="block text-xs text-muted-foreground mt-1">
-                      📚 Documento grande será processado em partes (aproximadamente {Math.ceil(formData.documentContent.length / 40000)} partes)
+                      📚 Documento grande será processado em partes (aproximadamente {Math.ceil(formData.documentContent.length / 150000)} partes)
                     </span>
                   )}
                 </div>
@@ -696,17 +696,23 @@ const TrainingEdit = () => {
                     .delete()
                     .eq('training_id', id);
 
-                  const content = formData.documentContent;
-                  const chunkSize = 40000; // ~8000 palavras por chunk
+                  // Limpar HTML/CSS do conteúdo antes de processar
+                  const cleanContent = formData.documentContent
+                    .replace(/<[^>]*>/g, '') // Remove tags HTML
+                    .replace(/style="[^"]*"/g, '') // Remove atributos style inline
+                    .replace(/\s+/g, ' ') // Normaliza espaços
+                    .trim();
+                  
+                  const chunkSize = 150000; // ~30000 palavras por chunk
                   const chunks: string[] = [];
                   
                   // Dividir documento em chunks
-                  if (content.length <= chunkSize) {
-                    chunks.push(content);
+                  if (cleanContent.length <= chunkSize) {
+                    chunks.push(cleanContent);
                   } else {
                     // Dividir mantendo parágrafos completos
                     let currentChunk = '';
-                    const paragraphs = content.split('\n\n');
+                    const paragraphs = cleanContent.split('\n\n');
                     
                     for (const paragraph of paragraphs) {
                       if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
