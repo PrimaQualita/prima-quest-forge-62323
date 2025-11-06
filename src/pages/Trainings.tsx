@@ -51,7 +51,6 @@ const Trainings = () => {
   }]);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-  const [isGeneratingAllQuestions, setIsGeneratingAllQuestions] = useState(false);
 
   const { data: trainings } = useQuery({
     queryKey: ['trainings'],
@@ -322,70 +321,7 @@ const Trainings = () => {
           <h1 className="text-2xl md:text-4xl font-bold text-foreground uppercase">TREINAMENTOS</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={async () => {
-              setIsGeneratingAllQuestions(true);
-              toast({
-                title: "Iniciando geração de questões",
-                description: "Processando documentos dos treinamentos...",
-              });
-              
-              try {
-                const { data, error } = await supabase.functions.invoke('generate-all-training-questions', {
-                  body: {}
-                });
-                
-                console.log('Resposta da função:', data, error);
-                
-                if (error) {
-                  console.error('Erro na função:', error);
-                  throw error;
-                }
-                
-                if (data?.success) {
-                  const { summary, results } = data;
-                  
-                  // Mostrar detalhes dos resultados
-                  const failedTrainings = results.filter((r: any) => !r.success);
-                  
-                  if (failedTrainings.length > 0) {
-                    console.error('Treinamentos com falha:', failedTrainings);
-                    toast({
-                      title: "Questões geradas com avisos",
-                      description: `${summary.success} de ${summary.total} treinamentos processados. ${summary.failures} falharam.`,
-                      variant: "destructive"
-                    });
-                  } else {
-                    toast({
-                      title: "✅ Questões geradas com sucesso!",
-                      description: `50 questões geradas para cada um dos ${summary.total} treinamentos.`
-                    });
-                  }
-                  
-                  // Recarregar dados
-                  queryClient.invalidateQueries({ queryKey: ['trainings'] });
-                } else {
-                  throw new Error(data?.error || 'Resposta inválida da função');
-                }
-              } catch (err) {
-                console.error('Erro ao gerar questões:', err);
-                toast({
-                  title: "Erro ao gerar questões",
-                  description: err instanceof Error ? err.message : "Não foi possível gerar as questões. Verifique o console para detalhes.",
-                  variant: "destructive"
-                });
-              } finally {
-                setIsGeneratingAllQuestions(false);
-              }
-            }}
-            disabled={isGeneratingAllQuestions}
-            className="w-full md:w-auto"
-          >
-            <GraduationCap className="w-4 h-4 mr-2" />
-            {isGeneratingAllQuestions ? "Gerando..." : "Gerar 50 Questões por Treinamento"}
-          </Button>
+        <div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
@@ -631,7 +567,7 @@ const Trainings = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

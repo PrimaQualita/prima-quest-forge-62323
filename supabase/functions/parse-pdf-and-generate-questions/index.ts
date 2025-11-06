@@ -44,9 +44,17 @@ serve(async (req) => {
 
     console.log('Convertendo PDF para texto...');
     
-    // Convert PDF to base64 for text extraction
+    // Convert PDF to base64 for text extraction (using chunks to avoid stack overflow)
     const arrayBuffer = await fileData.arrayBuffer();
-    const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Process in chunks to avoid "Maximum call stack size exceeded"
+    let base64Pdf = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      base64Pdf += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+    }
     
     // Use Gemini's multimodal capability to extract text from PDF
     const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
