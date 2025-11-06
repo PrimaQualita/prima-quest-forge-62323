@@ -410,7 +410,8 @@ const SupplierDueDiligence = () => {
             <CardTitle>Fornecedores Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
@@ -471,6 +472,7 @@ const SupplierDueDiligence = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}
