@@ -340,7 +340,7 @@ const Trainings = () => {
   };
 
   const getCompletionRate = (trainingId: string) => {
-    if (!participations || !employees) return 0;
+    if (!participations || !employees || employees.length === 0) return 0;
     const completed = participations.filter(
       p => p.training_id === trainingId && p.completed
     ).length;
