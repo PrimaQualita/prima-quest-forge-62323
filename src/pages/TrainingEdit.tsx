@@ -322,6 +322,98 @@ const TrainingEdit = () => {
     document.body.removeChild(link);
   };
 
+  const handleReplaceDocument = async (documentId: string, oldFilePath: string, newFile: File) => {
+    if (!id) return;
+    
+    toast({
+      title: "Substituindo documento...",
+      description: "Deletando arquivo antigo e fazendo upload do novo."
+    });
+
+    try {
+      // 1. Deletar arquivo antigo do storage
+      const { error: deleteStorageError } = await supabase.storage
+        .from('compliance-documents')
+        .remove([oldFilePath]);
+
+      if (deleteStorageError) {
+        console.error('Erro ao deletar arquivo antigo:', deleteStorageError);
+      }
+
+      // 2. Fazer upload do novo arquivo
+      const fileExt = newFile.name.split('.').pop();
+      const newFileName = `${id}/${crypto.randomUUID()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('compliance-documents')
+        .upload(newFileName, newFile);
+
+      if (uploadError) throw uploadError;
+
+      // 3. Atualizar registro na tabela training_documents
+      const { error: updateError } = await supabase
+        .from('training_documents')
+        .update({
+          file_path: newFileName,
+          file_name: newFile.name,
+        })
+        .eq('id', documentId);
+
+      if (updateError) throw updateError;
+
+      // 4. Deletar questões antigas deste treinamento
+      const { error: deleteQuestionsError } = await supabase
+        .from('training_questions')
+        .delete()
+        .eq('training_id', id);
+
+      if (deleteQuestionsError) {
+        console.error('Erro ao deletar questões antigas:', deleteQuestionsError);
+      }
+
+      toast({
+        title: "Documento substituído!",
+        description: "Gerando novas questões..."
+      });
+
+      // 5. Gerar novas questões
+      setIsGeneratingQuestions(true);
+      const response = await supabase.functions.invoke('parse-pdf-and-generate-questions', {
+        body: { 
+          trainingId: id, 
+          filePath: newFileName 
+        }
+      });
+
+      if (response.data?.success) {
+        toast({
+          title: "Sucesso!",
+          description: `Documento substituído e ${response.data.questionsGenerated} novas questões geradas.`
+        });
+        
+        // Atualizar lista de documentos
+        setDocuments(documents.map(doc => 
+          doc.id === documentId 
+            ? { ...doc, file_path: newFileName, file_name: newFile.name }
+            : doc
+        ));
+        
+        queryClient.invalidateQueries({ queryKey: ['training', id] });
+      } else {
+        throw new Error('Falha ao gerar questões');
+      }
+    } catch (err: any) {
+      console.error('Erro ao substituir documento:', err);
+      toast({
+        title: "Erro ao substituir documento",
+        description: err.message || "Não foi possível substituir o documento.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="pt-6">Carregando...</div>;
   }
@@ -625,6 +717,25 @@ const TrainingEdit = () => {
                         onClick={() => handleDownloadDocument(doc.file_path, doc.file_name)}
                       >
                         Baixar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.pdf,.doc,.docx';
+                          input.onchange = async (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file && doc.id) {
+                              await handleReplaceDocument(doc.id, doc.file_path, file);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        Substituir
                       </Button>
                       <Button
                         type="button"
