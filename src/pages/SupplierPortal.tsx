@@ -125,8 +125,8 @@ const SupplierPortal = () => {
                 <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
                   <img src="/logo-prima-qualita.png" alt="Prima Qualitá" className="h-16 w-16 object-contain" />
                 </div>
-                <CardTitle className="text-3xl">Portal do Fornecedor</CardTitle>
-                <CardDescription>Prima Qualitá Saúde</CardDescription>
+                <CardTitle className="text-3xl">Home</CardTitle>
+                <CardDescription>Portal do Fornecedor - Prima Qualitá Saúde</CardDescription>
               </div>
               <Button onClick={handleLogout} variant="outline" size="sm">
                 <LogOut className="w-4 h-4 mr-2" />

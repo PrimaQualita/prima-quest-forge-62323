@@ -29,40 +29,58 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ 
   children, 
-  adminOnly = false 
+  adminOnly = false,
+  allowSupplier = false
 }: { 
   children: React.ReactNode;
   adminOnly?: boolean;
+  allowSupplier?: boolean;
 }) => {
   const { session, loading, isAdmin, user } = useAuth();
   const location = useLocation();
   const [checkingFirstLogin, setCheckingFirstLogin] = useState(true);
   const [needsPasswordChange, setNeedsPasswordChange] = useState(false);
+  const [isSupplier, setIsSupplier] = useState(false);
+  const [checkingSupplier, setCheckingSupplier] = useState(true);
 
   useEffect(() => {
-    const checkFirstLogin = async () => {
+    const checkFirstLoginAndSupplier = async () => {
       if (user?.id && location.pathname !== '/change-password') {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('first_login')
-          .eq('id', user.id)
-          .maybeSingle();
+        const [profileResult, supplierResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('first_login')
+            .eq('id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('supplier_due_diligence')
+            .select('status')
+            .eq('user_id', user.id)
+            .eq('status', 'approved')
+            .maybeSingle()
+        ]);
 
-        if (profile?.first_login === true) {
+        if (profileResult.data?.first_login === true) {
           setNeedsPasswordChange(true);
+        }
+
+        if (supplierResult.data) {
+          setIsSupplier(true);
         }
       }
       setCheckingFirstLogin(false);
+      setCheckingSupplier(false);
     };
 
     if (!loading && user) {
-      checkFirstLogin();
+      checkFirstLoginAndSupplier();
     } else if (!loading) {
       setCheckingFirstLogin(false);
+      setCheckingSupplier(false);
     }
   }, [user, loading, location.pathname]);
 
-  if (loading || checkingFirstLogin) {
+  if (loading || checkingFirstLogin || checkingSupplier) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
@@ -75,8 +93,13 @@ const ProtectedRoute = ({
     return <Navigate to="/change-password" replace />;
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isAdmin && !isSupplier) {
     return <Navigate to="/" replace />;
+  }
+
+  // Allow suppliers if the route permits it
+  if (allowSupplier && isSupplier) {
+    return <>{children}</>;
   }
 
   return <>{children}</>;
@@ -95,13 +118,14 @@ const App = () => (
           <Route path="/verificar-certificado" element={<VerifyCertificate />} />
           <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
           
-          {/* Rotas acessíveis a todos os usuários autenticados */}
-          <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+          {/* Rotas acessíveis a todos os usuários autenticados e fornecedores */}
+          <Route path="/" element={<ProtectedRoute allowSupplier><Layout><Dashboard /></Layout></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-          <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
-          <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
-          <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute allowSupplier><Layout><Documents /></Layout></ProtectedRoute>} />
+          <Route path="/trainings" element={<ProtectedRoute allowSupplier><Layout><Trainings /></Layout></ProtectedRoute>} />
+          <Route path="/trainings/:id" element={<ProtectedRoute allowSupplier><Layout><TrainingView /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
+          <Route path="/supplier-home" element={<ProtectedRoute allowSupplier><Layout><SupplierPortal /></Layout></ProtectedRoute>} />
           
           {/* Rotas apenas para gestores/admins */}
           <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />

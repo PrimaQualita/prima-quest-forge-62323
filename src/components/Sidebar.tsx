@@ -10,31 +10,40 @@ import {
   BarChart3,
   FileCheck,
   Briefcase,
-  LogOut
+  LogOut,
+  Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { UserProfile } from "@/components/UserProfile";
+import { useQuery } from "@tanstack/react-query";
 
 interface SidebarProps {
   onNavigate?: () => void;
 }
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
-  { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
-  { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
-  { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
-  { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
-  { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
-  { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
-];
-
 export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
+
+  const { data: isSupplier } = useQuery({
+    queryKey: ['is-supplier', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      
+      const { data } = await supabase
+        .from('supplier_due_diligence')
+        .select('status')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+      
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -46,7 +55,25 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     onNavigate?.();
   };
 
-  const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
+  const supplierMenuItems = [
+    { icon: Home, label: "Home", path: "/supplier-home", adminOnly: false },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
+    { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
+    { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
+  ];
+
+  const regularMenuItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
+    { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
+    { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
+    { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
+    { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
+    { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
+    { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
+  ];
+
+  const menuItemsToShow = isSupplier ? supplierMenuItems : regularMenuItems;
+  const visibleMenuItems = menuItemsToShow.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border overflow-y-auto z-50">
@@ -98,7 +125,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
             <div className="mb-3 px-2">
               <p className="text-xs text-sidebar-foreground/60 mb-1">Tipo de Usuário</p>
               <p className="text-sm text-sidebar-foreground font-medium">
-                {isAdmin ? "Gestor" : "Colaborador"}
+                {isSupplier ? "Fornecedor" : isAdmin ? "Gestor" : "Colaborador"}
               </p>
             </div>
             <Button
