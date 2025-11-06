@@ -64,7 +64,7 @@ export const generateTrainingCertificate = async ({
 
   // Logo Prima Qualitá - menor e mais proporcional
   try {
-    doc.addImage(logoImage, "PNG", pageWidth / 2 - 25, 20, 50, 25);
+    doc.addImage(logoImage, "PNG", pageWidth / 2 - 25, 18, 50, 25);
   } catch (error) {
     console.error("Erro ao adicionar logo:", error);
   }
@@ -73,51 +73,53 @@ export const generateTrainingCertificate = async ({
   doc.setFontSize(36);
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
   doc.setFont("helvetica", "bold");
-  doc.text("CERTIFICADO", pageWidth / 2, 85, { align: "center" });
+  doc.text("CERTIFICADO", pageWidth / 2, 60, { align: "center" });
 
   // Subtítulo
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
-  doc.text("Projeto Social Cresce Comunidade", pageWidth / 2, 95, { align: "center" });
+  doc.text("Projeto Social Cresce Comunidade", pageWidth / 2, 72, { align: "center" });
 
   // Texto de certificação
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(40, 40, 40);
-  doc.text("Certificamos que", pageWidth / 2, 110, { align: "center" });
+  doc.text("Certificamos que", pageWidth / 2, 88, { align: "center" });
 
   // Nome do colaborador
-  doc.setFontSize(24);
+  doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
-  doc.text(employeeName.toUpperCase(), pageWidth / 2, 125, { align: "center" });
+  doc.text(employeeName.toUpperCase(), pageWidth / 2, 103, { align: "center" });
 
   // Linha decorativa sob o nome
   doc.setDrawColor(52, 152, 219);
   doc.setLineWidth(0.5);
-  doc.line(pageWidth / 2 - 60, 127, pageWidth / 2 + 60, 127);
+  doc.line(pageWidth / 2 - 60, 106, pageWidth / 2 + 60, 106);
 
   // Texto de conclusão
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text("concluiu com êxito o treinamento", pageWidth / 2, 140, { align: "center" });
+  doc.text("concluiu com êxito o treinamento", pageWidth / 2, 120, { align: "center" });
 
   // Nome do treinamento
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
   
   // Split training title if too long
   const maxWidth = pageWidth - 80;
   const titleLines = doc.splitTextToSize(trainingTitle, maxWidth);
-  doc.text(titleLines, pageWidth / 2, 150, { align: "center" });
+  const titleStartY = 133;
+  doc.text(titleLines, pageWidth / 2, titleStartY, { align: "center" });
 
-  // Nota obtida
-  doc.setFontSize(12);
+  // Nota obtida - com espaçamento adequado
+  doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  const yPositionScore = 150 + (titleLines.length * 7);
+  const lineHeight = 6;
+  const yPositionScore = titleStartY + (titleLines.length * lineHeight) + 12;
   doc.text(`com aproveitamento de ${score}%`, pageWidth / 2, yPositionScore, { align: "center" });
 
   // Data de conclusão
@@ -126,10 +128,10 @@ export const generateTrainingCertificate = async ({
     month: "long",
     year: "numeric",
   });
-  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
+  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 10, { align: "center" });
 
-  // Assinatura - sem linha e sem nome
-  const signatureY = pageHeight - 50;
+  // Assinatura - sem linha e sem nome, com espaçamento melhor
+  const signatureY = yPositionScore + 26;
   
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
@@ -139,17 +141,17 @@ export const generateTrainingCertificate = async ({
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 6, { align: "center" });
+  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 8, { align: "center" });
 
-  // Código de verificação
+  // Código de verificação - na parte inferior
   doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text(`Código de Verificação: ${verificationCode}`, pageWidth / 2, pageHeight - 25, { align: "center" });
+  doc.text(`Código de Verificação: ${verificationCode}`, pageWidth / 2, pageHeight - 22, { align: "center" });
   
   doc.setFontSize(7);
   doc.setTextColor(52, 152, 219);
   const verificationUrl = `${window.location.origin}/verificar-certificado`;
-  doc.text(`Verifique a autenticidade em: ${verificationUrl}`, pageWidth / 2, pageHeight - 20, { align: "center" });
+  doc.text(`Verifique a autenticidade em: ${verificationUrl}`, pageWidth / 2, pageHeight - 16, { align: "center" });
 
   // Save PDF
   doc.save(`Certificado_${employeeName.replace(/\s+/g, "_")}_${trainingTitle.substring(0, 30).replace(/\s+/g, "_")}.pdf`);
