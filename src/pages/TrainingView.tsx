@@ -99,11 +99,12 @@ const TrainingView = () => {
     enabled: !!currentEmployee,
   });
 
-  const { data: assessment } = useQuery<AssessmentWithQuestions | null>({
+  const { data: assessment, refetch: refetchAssessment } = useQuery<AssessmentWithQuestions | null>({
     queryKey: ['assessment', id, currentEmployee?.id],
     queryFn: async () => {
       if (!currentEmployee) return null;
       
+      // Check if assessment already exists
       const { data: assessmentData, error } = await supabase
         .from('training_assessments')
         .select('*')
@@ -131,7 +132,7 @@ const TrainingView = () => {
       
       return assessmentData as AssessmentWithQuestions;
     },
-    enabled: !!currentEmployee,
+    enabled: !!currentEmployee && !!id,
   });
 
   const updateProgressMutation = useMutation({
@@ -201,6 +202,53 @@ const TrainingView = () => {
   ) ?? false;
 
   const canTakeAssessment = allVideosCompleted && !assessment?.completed;
+
+  // Create assessment when videos are completed
+  const createAssessmentMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentEmployee || !id) return;
+      
+      // Fetch available questions for this training
+      const { data: questionsData } = await supabase
+        .from('training_questions')
+        .select('id')
+        .eq('training_id', id);
+      
+      if (!questionsData || questionsData.length === 0) {
+        throw new Error("Nenhuma questão disponível para este treinamento");
+      }
+      
+      // Create assessment with questions
+      const questionIds = questionsData.map(q => q.id);
+      const { data, error } = await supabase
+        .from('training_assessments')
+        .insert({
+          training_id: id,
+          employee_id: currentEmployee.id,
+          questions: questionIds,
+          completed: false
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      refetchAssessment();
+      toast({
+        title: "Avaliação criada!",
+        description: "Você já pode iniciar a avaliação.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar avaliação",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   console.log('Debug Assessment:', {
     allVideosCompleted,
@@ -401,6 +449,26 @@ const TrainingView = () => {
         </TabsContent>
 
         <TabsContent value="assessment" className="space-y-4 mt-4">
+          {allVideosCompleted && !assessment && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Criar Avaliação</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Você completou todos os vídeos! Crie sua avaliação para responder às questões.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => createAssessmentMutation.mutate()} 
+                  className="w-full"
+                  disabled={createAssessmentMutation.isPending}
+                >
+                  {createAssessmentMutation.isPending ? "Criando..." : "Criar Avaliação"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {canTakeAssessment && (
             <Card>
               <CardHeader>
