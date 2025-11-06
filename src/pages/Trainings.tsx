@@ -39,6 +39,7 @@ const Trainings = () => {
     category: "",
     description: "",
     duration_hours: 0,
+    documentContent: "", // Texto do documento para gerar questões
   });
   const [videos, setVideos] = useState<VideoData[]>([{
     title: "",
@@ -148,7 +149,7 @@ const Trainings = () => {
         if (videosError) throw videosError;
       }
 
-      // Upload de documentos
+      // Upload de documentos (opcional - apenas para download)
       if (documents.length > 0) {
         const { data: { user } } = await supabase.auth.getUser();
         
@@ -172,32 +173,35 @@ const Trainings = () => {
             });
 
           if (docError) throw docError;
-
-          // Gerar questões via IA usando a nova função que extrai texto do PDF corretamente
-          setIsGeneratingQuestions(true);
-          supabase.functions.invoke('parse-pdf-and-generate-questions', {
-            body: { 
-              trainingId: training.id, 
-              filePath: fileName 
-            }
-          }).then((response) => {
-            setIsGeneratingQuestions(false);
-            if (response.data?.success) {
-              toast({
-                title: "Questões geradas com sucesso!",
-                description: `${response.data.questionsGenerated} questões criadas.`
-              });
-            }
-          }).catch((err) => {
-            console.error('Erro ao gerar questões:', err);
-            setIsGeneratingQuestions(false);
-            toast({
-              title: "Erro ao gerar questões",
-              description: "Não foi possível gerar as questões automaticamente.",
-              variant: "destructive"
-            });
-          });
         }
+      }
+
+      // Gerar questões: prioriza texto digitado, senão usa arquivo PDF
+      if (formData.documentContent && formData.documentContent.trim().length > 0) {
+        // Usar texto digitado para gerar questões
+        setIsGeneratingQuestions(true);
+        supabase.functions.invoke('generate-questions-from-text', {
+          body: { 
+            trainingId: training.id, 
+            documentContent: formData.documentContent 
+          }
+        }).then((response) => {
+          setIsGeneratingQuestions(false);
+          if (response.data?.success) {
+            toast({
+              title: "Questões geradas com sucesso!",
+              description: `${response.data.questionsGenerated} questões criadas a partir do texto.`
+            });
+          }
+        }).catch((err) => {
+          console.error('Erro ao gerar questões:', err);
+          setIsGeneratingQuestions(false);
+          toast({
+            title: "Erro ao gerar questões",
+            description: "Não foi possível gerar as questões automaticamente.",
+            variant: "destructive"
+          });
+        });
       }
 
       return training;
@@ -226,6 +230,7 @@ const Trainings = () => {
       category: "",
       description: "",
       duration_hours: 0,
+      documentContent: "",
     });
     setVideos([{
       title: "",
@@ -392,7 +397,36 @@ const Trainings = () => {
 
               <div className="border-t pt-4 space-y-4">
                 <div className="space-y-2">
-                  <Label>Documentos do Treinamento (PDF, DOCX, TXT)</Label>
+                  <Label htmlFor="documentContent">
+                    📝 Conteúdo do Documento (para gerar questões)
+                  </Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Cole aqui o texto completo do documento. A IA irá gerar 50 questões baseadas neste conteúdo.
+                  </p>
+                  <Textarea 
+                    id="documentContent"
+                    placeholder="Cole aqui o conteúdo completo do documento (regulamento, procedimento, política, etc)..." 
+                    rows={12}
+                    className="font-mono text-sm"
+                    value={formData.documentContent}
+                    onChange={(e) => setFormData({ ...formData, documentContent: e.target.value })}
+                  />
+                  {formData.documentContent && formData.documentContent.length > 0 && (
+                    <div className="text-sm text-success">
+                      ✓ {formData.documentContent.split(/\s+/).length} palavras • 
+                      {formData.documentContent.length} caracteres
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>📄 Documentos (opcional - apenas para download)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Estes arquivos ficarão disponíveis para download, mas NÃO serão usados para gerar questões. 
+                    Use o campo acima para inserir o texto que será usado na geração de questões.
+                  </p>
                   <Input
                     type="file"
                     multiple
@@ -404,11 +438,7 @@ const Trainings = () => {
                   />
                   {documents.length > 0 && (
                     <div className="text-sm text-muted-foreground">
-                      {documents.length} documento(s) selecionado(s)
-                      <p className="text-xs mt-1">
-                        💡 A IA irá gerar 30 questões automaticamente a partir destes documentos.
-                        Cada colaborador receberá 10 questões aleatórias únicas.
-                      </p>
+                      {documents.length} documento(s) selecionado(s) para download
                     </div>
                   )}
                 </div>
