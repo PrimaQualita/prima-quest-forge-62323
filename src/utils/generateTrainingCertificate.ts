@@ -79,7 +79,7 @@ export const generateTrainingCertificate = async ({
   doc.setFontSize(15);
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
-  doc.text("Projeto Social Cresce Comunidade", pageWidth / 2, 72, { align: "center" });
+  doc.text("Projeto Social Cresce Comunidade - Prima Qualitá", pageWidth / 2, 72, { align: "center" });
 
   // Texto de certificação
   doc.setFontSize(13);
@@ -92,11 +92,11 @@ export const generateTrainingCertificate = async ({
   doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
   doc.text(employeeName.toUpperCase(), pageWidth / 2, 103, { align: "center" });
 
-  // Texto de conclusão
+  // Texto de conclusão - dividido em duas linhas
   doc.setFontSize(12);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  doc.text("concluiu com êxito o treinamento", pageWidth / 2, 120, { align: "center" });
+  doc.text("Concluiu com êxito o treinamento", pageWidth / 2, 117, { align: "center" });
 
   // Nome do treinamento
   doc.setFontSize(15);
@@ -106,16 +106,16 @@ export const generateTrainingCertificate = async ({
   // Split training title if too long
   const maxWidth = pageWidth - 80;
   const titleLines = doc.splitTextToSize(trainingTitle, maxWidth);
-  const titleStartY = 133;
+  const titleStartY = 128;
   doc.text(titleLines, pageWidth / 2, titleStartY, { align: "center" });
 
-  // Nota obtida - com espaçamento adequado
+  // Nota obtida - com espaçamento reduzido
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40, 40, 40);
-  const lineHeight = 6;
-  const yPositionScore = titleStartY + (titleLines.length * lineHeight) + 12;
-  doc.text(`com aproveitamento de ${score}%`, pageWidth / 2, yPositionScore, { align: "center" });
+  const lineHeight = 5;
+  const yPositionScore = titleStartY + (titleLines.length * lineHeight) + 8;
+  doc.text("Com aproveitamento de " + score + "%", pageWidth / 2, yPositionScore, { align: "center" });
 
   // Data de conclusão
   const formattedDate = new Date(completionDate).toLocaleDateString("pt-BR", {
@@ -125,7 +125,7 @@ export const generateTrainingCertificate = async ({
   });
   doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 10, { align: "center" });
 
-  // Assinatura - sem linha e sem nome, com espaçamento melhor
+  // Assinatura - com espaçamento aumentado
   const signatureY = yPositionScore + 26;
   
   doc.setFontSize(11);
@@ -138,12 +138,14 @@ export const generateTrainingCertificate = async ({
   doc.setTextColor(60, 60, 60);
   doc.text("Prima Qualitá", pageWidth / 2, signatureY + 8, { align: "center" });
 
-  // Código de verificação - na parte inferior
+  // Código de verificação - na parte inferior (azul e negrito)
   doc.setFontSize(8);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Código de Verificação: ${verificationCode}`, pageWidth / 2, pageHeight - 22, { align: "center" });
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(52, 152, 219); // Azul Prima Qualitá
+  doc.text(`Código de Verificação: ${verificationCode}`, pageWidth / 2, pageHeight - 24, { align: "center" });
   
   doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(52, 152, 219);
   const verificationUrl = `${window.location.origin}/verificar-certificado`;
   doc.text(`Verifique a autenticidade em: ${verificationUrl}`, pageWidth / 2, pageHeight - 16, { align: "center" });
