@@ -690,22 +690,24 @@ const Trainings = () => {
                   <Progress value={completionRate} className="h-2" />
                 </div>
 
-                {userPassedAssessment && currentEmployee ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                        Treinamento Concluído
-                      </span>
-                    </div>
-                    <CertificateButton
-                      employeeName={currentEmployee.name}
-                      trainingTitle={training.title}
-                      completionDate={userPassedAssessment.completed_at || new Date().toISOString()}
-                      score={userPassedAssessment.score || 0}
-                    />
-                  </div>
-                ) : (
+                <div className="space-y-2">
+                  {userPassedAssessment && currentEmployee && (
+                    <>
+                      <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                          Treinamento Concluído
+                        </span>
+                      </div>
+                      <CertificateButton
+                        employeeName={currentEmployee.name}
+                        trainingTitle={training.title}
+                        completionDate={userPassedAssessment.completed_at || new Date().toISOString()}
+                        score={userPassedAssessment.score || 0}
+                      />
+                    </>
+                  )}
+                  
                   <div className="grid grid-cols-2 gap-2">
                     <Button 
                       className="w-full"
@@ -726,7 +728,7 @@ const Trainings = () => {
                       </Button>
                     )}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           );
