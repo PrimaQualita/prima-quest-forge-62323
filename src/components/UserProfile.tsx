@@ -20,32 +20,52 @@ export const UserProfile = () => {
     }
   }, [user?.id]);
 
+  // Force refresh on component mount to clear cache
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        fetchProfile();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id]);
+
   const fetchProfile = async () => {
     if (!user?.id) return;
 
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', user.id)
-      .maybeSingle();
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      // Buscar name e job_title do employee - force fresh data
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('name, job_title')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      console.log('Employee data fetched:', employeeData);
+
+      setProfile({
+        full_name: employeeData?.name || null,
+        avatar_url: profileData?.avatar_url || null,
+        job_title: employeeData?.job_title || null,
+      });
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
     }
-
-    // Buscar name e job_title do employee
-    const { data: employeeData } = await supabase
-      .from('employees')
-      .select('name, job_title')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    setProfile({
-      full_name: employeeData?.name || null,
-      avatar_url: profileData?.avatar_url || null,
-      job_title: employeeData?.job_title || null,
-    });
   };
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
