@@ -91,18 +91,17 @@ serve(async (req) => {
             type: 'function',
             function: {
               name: 'generate_questions',
-              description: 'Gera exatamente 50 questões de múltipla escolha',
+              description: 'Gera 50 questões de múltipla escolha sobre o conteúdo fornecido',
               parameters: {
                 type: 'object',
                 properties: {
                   questions: {
                     type: 'array',
-                    minItems: 50,
-                    maxItems: 50,
+                    description: 'Array com 50 questões',
                     items: {
                       type: 'object',
                       properties: {
-                        question: { type: 'string', description: 'A pergunta' },
+                        question: { type: 'string' },
                         options: {
                           type: 'object',
                           properties: {
@@ -115,8 +114,7 @@ serve(async (req) => {
                         },
                         correct_answer: { 
                           type: 'string', 
-                          enum: ['A', 'B', 'C', 'D'],
-                          description: 'A letra da resposta correta' 
+                          enum: ['A', 'B', 'C', 'D']
                         }
                       },
                       required: ['question', 'options', 'correct_answer']
