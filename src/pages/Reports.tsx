@@ -15,8 +15,8 @@ const Reports = () => {
         supabase.from('employees').select('*', { count: 'exact' }),
         supabase.from('compliance_documents').select('*', { count: 'exact' }),
         supabase.from('trainings').select('*', { count: 'exact' }),
-        supabase.from('document_acknowledgments').select('*').eq('quiz_correct', true),
-        supabase.from('training_participations').select('*').eq('completed', true),
+        supabase.from('document_acknowledgments').select('*').eq('quiz_correct', true).not('employee_id', 'is', null),
+        supabase.from('training_participations').select('*').eq('completed', true).not('employee_id', 'is', null),
       ]);
 
       return {
@@ -131,12 +131,12 @@ const Reports = () => {
     ? ((stats.completedTrainings / (stats.totalEmployees * stats.totalTrainings || 1)) * 100).toFixed(2)
     : "0,00";
 
-  const avgDocPerEmployee = stats
-    ? ((stats.acknowledgedDocs / (stats.totalEmployees || 1)) * 100).toFixed(2)
+  const avgDocPerEmployee = stats && stats.totalDocuments > 0
+    ? ((stats.acknowledgedDocs / (stats.totalEmployees * stats.totalDocuments || 1)) * 100).toFixed(2)
     : "0,00";
 
-  const avgTrainingPerEmployee = stats
-    ? ((stats.completedTrainings / (stats.totalEmployees || 1)) * 100).toFixed(2)
+  const avgTrainingPerEmployee = stats && stats.totalTrainings > 0
+    ? ((stats.completedTrainings / (stats.totalEmployees * stats.totalTrainings || 1)) * 100).toFixed(2)
     : "0,00";
 
   const overallCompliance = ((parseFloat(String(documentComplianceRate).replace(',', '.')) + parseFloat(String(trainingComplianceRate).replace(',', '.'))) / 2).toFixed(2);
