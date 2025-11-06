@@ -86,8 +86,9 @@ serve(async (req) => {
     const extractData = await extractResponse.json();
     const documentContent = extractData.choices[0].message.content;
     
-    console.log('Texto extraído, gerando questões...');
-    console.log('Preview do conteúdo:', documentContent.substring(0, 500));
+    console.log('Texto extraído com sucesso');
+    console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
+    console.log('Preview do conteúdo:', documentContent.substring(0, 300));
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
@@ -192,8 +193,14 @@ serve(async (req) => {
 
     const questionsData = JSON.parse(toolCall.function.arguments);
     
-    if (!questionsData.questions || questionsData.questions.length < 50) {
-      console.warn(`IA gerou apenas ${questionsData.questions?.length || 0} questões, esperado 50`);
+    console.log(`IA gerou ${questionsData.questions?.length || 0} questões`);
+    
+    if (!questionsData.questions || questionsData.questions.length === 0) {
+      throw new Error('Nenhuma questão foi gerada pela IA');
+    }
+    
+    if (questionsData.questions.length < 50) {
+      console.warn(`⚠️ IA gerou apenas ${questionsData.questions.length} questões, esperado 50`);
     }
 
     console.log(`Inserindo ${questionsData.questions.length} questões no banco...`);
