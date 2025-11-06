@@ -209,7 +209,8 @@ const TrainingView = () => {
     hasQuestions: assessment?.training_questions?.length || 0,
     assessmentCompleted: assessment?.completed,
     totalVideos: training?.training_videos?.length || 0,
-    completedVideos: videoProgress?.filter(vp => vp.completed).length || 0
+    completedVideos: videoProgress?.filter(vp => vp.completed).length || 0,
+    assessmentData: assessment
   });
 
   const handleDownloadDocument = async (filePath: string, fileName: string) => {
@@ -436,39 +437,52 @@ const TrainingView = () => {
             <DialogTitle className="text-base md:text-lg">Avaliação - {training.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            {assessment?.training_questions?.map((q: any, index: number) => (
-              <Card key={q.id}>
-                <CardContent className="pt-6 space-y-4">
-                  <Label className="text-base font-medium">
-                    {index + 1}. {q.question}
-                  </Label>
-                  <RadioGroup
-                    value={answers[q.id] || ""}
-                    onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
-                  >
-                    {q.options?.map((option: string, optIndex: number) => (
-                      <div key={optIndex} className="flex items-center space-x-2">
-                        <RadioGroupItem value={option} id={`${q.id}-${optIndex}`} />
-                        <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+            {!assessment?.training_questions || assessment.training_questions.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">
+                    Nenhuma questão disponível para esta avaliação.
+                    Entre em contato com o administrador.
+                  </p>
                 </CardContent>
               </Card>
-            ))}
-            
-            <Button 
-              className="w-full"
-              onClick={() => submitAssessmentMutation.mutate()}
-              disabled={
-                submitAssessmentMutation.isPending ||
-                Object.keys(answers).length !== assessment?.training_questions?.length
-              }
-            >
-              {submitAssessmentMutation.isPending ? "Enviando..." : "Enviar Avaliação"}
-            </Button>
+            ) : (
+              <>
+                {assessment.training_questions.map((q: any, index: number) => (
+                  <Card key={q.id}>
+                    <CardContent className="pt-6 space-y-4">
+                      <Label className="text-base font-medium">
+                        {index + 1}. {q.question}
+                      </Label>
+                      <RadioGroup
+                        value={answers[q.id] || ""}
+                        onValueChange={(value) => setAnswers({ ...answers, [q.id]: value })}
+                      >
+                        {q.options?.map((option: string, optIndex: number) => (
+                          <div key={optIndex} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`${q.id}-${optIndex}`} />
+                            <Label htmlFor={`${q.id}-${optIndex}`} className="font-normal cursor-pointer">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                <Button 
+                  className="w-full"
+                  onClick={() => submitAssessmentMutation.mutate()}
+                  disabled={
+                    submitAssessmentMutation.isPending ||
+                    Object.keys(answers).length !== assessment.training_questions.length
+                  }
+                >
+                  {submitAssessmentMutation.isPending ? "Enviando..." : "Enviar Avaliação"}
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
