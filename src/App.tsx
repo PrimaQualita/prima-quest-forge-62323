@@ -22,7 +22,7 @@ import ManagementContracts from "./pages/ManagementContracts";
 import SupplierDueDiligence from "./pages/SupplierDueDiligence";
 import SupplierForm from "./pages/SupplierForm";
 import SupplierPortal from "./pages/SupplierPortal";
-import Profile from "./pages/Profile";
+import ProfilePage from "./pages/ProfilePage";
 import VerifyCertificate from "./pages/VerifyCertificate";
 
 const queryClient = new QueryClient();
@@ -120,12 +120,11 @@ const App = () => (
           
           {/* Rotas acessíveis a todos os usuários autenticados e fornecedores */}
           <Route path="/" element={<ProtectedRoute allowSupplier><Layout><Dashboard /></Layout></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute allowSupplier><Layout><ProfilePage /></Layout></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute allowSupplier><Layout><Documents /></Layout></ProtectedRoute>} />
           <Route path="/trainings" element={<ProtectedRoute allowSupplier><Layout><Trainings /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id" element={<ProtectedRoute allowSupplier><Layout><TrainingView /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
-          <Route path="/supplier-home" element={<ProtectedRoute allowSupplier><Layout><SupplierPortal /></Layout></ProtectedRoute>} />
           
           {/* Rotas apenas para gestores/admins */}
           <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />

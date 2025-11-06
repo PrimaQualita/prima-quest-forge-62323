@@ -10,8 +10,7 @@ import {
   BarChart3,
   FileCheck,
   Briefcase,
-  LogOut,
-  Home
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,14 +54,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     onNavigate?.();
   };
 
-  const supplierMenuItems = [
-    { icon: Home, label: "Home", path: "/supplier-home", adminOnly: false },
-    { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
-    { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
-    { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
-  ];
-
-  const regularMenuItems = [
+  const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
     { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
     { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
@@ -72,8 +64,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
   ];
 
-  const menuItemsToShow = isSupplier ? supplierMenuItems : regularMenuItems;
-  const visibleMenuItems = menuItemsToShow.filter(item => !item.adminOnly || isAdmin);
+  const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border overflow-y-auto z-50">

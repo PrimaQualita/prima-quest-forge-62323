@@ -17,7 +17,6 @@ const SupplierPortal = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar autenticação
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -74,7 +73,7 @@ const SupplierPortal = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando...</p>
@@ -85,7 +84,7 @@ const SupplierPortal = () => {
 
   if (!supplierData || supplierData.status !== 'approved') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
+      <div className="flex items-center justify-center h-96 p-4">
         <Card className="w-full max-w-2xl text-center">
           <CardHeader>
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-muted flex items-center justify-center">
@@ -116,149 +115,134 @@ const SupplierPortal = () => {
   const needsRenewal = daysUntilExpiry !== null && daysUntilExpiry <= 30;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
-      <div className="max-w-4xl mx-auto py-8 space-y-6">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
-                  <img src="/logo-prima-qualita.png" alt="Prima Qualitá" className="h-16 w-16 object-contain" />
-                </div>
-                <CardTitle className="text-3xl">Home</CardTitle>
-                <CardDescription>Portal do Fornecedor - Prima Qualitá Saúde</CardDescription>
-              </div>
-              <Button onClick={handleLogout} variant="outline" size="sm">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sair
-              </Button>
-            </div>
-          </CardHeader>
-        </Card>
+    <div className="space-y-6 pt-6">
+      <div>
+        <h1 className="text-4xl font-bold text-foreground uppercase">PERFIL DO FORNECEDOR</h1>
+        <p className="text-muted-foreground mt-1">Informações sobre seu cadastro e certificação</p>
+      </div>
 
-        <Card>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Status do Cadastro</CardTitle>
+              <CardDescription>Informações sobre seu cadastro</CardDescription>
+            </div>
+            <Badge className="bg-green-500 text-white">
+              <CheckCircle className="w-4 h-4 mr-1" />
+              Aprovado
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <p className="text-sm text-muted-foreground">Razão Social</p>
+            <p className="text-lg font-semibold">{supplierData.company_name}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">CNPJ</p>
+              <p className="font-medium">{supplierData.cnpj}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">E-mail</p>
+              <p className="font-medium">{supplierData.email}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {expiresAt && (
+        <Card className={needsRenewal ? "border-destructive" : ""}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Status do Cadastro</CardTitle>
-                <CardDescription>Informações sobre seu cadastro</CardDescription>
+                <CardTitle>Validade do Certificado</CardTitle>
+                <CardDescription>Informações sobre validade</CardDescription>
               </div>
-              <Badge className="bg-green-500 text-white">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Aprovado
-              </Badge>
+              <Calendar className="w-6 h-6 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Razão Social</p>
-              <p className="text-lg font-semibold">{supplierData.company_name}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
               <div>
-                <p className="text-sm text-muted-foreground">CNPJ</p>
-                <p className="font-medium">{supplierData.cnpj}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">E-mail</p>
-                <p className="font-medium">{supplierData.email}</p>
+                <p className="text-sm text-muted-foreground">Válido até</p>
+                <p className="text-lg font-semibold">
+                  {format(expiresAt, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </p>
+                {daysUntilExpiry !== null && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {daysUntilExpiry > 0 ? `${daysUntilExpiry} dias restantes` : 'Expirado'}
+                  </p>
+                )}
               </div>
             </div>
+
+            {needsRenewal && (
+              <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive rounded-lg">
+                <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-destructive">Renovação Necessária</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Seu certificado vence em {daysUntilExpiry} dias. Entre em contato para renovar seu cadastro.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
+      )}
 
-        {expiresAt && (
-          <Card className={needsRenewal ? "border-destructive" : ""}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Status do Cadastro</CardTitle>
-                  <CardDescription>Informações sobre validade</CardDescription>
-                </div>
-                <Calendar className="w-6 h-6 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                <div>
-                  <p className="text-sm text-muted-foreground">Válido até</p>
-                  <p className="text-lg font-semibold">
-                    {format(expiresAt, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                  {daysUntilExpiry !== null && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {daysUntilExpiry > 0 ? `${daysUntilExpiry} dias restantes` : 'Expirado'}
-                    </p>
-                  )}
-                </div>
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Documentos e Relatórios</CardTitle>
+          <CardDescription>Baixe seus documentos de due diligence</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => supplierData && generateSupplierPDF(supplierData, questions || [])}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Relatório de Due Diligence (PDF)
+          </Button>
 
-              {needsRenewal && (
-                <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-destructive">Renovação Necessária</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Seu certificado vence em {daysUntilExpiry} dias. Entre em contato para renovar seu cadastro.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Documentos e Relatórios</CardTitle>
-            <CardDescription>Baixe seus documentos de due diligence</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          {supplierData.certificate_file_path && (
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => supplierData && generateSupplierPDF(supplierData, questions || [])}
+              onClick={() => window.open(supplierData.certificate_file_path, '_blank')}
             >
-              <FileText className="w-4 h-4 mr-2" />
-              Relatório de Due Diligence (PDF)
+              <Download className="w-4 h-4 mr-2" />
+              Certificado do Fornecedor
             </Button>
+          )}
 
-            {supplierData.certificate_file_path && (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => window.open(supplierData.certificate_file_path, '_blank')}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Certificado do Fornecedor
-              </Button>
-            )}
+          {supplierData.kpmg_report_file_path && (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => window.open(supplierData.kpmg_report_file_path, '_blank')}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Relatório KPMG
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
-            {supplierData.kpmg_report_file_path && (
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => window.open(supplierData.kpmg_report_file_path, '_blank')}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Relatório KPMG
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações de Contato</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-2">
-              Em caso de dúvidas ou para renovação do cadastro, entre em contato:
-            </p>
-            <p className="font-medium">compliance@primaqualita.com.br</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações de Contato</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-2">
+            Em caso de dúvidas ou para renovação do cadastro, entre em contato:
+          </p>
+          <p className="font-medium">compliance@primaqualita.com.br</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };
