@@ -659,9 +659,9 @@ const TrainingEdit = () => {
                 <div className="text-sm text-success">
                   ✓ {formData.documentContent.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()} palavras • 
                   {formData.documentContent.length.toLocaleString()} caracteres
-                  {formData.documentContent.length > 200000 && (
-                    <span className="block text-xs text-muted-foreground mt-1">
-                      📚 Documento grande será processado em partes (aproximadamente {Math.ceil(formData.documentContent.length / 150000)} partes)
+                  {formData.documentContent.length > 500000 && (
+                    <span className="block text-xs text-warning">
+                      ⚠️ Documento muito grande ({(formData.documentContent.length / 1000).toFixed(0)}k caracteres). O processamento pode demorar vários minutos.
                     </span>
                   )}
                 </div>
@@ -702,71 +702,25 @@ const TrainingEdit = () => {
                     .replace(/style="[^"]*"/g, '') // Remove atributos style inline
                     .replace(/\s+/g, ' ') // Normaliza espaços
                     .trim();
-                  
-                  const chunkSize = 150000; // ~30000 palavras por chunk
-                  const chunks: string[] = [];
-                  
-                  // Dividir documento em chunks
-                  if (cleanContent.length <= chunkSize) {
-                    chunks.push(cleanContent);
-                  } else {
-                    // Dividir mantendo parágrafos completos
-                    let currentChunk = '';
-                    const paragraphs = cleanContent.split('\n\n');
-                    
-                    for (const paragraph of paragraphs) {
-                      if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
-                        chunks.push(currentChunk.trim());
-                        currentChunk = paragraph;
-                      } else {
-                        currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
-                      }
-                    }
-                    
-                    if (currentChunk.trim()) {
-                      chunks.push(currentChunk.trim());
-                    }
-                  }
 
-                  console.log(`Documento dividido em ${chunks.length} parte(s)`);
-                  
-                  let totalQuestionsGenerated = 0;
-                  
-                  // Processar cada chunk
-                  for (let i = 0; i < chunks.length; i++) {
-                    console.log(`Processando parte ${i + 1}/${chunks.length}...`);
-                    
-                    toast({
-                      title: "Gerando questões...",
-                      description: `Processando parte ${i + 1} de ${chunks.length}. Aguarde...`
-                    });
+                  console.log(`Processando documento completo: ${cleanContent.length} caracteres`);
 
-                    const response = await supabase.functions.invoke('generate-questions-from-text', {
-                      body: { 
-                        trainingId: id, 
-                        documentContent: chunks[i]
-                      }
-                    });
-                    
-                    if (response.error) {
-                      console.error(`Erro na parte ${i + 1}:`, response.error);
-                      throw new Error(`Erro ao processar parte ${i + 1}: ${response.error.message}`);
+                  const response = await supabase.functions.invoke('generate-questions-from-text', {
+                    body: { 
+                      trainingId: id, 
+                      documentContent: cleanContent
                     }
-                    
-                    if (response.data?.success) {
-                      totalQuestionsGenerated += response.data.questionsGenerated;
-                      console.log(`Parte ${i + 1}: ${response.data.questionsGenerated} questões geradas`);
-                    }
-                    
-                    // Pequeno delay entre requisições para evitar rate limit
-                    if (i < chunks.length - 1) {
-                      await new Promise(resolve => setTimeout(resolve, 2000));
-                    }
+                  });
+                  
+                  if (response.error) {
+                    throw new Error(response.error.message);
                   }
+                  
+                  const totalQuestionsGenerated = response.data?.questionsGenerated || 0;
 
                   toast({
                     title: "Questões geradas com sucesso!",
-                    description: `${totalQuestionsGenerated} questões criadas a partir de ${chunks.length} parte(s) do documento.`
+                    description: `${totalQuestionsGenerated} questões criadas a partir do documento.`
                   });
                   queryClient.invalidateQueries({ queryKey: ['training', id] });
                   

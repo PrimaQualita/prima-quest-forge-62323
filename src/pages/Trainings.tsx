@@ -185,66 +185,38 @@ const Trainings = () => {
           .replace(/style="[^"]*"/g, '') // Remove atributos style inline
           .replace(/\s+/g, ' ') // Normaliza espaços
           .trim();
-        
-        const chunkSize = 150000; // ~30000 palavras por chunk
-        const chunks: string[] = [];
-        
-        if (cleanContent.length <= chunkSize) {
-          chunks.push(cleanContent);
-        } else {
-          let currentChunk = '';
-          const paragraphs = cleanContent.split('\n\n');
-          
-          for (const paragraph of paragraphs) {
-            if ((currentChunk + paragraph).length > chunkSize && currentChunk.length > 0) {
-              chunks.push(currentChunk.trim());
-              currentChunk = paragraph;
-            } else {
-              currentChunk += (currentChunk ? '\n\n' : '') + paragraph;
-            }
-          }
-          
-          if (currentChunk.trim()) {
-            chunks.push(currentChunk.trim());
-          }
-        }
 
-        console.log(`Documento dividido em ${chunks.length} parte(s) para processamento`);
+        console.log(`Processando documento completo: ${cleanContent.length} caracteres`);
         
-        // Processar cada chunk sequencialmente
         setIsGeneratingQuestions(true);
         
-        let totalQuestionsGenerated = 0;
+        try {
+          const response = await supabase.functions.invoke('generate-questions-from-text', {
+            body: { 
+              trainingId: training.id, 
+              documentContent: cleanContent
+            }
+          });
+          
+          if (response.error) throw response.error;
+          
+          const totalQuestionsGenerated = response.data?.questionsGenerated || 0;
         
-        for (let i = 0; i < chunks.length; i++) {
-          try {
-            const response = await supabase.functions.invoke('generate-questions-from-text', {
-              body: { 
-                trainingId: training.id, 
-                documentContent: chunks[i]
-              }
+          setIsGeneratingQuestions(false);
+          
+          if (totalQuestionsGenerated > 0) {
+            toast({
+              title: "Questões geradas com sucesso!",
+              description: `${totalQuestionsGenerated} questões criadas a partir do documento.`
             });
-            
-            if (response.data?.success) {
-              totalQuestionsGenerated += response.data.questionsGenerated;
-              console.log(`Parte ${i + 1}/${chunks.length}: ${response.data.questionsGenerated} questões geradas`);
-            }
-            
-            // Delay entre requisições
-            if (i < chunks.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-          } catch (err) {
-            console.error(`Erro ao processar parte ${i + 1}:`, err);
           }
-        }
-        
-        setIsGeneratingQuestions(false);
-        
-        if (totalQuestionsGenerated > 0) {
+        } catch (err) {
+          console.error('Erro ao processar documento:', err);
+          setIsGeneratingQuestions(false);
           toast({
-            title: "Questões geradas com sucesso!",
-            description: `${totalQuestionsGenerated} questões criadas a partir de ${chunks.length} parte(s) do documento.`
+            title: "Erro ao gerar questões",
+            description: "Ocorreu um erro ao processar o documento.",
+            variant: "destructive"
           });
         }
       }
