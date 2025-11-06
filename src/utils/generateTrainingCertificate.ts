@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import logoImage from "@/assets/logo-prima-qualita-cert.jpeg";
+import logoImage from "@/assets/logo-prima-qualita-cert.png";
 
 interface CertificateData {
   employeeName: string;
@@ -37,7 +37,7 @@ export const generateTrainingCertificate = async ({
 
   // Logo Prima Qualitá - maior e com proporção correta
   try {
-    doc.addImage(logoImage, "JPEG", pageWidth / 2 - 30, 20, 60, 50);
+    doc.addImage(logoImage, "PNG", pageWidth / 2 - 40, 20, 80, 40);
   } catch (error) {
     console.error("Erro ao adicionar logo:", error);
   }
@@ -99,10 +99,10 @@ export const generateTrainingCertificate = async ({
     month: "long",
     year: "numeric",
   });
-  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 10, { align: "center" });
+  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
 
-  // Assinatura (sem imagem)
-  const signatureY = pageHeight - 50;
+  // Assinatura - com espaçamento adequado
+  const signatureY = pageHeight - 45;
   
   doc.setLineWidth(0.3);
   doc.setDrawColor(52, 152, 219);
@@ -111,13 +111,13 @@ export const generateTrainingCertificate = async ({
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(52, 152, 219);
-  doc.text("Diego Figueiredo", pageWidth / 2, signatureY + 5, { align: "center" });
+  doc.text("Diego Figueiredo", pageWidth / 2, signatureY + 6, { align: "center" });
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.text("Coordenador de Compliance", pageWidth / 2, signatureY + 10, { align: "center" });
-  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 15, { align: "center" });
+  doc.text("Coordenador de Compliance", pageWidth / 2, signatureY + 12, { align: "center" });
+  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 17, { align: "center" });
 
   // Save PDF
   doc.save(`Certificado_${employeeName.replace(/\s+/g, "_")}_${trainingTitle.substring(0, 30).replace(/\s+/g, "_")}.pdf`);
