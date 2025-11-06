@@ -818,9 +818,6 @@ const TrainingEdit = () => {
               {newDocuments.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {newDocuments.length} documento(s) selecionado(s)
-                  <p className="text-xs mt-1">
-                    💡 A IA irá gerar 30 questões automaticamente a partir destes documentos.
-                  </p>
                 </div>
               )}
             </div>
