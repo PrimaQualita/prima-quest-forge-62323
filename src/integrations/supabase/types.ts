@@ -841,6 +841,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fix_encoding: { Args: { text_value: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
