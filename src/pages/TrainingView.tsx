@@ -521,6 +521,33 @@ const TrainingView = () => {
             </Card>
           )}
 
+          {(canTakeAssessment || canRetakeAssessment) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {canRetakeAssessment ? "Tentar Novamente" : "Iniciar Avaliação"}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {canRetakeAssessment ? (
+                    <>
+                      Tentativa {(assessment?.attempts || 0) + 1} de 5 - Você precisa de 60% de acertos para aprovação.
+                      {assessment?.score && <span className="block mt-1">Última nota: {assessment.score}%</span>}
+                    </>
+                  ) : (
+                    "Responda às 10 questões. Você precisa de 60% de acertos e tem até 5 tentativas."
+                  )}
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => {
+                  setAnswers({});
+                  setIsAssessmentOpen(true);
+                }} className="w-full">
+                  {canRetakeAssessment ? "Tentar Novamente" : "Iniciar Avaliação"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {assessment?.passed && (
             <Card>
