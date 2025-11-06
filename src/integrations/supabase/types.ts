@@ -109,39 +109,39 @@ export type Database = {
         Row: {
           category: string
           content: string | null
-          correct_answer: string
+          correct_answer: string | null
           created_at: string | null
           description: string | null
           file_path: string | null
           id: string
-          quiz_options: Json
-          quiz_question: string
+          quiz_options: Json | null
+          quiz_question: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
           category: string
           content?: string | null
-          correct_answer: string
+          correct_answer?: string | null
           created_at?: string | null
           description?: string | null
           file_path?: string | null
           id?: string
-          quiz_options: Json
-          quiz_question: string
+          quiz_options?: Json | null
+          quiz_question?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
           category?: string
           content?: string | null
-          correct_answer?: string
+          correct_answer?: string | null
           created_at?: string | null
           description?: string | null
           file_path?: string | null
           id?: string
-          quiz_options?: Json
-          quiz_question?: string
+          quiz_options?: Json | null
+          quiz_question?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -270,6 +270,41 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_questions: {
+        Row: {
+          correct_answer: string
+          created_at: string | null
+          document_id: string
+          id: string
+          options: Json
+          question: string
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          options: Json
+          question: string
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          options?: Json
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
             referencedColumns: ["id"]
           },
         ]

@@ -15,6 +15,9 @@ verify_jwt = true
 [functions.generate-all-training-questions]
 verify_jwt = true
 
+[functions.generate-document-questions]
+verify_jwt = true
+
 [functions.generate-quiz]
 verify_jwt = true
 

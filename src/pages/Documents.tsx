@@ -112,15 +112,6 @@ const Documents = () => {
 
       setIsGeneratingQuiz(true);
       try {
-        const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-quiz', {
-          body: { 
-            content: formData.content,
-            title: formData.title
-          }
-        });
-
-        if (quizError) throw quizError;
-
         let filePath = editingDoc.file_path;
 
         if (selectedFile) {
@@ -148,14 +139,28 @@ const Documents = () => {
             category: formData.category,
             description: formData.description,
             content: formData.content,
-            quiz_question: quizData.question,
-            quiz_options: quizData.options,
-            correct_answer: quizData.correct_answer,
             file_path: filePath,
           })
           .eq('id', editingDoc.id);
 
         if (error) throw error;
+
+        // Gerar 20 perguntas com IA
+        const { data: questionsData, error: questionsError } = await supabase.functions.invoke('generate-document-questions', {
+          body: { 
+            documentId: editingDoc.id,
+            documentContent: formData.content,
+            documentTitle: formData.title,
+            documentCategory: formData.category
+          }
+        });
+
+        if (questionsError) {
+          console.error("Erro ao gerar questões:", questionsError);
+          throw questionsError;
+        }
+
+        console.log(`${questionsData.questionsGenerated} questões geradas para o documento`);
       } finally {
         setIsGeneratingQuiz(false);
       }
@@ -187,18 +192,8 @@ const Documents = () => {
 
   const addDocumentMutation = useMutation({
     mutationFn: async () => {
-      // Gerar quiz com IA
       setIsGeneratingQuiz(true);
       try {
-        const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-quiz', {
-          body: { 
-            content: formData.content,
-            title: formData.title
-          }
-        });
-
-        if (quizError) throw quizError;
-
         let filePath = null;
 
         // Upload do arquivo se houver
@@ -213,21 +208,37 @@ const Documents = () => {
           filePath = fileName;
         }
 
-        // Criar o documento com quiz gerado
-        const { error } = await supabase
+        // Criar o documento
+        const { data: newDoc, error } = await supabase
           .from('compliance_documents')
           .insert({
             title: formData.title,
             category: formData.category,
             description: formData.description,
             content: formData.content,
-            quiz_question: quizData.question,
-            quiz_options: quizData.options,
-            correct_answer: quizData.correct_answer,
             file_path: filePath,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Gerar 20 perguntas com IA
+        const { data: questionsData, error: questionsError } = await supabase.functions.invoke('generate-document-questions', {
+          body: { 
+            documentId: newDoc.id,
+            documentContent: formData.content,
+            documentTitle: formData.title,
+            documentCategory: formData.category
+          }
+        });
+
+        if (questionsError) {
+          console.error("Erro ao gerar questões:", questionsError);
+          throw questionsError;
+        }
+
+        console.log(`${questionsData.questionsGenerated} questões geradas para o documento`);
       } finally {
         setIsGeneratingQuiz(false);
       }
@@ -258,20 +269,34 @@ const Documents = () => {
 
   const generateNewQuestionMutation = useMutation({
     mutationFn: async (docId: string) => {
-      const doc = documents?.find(d => d.id === docId);
-      if (!doc) throw new Error("Documento não encontrado");
-
       setIsGeneratingNewQuestion(true);
       try {
-        const { data: quizData, error: quizError } = await supabase.functions.invoke('generate-quiz', {
-          body: { 
-            content: doc.content,
-            title: doc.title
-          }
-        });
+        // Buscar uma pergunta aleatória diferente da atual
+        const { data: questions, error } = await supabase
+          .from('document_questions')
+          .select('*')
+          .eq('document_id', docId);
 
-        if (quizError) throw quizError;
-        return quizData;
+        if (error) throw error;
+
+        if (!questions || questions.length === 0) {
+          throw new Error("Nenhuma pergunta disponível para este documento");
+        }
+
+        // Filtrar a pergunta atual se houver
+        let availableQuestions = questions;
+        if (currentQuiz?.id) {
+          availableQuestions = questions.filter(q => q.id !== currentQuiz.id);
+        }
+
+        // Se não há mais perguntas diferentes, usar todas
+        if (availableQuestions.length === 0) {
+          availableQuestions = questions;
+        }
+
+        // Selecionar uma pergunta aleatória
+        const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+        return availableQuestions[randomIndex];
       } finally {
         setIsGeneratingNewQuestion(false);
       }
@@ -283,7 +308,7 @@ const Documents = () => {
     },
     onError: (error) => {
       toast({ 
-        title: "Erro ao gerar nova pergunta", 
+        title: "Erro ao carregar nova pergunta", 
         description: error.message,
         variant: "destructive" 
       });
@@ -575,11 +600,39 @@ const Documents = () => {
                       <Button 
                         variant="outline" 
                         className="w-full"
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedDoc(doc);
-                          setCurrentQuiz(null);
                           setQuizResult(null);
                           setQuizAnswer("");
+                          
+                          // Buscar uma pergunta aleatória do banco
+                          try {
+                            const { data: questions, error } = await supabase
+                              .from('document_questions')
+                              .select('*')
+                              .eq('document_id', doc.id);
+
+                            if (error) throw error;
+
+                            if (questions && questions.length > 0) {
+                              const randomIndex = Math.floor(Math.random() * questions.length);
+                              setCurrentQuiz(questions[randomIndex]);
+                            } else {
+                              // Fallback para o quiz antigo se não houver perguntas
+                              setCurrentQuiz({
+                                question: doc.quiz_question,
+                                options: doc.quiz_options,
+                                correct_answer: doc.correct_answer
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Erro ao buscar pergunta:", error);
+                            toast({
+                              title: "Erro ao carregar pergunta",
+                              description: "Tente novamente",
+                              variant: "destructive"
+                            });
+                          }
                         }}
                       >
                         Ler e Aceitar
@@ -640,10 +693,10 @@ const Documents = () => {
                               <p className="text-sm text-muted-foreground">{currentQuiz.question}</p>
                               
                               <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer}>
-                                {(currentQuiz.options as string[])?.map((option: string, idx: number) => (
-                                  <div key={idx} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={option} id={`opt-new-${idx}`} />
-                                    <Label htmlFor={`opt-new-${idx}`}>{option}</Label>
+                                {Object.entries(currentQuiz.options || {}).map(([key, value]) => (
+                                  <div key={key} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={key} id={`opt-new-${key}`} />
+                                    <Label htmlFor={`opt-new-${key}`}>{value as string}</Label>
                                   </div>
                                 ))}
                               </RadioGroup>
@@ -672,14 +725,14 @@ const Documents = () => {
                       ) : (
                         <>
                           <p className="text-sm text-muted-foreground">
-                            {currentQuiz ? currentQuiz.question : doc.quiz_question}
+                            {currentQuiz?.question}
                           </p>
                           
                           <RadioGroup value={quizAnswer} onValueChange={setQuizAnswer}>
-                            {((currentQuiz?.options || doc.quiz_options) as string[])?.map((option: string, idx: number) => (
-                              <div key={idx} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`opt-${idx}`} />
-                                <Label htmlFor={`opt-${idx}`}>{option}</Label>
+                            {Object.entries(currentQuiz?.options || {}).map(([key, value]) => (
+                              <div key={key} className="flex items-center space-x-2">
+                                <RadioGroupItem value={key} id={`opt-${key}`} />
+                                <Label htmlFor={`opt-${key}`}>{value as string}</Label>
                               </div>
                             ))}
                           </RadioGroup>
