@@ -24,6 +24,9 @@ interface AssessmentWithQuestions {
   completed_at: string | null;
   score: number | null;
   created_at: string;
+  attempts: number;
+  passed: boolean;
+  last_attempt_at: string | null;
   training_questions?: Array<{
     id: string;
     question: string;
@@ -165,22 +168,64 @@ const TrainingView = () => {
     mutationFn: async () => {
       if (!currentEmployee || !assessment) return;
 
+      // Calculate score
+      const totalQuestions = assessment.training_questions?.length || 0;
+      let correctAnswers = 0;
+      
+      assessment.training_questions?.forEach((q: any) => {
+        if (answers[q.id] === q.correct_answer) {
+          correctAnswers++;
+        }
+      });
+      
+      const scorePercentage = (correctAnswers / totalQuestions) * 100;
+      const passed = scorePercentage >= 60;
+      const newAttempts = (assessment.attempts || 0) + 1;
+
       const { error } = await supabase
         .from('training_assessments')
         .update({
           answers,
           completed: true,
           completed_at: new Date().toISOString(),
+          score: Math.round(scorePercentage),
+          attempts: newAttempts,
+          passed,
+          last_attempt_at: new Date().toISOString()
         })
         .eq('id', assessment.id);
 
       if (error) throw error;
+      
+      return { passed, scorePercentage, correctAnswers, totalQuestions, newAttempts };
     },
-    onSuccess: () => {
-      toast({
-        title: "Avaliação enviada com sucesso!",
-        description: "Sua resposta foi registrada.",
-      });
+    onSuccess: (data) => {
+      if (!data) return;
+      
+      const { passed, scorePercentage, correctAnswers, totalQuestions, newAttempts } = data;
+      
+      if (passed) {
+        toast({
+          title: "🎉 Parabéns! Você foi aprovado!",
+          description: `Nota: ${scorePercentage.toFixed(1)}% (${correctAnswers}/${totalQuestions} acertos)`,
+        });
+      } else {
+        const remainingAttempts = 5 - newAttempts;
+        if (remainingAttempts > 0) {
+          toast({
+            title: "Não foi dessa vez...",
+            description: `Nota: ${scorePercentage.toFixed(1)}% (${correctAnswers}/${totalQuestions}). Você tem mais ${remainingAttempts} tentativa(s).`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Tentativas esgotadas",
+            description: `Você atingiu o limite de 5 tentativas. Entre em contato com o administrador.`,
+            variant: "destructive",
+          });
+        }
+      }
+      
       setIsAssessmentOpen(false);
       queryClient.invalidateQueries({ queryKey: ['assessment'] });
       navigate('/trainings');
@@ -201,7 +246,8 @@ const TrainingView = () => {
     videoProgress?.find(vp => vp.video_id === video.id)?.completed
   ) ?? false;
 
-  const canTakeAssessment = allVideosCompleted && !assessment?.completed;
+  const canTakeAssessment = allVideosCompleted && !assessment?.completed && (assessment?.attempts || 0) < 5;
+  const canRetakeAssessment = allVideosCompleted && assessment?.completed && !assessment?.passed && (assessment?.attempts || 0) < 5;
 
   // Create assessment when videos are completed
   const createAssessmentMutation = useMutation({
@@ -218,15 +264,20 @@ const TrainingView = () => {
         throw new Error("Nenhuma questão disponível para este treinamento");
       }
       
-      // Create assessment with questions
-      const questionIds = questionsData.map(q => q.id);
+      // Select 10 random questions from available pool
+      const shuffled = [...questionsData].sort(() => 0.5 - Math.random());
+      const selectedQuestions = shuffled.slice(0, 10);
+      const questionIds = selectedQuestions.map(q => q.id);
+      
       const { data, error } = await supabase
         .from('training_assessments')
         .insert({
           training_id: id,
           employee_id: currentEmployee.id,
           questions: questionIds,
-          completed: false
+          completed: false,
+          attempts: 0,
+          passed: false
         })
         .select()
         .single();
@@ -238,7 +289,7 @@ const TrainingView = () => {
       refetchAssessment();
       toast({
         title: "Avaliação criada!",
-        description: "Você já pode iniciar a avaliação.",
+        description: "Você tem até 5 tentativas para atingir 60% de acertos.",
       });
     },
     onError: (error: any) => {
@@ -454,7 +505,8 @@ const TrainingView = () => {
               <CardHeader>
                 <CardTitle>Criar Avaliação</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Você completou todos os vídeos! Crie sua avaliação para responder às questões.
+                  Você completou todos os vídeos! A avaliação terá 10 questões aleatórias.<br/>
+                  Você precisa acertar 60% (6 questões) para ser aprovado e tem até 5 tentativas.
                 </p>
               </CardHeader>
               <CardContent>
@@ -469,29 +521,59 @@ const TrainingView = () => {
             </Card>
           )}
 
-          {canTakeAssessment && (
+          {(canTakeAssessment || canRetakeAssessment) && (
             <Card>
               <CardHeader>
                 <CardTitle>Avaliação do Treinamento</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Responda às questões abaixo para concluir o treinamento.
+                  {canRetakeAssessment ? (
+                    <>
+                      Tentativa {(assessment?.attempts || 0) + 1} de 5 - Você precisa de 60% de acertos para aprovação.
+                      {assessment?.score && <span className="block mt-1">Última nota: {assessment.score}%</span>}
+                    </>
+                  ) : (
+                    "Responda às 10 questões abaixo. Você precisa de 60% de acertos e tem até 5 tentativas."
+                  )}
                 </p>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => setIsAssessmentOpen(true)} className="w-full">
-                  Iniciar Avaliação
+                <Button onClick={() => {
+                  setAnswers({});
+                  setIsAssessmentOpen(true);
+                }} className="w-full">
+                  {canRetakeAssessment ? "Tentar Novamente" : "Iniciar Avaliação"}
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {assessment?.completed && (
+          {assessment?.passed && (
             <Card>
               <CardContent className="pt-6 text-center">
                 <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Avaliação Concluída!</h3>
+                <h3 className="text-xl font-semibold mb-2">Parabéns! Você foi aprovado!</h3>
                 <p className="text-muted-foreground">
-                  Você completou este treinamento com sucesso.
+                  Nota final: {assessment.score}%
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Tentativas utilizadas: {assessment.attempts} de 5
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {assessment?.completed && !assessment?.passed && (assessment?.attempts || 0) >= 5 && (
+            <Card className="border-destructive">
+              <CardContent className="pt-6 text-center">
+                <h3 className="text-xl font-semibold mb-2 text-destructive">Limite de tentativas atingido</h3>
+                <p className="text-muted-foreground">
+                  Você utilizou todas as 5 tentativas disponíveis.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Última nota: {assessment.score}% (necessário 60% para aprovação)
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Entre em contato com o administrador para mais informações.
                 </p>
               </CardContent>
             </Card>

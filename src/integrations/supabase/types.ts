@@ -475,33 +475,42 @@ export type Database = {
       training_assessments: {
         Row: {
           answers: Json | null
+          attempts: number | null
           completed: boolean | null
           completed_at: string | null
           created_at: string | null
           employee_id: string
           id: string
+          last_attempt_at: string | null
+          passed: boolean | null
           questions: Json
           score: number | null
           training_id: string
         }
         Insert: {
           answers?: Json | null
+          attempts?: number | null
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           employee_id: string
           id?: string
+          last_attempt_at?: string | null
+          passed?: boolean | null
           questions: Json
           score?: number | null
           training_id: string
         }
         Update: {
           answers?: Json | null
+          attempts?: number | null
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           employee_id?: string
           id?: string
+          last_attempt_at?: string | null
+          passed?: boolean | null
           questions?: Json
           score?: number | null
           training_id?: string

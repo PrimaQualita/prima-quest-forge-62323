@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.delete-employee]
 verify_jwt = true
 
+[functions.generate-all-training-questions]
+verify_jwt = true
+
 [functions.generate-quiz]
 verify_jwt = true
 

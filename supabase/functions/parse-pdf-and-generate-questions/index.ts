@@ -91,15 +91,16 @@ serve(async (req) => {
 
     const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
     
-    Com base no conteúdo do documento fornecido, gere EXATAMENTE 30 questões de múltipla escolha.
+    Com base no conteúdo do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
     
     IMPORTANTE:
     - Cada questão deve ter 4 opções (A, B, C, D)
     - Apenas uma opção correta
-    - Questões devem cobrir todo o conteúdo do documento
-    - Misture questões fáceis, médias e difíceis
-    - Questões devem testar compreensão, não memorização
+    - Questões devem cobrir TODO o conteúdo do documento de forma abrangente
+    - Misture questões fáceis (40%), médias (40%) e difíceis (20%)
+    - Questões devem testar compreensão e aplicação prática, não apenas memorização
     - As questões devem ser sobre o CONTEÚDO real do documento, não sobre metadados ou estrutura técnica
+    - Varie os tópicos e conceitos abordados para garantir cobertura completa
     
     Retorne as questões no seguinte formato JSON:
     {
@@ -129,7 +130,7 @@ serve(async (req) => {
           { role: "system", content: systemPrompt },
           { 
             role: "user", 
-            content: `Gere 30 questões baseadas neste documento:\n\n${documentContent}` 
+            content: `Gere 50 questões baseadas neste documento:\n\n${documentContent}` 
           }
         ],
         tools: [
@@ -191,8 +192,8 @@ serve(async (req) => {
 
     const questionsData = JSON.parse(toolCall.function.arguments);
     
-    if (!questionsData.questions || questionsData.questions.length < 30) {
-      console.warn(`IA gerou apenas ${questionsData.questions?.length || 0} questões, esperado 30`);
+    if (!questionsData.questions || questionsData.questions.length < 50) {
+      console.warn(`IA gerou apenas ${questionsData.questions?.length || 0} questões, esperado 50`);
     }
 
     console.log(`Inserindo ${questionsData.questions.length} questões no banco...`);

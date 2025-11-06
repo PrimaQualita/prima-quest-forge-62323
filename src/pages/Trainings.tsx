@@ -51,6 +51,7 @@ const Trainings = () => {
   }]);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isGeneratingAllQuestions, setIsGeneratingAllQuestions] = useState(false);
 
   const { data: trainings } = useQuery({
     queryKey: ['trainings'],
@@ -321,17 +322,52 @@ const Trainings = () => {
           <h1 className="text-2xl md:text-4xl font-bold text-foreground uppercase">TREINAMENTOS</h1>
           <p className="text-sm md:text-base text-muted-foreground mt-1">Acompanhe e gerencie treinamentos de compliance</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full md:w-auto">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Treinamento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Treinamento</DialogTitle>
-            </DialogHeader>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={async () => {
+              setIsGeneratingAllQuestions(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('generate-all-training-questions', {
+                  body: {}
+                });
+                
+                if (error) throw error;
+                
+                if (data?.success) {
+                  toast({
+                    title: "Questões geradas com sucesso!",
+                    description: `${data.summary.success} de ${data.summary.total} treinamentos processados.`
+                  });
+                }
+              } catch (err) {
+                console.error('Erro ao gerar questões:', err);
+                toast({
+                  title: "Erro ao gerar questões",
+                  description: "Não foi possível gerar as questões. Tente novamente.",
+                  variant: "destructive"
+                });
+              } finally {
+                setIsGeneratingAllQuestions(false);
+              }
+            }}
+            disabled={isGeneratingAllQuestions}
+            className="w-full md:w-auto"
+          >
+            <GraduationCap className="w-4 h-4 mr-2" />
+            {isGeneratingAllQuestions ? "Gerando..." : "Gerar Questões"}
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="w-full md:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Treinamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Criar Novo Treinamento</DialogTitle>
+              </DialogHeader>
             <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -566,6 +602,7 @@ const Trainings = () => {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
