@@ -123,7 +123,7 @@ export const generateTrainingCertificate = async ({
     month: "long",
     year: "numeric",
   });
-  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
+  doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 14, { align: "center" });
 
   // Assinatura - com espaçamento aumentado
   const signatureY = yPositionScore + 32;
