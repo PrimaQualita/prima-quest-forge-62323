@@ -114,7 +114,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/supplier-form" element={<SupplierForm />} />
-          <Route path="/supplier-portal" element={<SupplierPortal />} />
+          <Route path="/supplier-portal" element={<Navigate to="/profile" replace />} />
           <Route path="/verificar-certificado" element={<VerifyCertificate />} />
           <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
           
