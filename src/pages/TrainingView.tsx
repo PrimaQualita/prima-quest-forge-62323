@@ -522,7 +522,7 @@ const TrainingView = () => {
             </Card>
           )}
 
-          {(canTakeAssessment || canRetakeAssessment) && (
+          {assessment && (canTakeAssessment || canRetakeAssessment) && (
             <Card>
               <CardHeader>
                 <CardTitle>
