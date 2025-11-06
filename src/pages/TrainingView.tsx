@@ -138,7 +138,7 @@ const TrainingView = () => {
     mutationFn: async ({ videoId, percentage }: { videoId: string; percentage: number }) => {
       if (!currentEmployee) return;
 
-      const completed = percentage >= 70;
+      const completed = percentage >= 95;
 
       const { error } = await supabase
         .from('video_progress')
@@ -201,6 +201,16 @@ const TrainingView = () => {
   ) ?? false;
 
   const canTakeAssessment = allVideosCompleted && !assessment?.completed;
+
+  console.log('Debug Assessment:', {
+    allVideosCompleted,
+    canTakeAssessment,
+    hasAssessment: !!assessment,
+    hasQuestions: assessment?.training_questions?.length || 0,
+    assessmentCompleted: assessment?.completed,
+    totalVideos: training?.training_videos?.length || 0,
+    completedVideos: videoProgress?.filter(vp => vp.completed).length || 0
+  });
 
   const handleDownloadDocument = async (filePath: string, fileName: string) => {
     const { data } = supabase.storage
@@ -293,7 +303,7 @@ const TrainingView = () => {
                     onComplete={() => {
                       toast({
                         title: "Vídeo concluído!",
-                        description: "Você assistiu a mais de 70% deste vídeo.",
+                        description: "Você assistiu a mais de 95% deste vídeo.",
                       });
                     }}
                   />
