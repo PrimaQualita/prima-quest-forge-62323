@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { trainingId, filePath } = await req.json();
+    const { trainingId, trainingTitle, trainingCategory } = await req.json();
     
-    if (!trainingId || !filePath) {
-      throw new Error('Training ID e caminho do arquivo são obrigatórios');
+    if (!trainingId || !trainingTitle) {
+      throw new Error('Training ID e título são obrigatórios');
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -29,89 +29,26 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Baixando arquivo PDF do storage...');
-    
-    // Download the PDF from storage
-    const { data: fileData, error: downloadError } = await supabase
-      .storage
-      .from('compliance-documents')
-      .download(filePath);
+    console.log(`Gerando 50 questões para: ${trainingTitle}`);
 
-    if (downloadError) {
-      console.error('Erro ao baixar arquivo:', downloadError);
-      throw downloadError;
-    }
-
-    console.log('Extraindo texto do PDF...');
+    const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos de compliance.
     
-    // Converter para base64 em chunks para evitar stack overflow
-    const arrayBuffer = await fileData.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let base64Pdf = '';
-    const chunkSize = 8192;
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-      base64Pdf += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
-    }
-    
-    console.log(`PDF convertido para base64, tamanho: ${base64Pdf.length} caracteres`);
-    
-    // Usar Gemini para extrair texto - com prompt específico para PDFs grandes
-    const extractResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system",
-            content: "Você é um especialista em extrair e estruturar texto de documentos PDF. Extraia TODO o texto mantendo a estrutura lógica."
-          },
-          { 
-            role: "user", 
-            content: `Extraia todo o texto deste documento PDF. O documento está em base64. Retorne APENAS o texto extraído de forma estruturada, preservando títulos, parágrafos e listas.
-
-Base64 do PDF (primeiros 100KB):
-${base64Pdf.substring(0, 100000)}`
-          }
-        ]
-      }),
-    });
-
-    if (!extractResponse.ok) {
-      const error = await extractResponse.text();
-      console.error("Erro ao extrair texto:", extractResponse.status, error);
-      throw new Error(`Erro ao extrair texto do PDF: ${extractResponse.status}`);
-    }
-
-    const extractData = await extractResponse.json();
-    const documentContent = extractData.choices[0].message.content;
-    
-    console.log('Texto extraído com sucesso');
-    console.log('Tamanho do conteúdo:', documentContent.length, 'caracteres');
-    console.log('Preview do conteúdo:', documentContent.substring(0, 300));
-
-    const systemPrompt = `Você é um especialista em criar questões de avaliação para treinamentos corporativos.
-    
-    Com base no conteúdo do documento fornecido, gere EXATAMENTE 50 questões de múltipla escolha.
+    Com base no título e categoria do treinamento fornecidos, gere EXATAMENTE 50 questões de múltipla escolha relevantes e práticas.
     
     IMPORTANTE:
     - Cada questão deve ter 4 opções (A, B, C, D)
     - Apenas uma opção correta
-    - Questões devem cobrir TODO o conteúdo do documento de forma abrangente
+    - Questões devem cobrir aspectos importantes do tema de forma abrangente
     - Misture questões fáceis (40%), médias (40%) e difíceis (20%)
-    - Questões devem testar compreensão e aplicação prática, não apenas memorização
-    - As questões devem ser sobre o CONTEÚDO real do documento, não sobre metadados ou estrutura técnica
-    - Varie os tópicos e conceitos abordados para garantir cobertura completa
+    - Questões devem testar compreensão e aplicação prática
+    - Foque em situações reais e casos práticos
+    - Varie os tópicos dentro do tema principal
     
     Retorne as questões no seguinte formato JSON:
     {
       "questions": [
         {
-          "question": "Texto da pergunta sobre o conteúdo do documento",
+          "question": "Texto da pergunta",
           "options": {
             "A": "Primeira alternativa completa",
             "B": "Segunda alternativa completa",
@@ -135,7 +72,12 @@ ${base64Pdf.substring(0, 100000)}`
           { role: "system", content: systemPrompt },
           { 
             role: "user", 
-            content: `Gere 50 questões baseadas neste documento:\n\n${documentContent}` 
+            content: `Gere 50 questões de múltipla escolha para o treinamento:
+
+Título: ${trainingTitle}
+Categoria: ${trainingCategory || 'Compliance'}
+
+As questões devem ser práticas, relevantes e cobrir os principais aspectos do tema.` 
           }
         ],
         tools: [
@@ -143,7 +85,7 @@ ${base64Pdf.substring(0, 100000)}`
             type: "function",
             function: {
               name: "generate_questions",
-              description: "Gera questões de múltipla escolha baseadas no documento",
+              description: "Gera questões de múltipla escolha",
               parameters: {
                 type: "object",
                 properties: {
@@ -232,8 +174,7 @@ ${base64Pdf.substring(0, 100000)}`
     return new Response(
       JSON.stringify({ 
         success: true, 
-        questionsGenerated: insertedQuestions.length,
-        contentPreview: documentContent.substring(0, 200)
+        questionsGenerated: insertedQuestions.length
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
