@@ -33,8 +33,6 @@ const Trainings = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [selectedTraining, setSelectedTraining] = useState<any>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState("");
   const [isTrail, setIsTrail] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -338,26 +336,6 @@ const Trainings = () => {
     newVideos[index] = { ...newVideos[index], [field]: value };
     setVideos(newVideos);
   };
-
-  const completeTrainingMutation = useMutation({
-    mutationFn: async ({ trainingId, employeeId }: any) => {
-      const { error } = await supabase
-        .from('training_participations')
-        .upsert({
-          training_id: trainingId,
-          employee_id: employeeId,
-          completed: true,
-          completion_date: new Date().toISOString(),
-        });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Treinamento concluído com sucesso!" });
-      setSelectedTraining(null);
-      setSelectedEmployee("");
-      queryClient.invalidateQueries({ queryKey: ['training-participations'] });
-    },
-  });
 
   const getCompletionRate = (trainingId: string) => {
     if (!participations || !employees) return 0;
@@ -745,52 +723,6 @@ const Trainings = () => {
                     </Button>
                   </div>
                 )}
-
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => setSelectedTraining(training)}
-                    >
-                      Marcar Conclusão
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Confirmar Conclusão de Treinamento</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <p className="text-sm text-muted-foreground">
-                        {training.title}
-                      </p>
-                      <div className="space-y-2">
-                        <Label>Selecione o colaborador</Label>
-                        <select
-                          className="w-full border rounded-md p-2"
-                          value={selectedEmployee}
-                          onChange={(e) => setSelectedEmployee(e.target.value)}
-                        >
-                          <option value="">Selecione...</option>
-                          {employees?.map(emp => (
-                            <option key={emp.id} value={emp.id}>{emp.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <Button 
-                        className="w-full"
-                        disabled={!selectedEmployee}
-                        onClick={() => completeTrainingMutation.mutate({
-                          trainingId: training.id,
-                          employeeId: selectedEmployee
-                        })}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Confirmar Conclusão
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </CardContent>
             </Card>
           );
