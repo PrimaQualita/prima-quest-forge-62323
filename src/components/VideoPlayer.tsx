@@ -23,9 +23,6 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
     const video = videoRef.current;
     if (!video) return;
 
-    // Prevent seeking forward
-    let lastValidTime = currentProgress * video.duration / 100;
-
     const handleTimeUpdate = () => {
       const currentTime = video.currentTime;
       const duration = video.duration;
@@ -34,22 +31,14 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
         const currentProgress = (currentTime / duration) * 100;
         setProgress(currentProgress);
 
-        // Only allow seeking backwards or to already watched positions
-        if (currentTime > lastValidTime + 1) {
-          video.currentTime = lastValidTime;
-          return;
-        }
-        
-        lastValidTime = Math.max(lastValidTime, currentTime);
-
         // Report progress every 5%
         if (Math.floor(currentProgress / 5) > Math.floor(lastReportedProgress.current / 5)) {
           onProgressUpdate(currentProgress);
           lastReportedProgress.current = currentProgress;
         }
 
-        // Mark as complete at 70%
-        if (currentProgress >= 70 && !hasCompleted.current) {
+        // Mark as complete at 95%
+        if (currentProgress >= 95 && !hasCompleted.current) {
           hasCompleted.current = true;
           onComplete();
         }
@@ -60,13 +49,6 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
       setDuration(video.duration);
       if (currentProgress > 0) {
         video.currentTime = (currentProgress / 100) * video.duration;
-        lastValidTime = video.currentTime;
-      }
-    };
-
-    const handleSeeking = () => {
-      if (video.currentTime > lastValidTime) {
-        video.currentTime = lastValidTime;
       }
     };
 
@@ -77,13 +59,11 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('seeking', handleSeeking);
     video.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('seeking', handleSeeking);
       video.removeEventListener('contextmenu', handleContextMenu);
     };
   }, [onProgressUpdate, onComplete, currentProgress]);
@@ -158,15 +138,9 @@ export const VideoPlayer = ({ url, onProgressUpdate, onComplete, currentProgress
           </div>
 
           <span className="text-xs md:text-sm font-medium">
-            {progress >= 70 ? "✓ Concluído" : `${Math.floor(progress)}%`}
+            {progress >= 95 ? "✓ Concluído" : `${Math.floor(progress)}%`}
           </span>
         </div>
-
-        {progress < 70 && (
-          <p className="text-xs text-muted-foreground text-center">
-            Assista até pelo menos 70% do vídeo para concluí-lo
-          </p>
-        )}
       </div>
     </div>
   );
