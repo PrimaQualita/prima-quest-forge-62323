@@ -214,38 +214,12 @@ const TrainingEdit = () => {
             });
 
           if (docError) throw docError;
-
-          // Gerar questões via IA usando a nova função que extrai texto do PDF corretamente
-          setIsGeneratingQuestions(true);
-          supabase.functions.invoke('parse-pdf-and-generate-questions', {
-            body: { 
-              trainingId: id, 
-              filePath: fileName 
-            }
-          }).then((response) => {
-            setIsGeneratingQuestions(false);
-            if (response.data?.success) {
-              toast({
-                title: "Questões geradas com sucesso!",
-                description: `${response.data.questionsGenerated} questões criadas.`
-              });
-            }
-          }).catch((err) => {
-            console.error('Erro ao gerar questões:', err);
-            setIsGeneratingQuestions(false);
-            toast({
-              title: "Erro ao gerar questões",
-              description: "Não foi possível gerar as questões automaticamente.",
-              variant: "destructive"
-            });
-          });
         }
       }
     },
     onSuccess: () => {
       toast({ 
         title: "Treinamento atualizado com sucesso!",
-        description: isGeneratingQuestions ? "As questões estão sendo geradas pela IA..." : undefined
       });
       queryClient.invalidateQueries({ queryKey: ['trainings'] });
       queryClient.invalidateQueries({ queryKey: ['training', id] });
@@ -364,47 +338,19 @@ const TrainingEdit = () => {
 
       if (updateError) throw updateError;
 
-      // 4. Deletar questões antigas deste treinamento
-      const { error: deleteQuestionsError } = await supabase
-        .from('training_questions')
-        .delete()
-        .eq('training_id', id);
-
-      if (deleteQuestionsError) {
-        console.error('Erro ao deletar questões antigas:', deleteQuestionsError);
-      }
-
       toast({
-        title: "Documento substituído!",
-        description: "Gerando novas questões..."
+        title: "Documento substituído com sucesso!",
+        description: "O documento foi atualizado."
       });
-
-      // 5. Gerar novas questões
-      setIsGeneratingQuestions(true);
-      const response = await supabase.functions.invoke('parse-pdf-and-generate-questions', {
-        body: { 
-          trainingId: id, 
-          filePath: newFileName 
-        }
-      });
-
-      if (response.data?.success) {
-        toast({
-          title: "Sucesso!",
-          description: `Documento substituído e ${response.data.questionsGenerated} novas questões geradas.`
-        });
-        
-        // Atualizar lista de documentos
-        setDocuments(documents.map(doc => 
-          doc.id === documentId 
-            ? { ...doc, file_path: newFileName, file_name: newFile.name }
-            : doc
-        ));
-        
-        queryClient.invalidateQueries({ queryKey: ['training', id] });
-      } else {
-        throw new Error('Falha ao gerar questões');
-      }
+      
+      // Atualizar lista de documentos
+      setDocuments(documents.map(doc => 
+        doc.id === documentId 
+          ? { ...doc, file_path: newFileName, file_name: newFile.name }
+          : doc
+      ));
+      
+      queryClient.invalidateQueries({ queryKey: ['training', id] });
     } catch (err: any) {
       console.error('Erro ao substituir documento:', err);
       toast({
