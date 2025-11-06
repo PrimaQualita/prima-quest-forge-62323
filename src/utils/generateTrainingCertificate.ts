@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import logoImage from "@/assets/logo-prima-qualita-cert.png";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CertificateData {
   employeeName: string;
@@ -7,6 +8,17 @@ interface CertificateData {
   completionDate: string;
   score: number;
 }
+
+// Gerar código de verificação único
+const generateVerificationCode = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 12; i++) {
+    if (i > 0 && i % 4 === 0) code += '-';
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
 
 export const generateTrainingCertificate = async ({
   employeeName,
@@ -35,9 +47,24 @@ export const generateTrainingCertificate = async ({
   doc.setLineWidth(0.5);
   doc.rect(12, 12, pageWidth - 24, pageHeight - 24, "S");
 
-  // Logo Prima Qualitá - maior e com proporção correta
+  // Gerar e salvar código de verificação
+  const verificationCode = generateVerificationCode();
+  
   try {
-    doc.addImage(logoImage, "PNG", pageWidth / 2 - 40, 20, 80, 40);
+    await supabase.from('certificates').insert({
+      verification_code: verificationCode,
+      employee_name: employeeName,
+      training_title: trainingTitle,
+      completion_date: completionDate,
+      score: score,
+    });
+  } catch (error) {
+    console.error("Erro ao salvar certificado:", error);
+  }
+
+  // Logo Prima Qualitá - menor e mais proporcional
+  try {
+    doc.addImage(logoImage, "PNG", pageWidth / 2 - 25, 20, 50, 25);
   } catch (error) {
     console.error("Erro ao adicionar logo:", error);
   }
@@ -101,23 +128,28 @@ export const generateTrainingCertificate = async ({
   });
   doc.text(`Concluído em ${formattedDate}`, pageWidth / 2, yPositionScore + 8, { align: "center" });
 
-  // Assinatura - com espaçamento adequado
-  const signatureY = pageHeight - 45;
+  // Assinatura - sem linha e sem nome
+  const signatureY = pageHeight - 50;
   
-  doc.setLineWidth(0.3);
-  doc.setDrawColor(52, 152, 219);
-  doc.line(pageWidth / 2 - 35, signatureY, pageWidth / 2 + 35, signatureY);
-  
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(52, 152, 219);
-  doc.text("Diego Figueiredo", pageWidth / 2, signatureY + 6, { align: "center" });
+  doc.text("Coordenação de Compliance", pageWidth / 2, signatureY, { align: "center" });
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(60, 60, 60);
-  doc.text("Coordenador de Compliance", pageWidth / 2, signatureY + 12, { align: "center" });
-  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 17, { align: "center" });
+  doc.text("Prima Qualitá", pageWidth / 2, signatureY + 6, { align: "center" });
+
+  // Código de verificação
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Código de Verificação: ${verificationCode}`, pageWidth / 2, pageHeight - 25, { align: "center" });
+  
+  doc.setFontSize(7);
+  doc.setTextColor(52, 152, 219);
+  const verificationUrl = `${window.location.origin}/verificar-certificado`;
+  doc.text(`Verifique a autenticidade em: ${verificationUrl}`, pageWidth / 2, pageHeight - 20, { align: "center" });
 
   // Save PDF
   doc.save(`Certificado_${employeeName.replace(/\s+/g, "_")}_${trainingTitle.substring(0, 30).replace(/\s+/g, "_")}.pdf`);

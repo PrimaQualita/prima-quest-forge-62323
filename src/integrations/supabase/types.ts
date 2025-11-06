@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      certificates: {
+        Row: {
+          completion_date: string
+          created_at: string
+          employee_name: string
+          id: string
+          issued_at: string
+          score: number
+          training_title: string
+          verification_code: string
+        }
+        Insert: {
+          completion_date: string
+          created_at?: string
+          employee_name: string
+          id?: string
+          issued_at?: string
+          score: number
+          training_title: string
+          verification_code: string
+        }
+        Update: {
+          completion_date?: string
+          created_at?: string
+          employee_name?: string
+          id?: string
+          issued_at?: string
+          score?: number
+          training_title?: string
+          verification_code?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string | null

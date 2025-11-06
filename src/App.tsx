@@ -23,6 +23,7 @@ import SupplierDueDiligence from "./pages/SupplierDueDiligence";
 import SupplierForm from "./pages/SupplierForm";
 import SupplierPortal from "./pages/SupplierPortal";
 import Profile from "./pages/Profile";
+import VerifyCertificate from "./pages/VerifyCertificate";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/supplier-form" element={<SupplierForm />} />
           <Route path="/supplier-portal" element={<SupplierPortal />} />
+          <Route path="/verificar-certificado" element={<VerifyCertificate />} />
           <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
           
           {/* Rotas acessíveis a todos os usuários autenticados */}
