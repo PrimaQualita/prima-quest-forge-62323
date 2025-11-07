@@ -141,16 +141,32 @@ const Reports = () => {
   const { data: employeesCompliance } = useQuery({
     queryKey: ['employees-compliance'],
     queryFn: async () => {
-      // Buscar todos os dados de uma vez em vez de fazer queries individuais
+      // Buscar todos os colaboradores com paginação
+      let allEmployees: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id, name')
+          .order('name')
+          .range(from, from + pageSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        allEmployees = [...allEmployees, ...batch];
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      // Buscar todos os outros dados de uma vez
       const [
-        { data: employees },
         { data: documents },
         { data: trainings },
         { data: allAcknowledgments },
         { data: allParticipations },
         { data: allAssessments }
       ] = await Promise.all([
-        supabase.from('employees').select('id, name').order('name'),
         supabase.from('compliance_documents').select('id'),
         supabase.from('trainings').select('id'),
         supabase.from('document_acknowledgments').select('employee_id, document_id').eq('quiz_correct', true).not('employee_id', 'is', null),
@@ -158,13 +174,13 @@ const Reports = () => {
         supabase.from('training_assessments').select('employee_id, training_id').eq('passed', true).not('employee_id', 'is', null)
       ]);
 
-      if (!employees) return [];
+      if (!allEmployees || allEmployees.length === 0) return [];
 
       const totalDocuments = documents?.length || 0;
       const totalTrainings = trainings?.length || 0;
 
       // Processar dados em memória para cada employee
-      const employeesWithCompliance = employees.map((employee) => {
+      const employeesWithCompliance = allEmployees.map((employee) => {
         // Contar documentos aceitos por este employee
         const docsAccepted = allAcknowledgments?.filter(
           ack => ack.employee_id === employee.id
