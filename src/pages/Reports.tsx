@@ -6,8 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { ComplianceCharts } from "@/components/dashboard/ComplianceCharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 const Reports = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const { data: stats } = useQuery({
     queryKey: ['compliance-stats'],
     queryFn: async () => {
@@ -219,6 +226,19 @@ const Reports = () => {
     },
   });
 
+  // Calcular paginação
+  const totalEmployees = employeesCompliance?.length || 0;
+  const totalPages = Math.ceil(totalEmployees / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEmployees = employeesCompliance?.slice(startIndex, endIndex) || [];
+
+  // Reset para página 1 quando mudar items per page
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-6 pt-6">
       <div>
@@ -348,7 +368,28 @@ const Reports = () => {
             Status por Colaborador
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Mostrar</span>
+              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                  <SelectItem value="500">500</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">por página</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Mostrando {startIndex + 1} a {Math.min(endIndex, totalEmployees)} de {totalEmployees} colaboradores
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -361,7 +402,7 @@ const Reports = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {employeesCompliance?.map((employee) => (
+                {paginatedEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell className="text-center">
@@ -388,6 +429,52 @@ const Reports = () => {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
