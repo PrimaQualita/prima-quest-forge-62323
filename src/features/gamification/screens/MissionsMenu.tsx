@@ -68,7 +68,7 @@ export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Missões de Compliance</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">CompliancePlay</h1>
           <p className="text-xl text-muted-foreground">Escolha sua missão e avance na jornada da integridade</p>
         </motion.div>
 
@@ -82,12 +82,20 @@ export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 {/* Avatar */}
-                <div 
-                  className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-                  style={{ backgroundColor: user.avatarColor }}
-                >
-                  {getInitials(user.name)}
-                </div>
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-20 h-20 rounded-full object-cover border-4 border-primary/20"
+                  />
+                ) : (
+                  <div 
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
+                    style={{ backgroundColor: user.avatarColor }}
+                  >
+                    {getInitials(user.name)}
+                  </div>
+                )}
 
                 {/* Informações */}
                 <div className="flex-1 text-center md:text-left space-y-4 w-full">

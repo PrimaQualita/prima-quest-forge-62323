@@ -3,6 +3,7 @@
 export interface User {
   name: string;
   avatarColor: string;
+  avatarUrl?: string;
 }
 
 export interface Badge {

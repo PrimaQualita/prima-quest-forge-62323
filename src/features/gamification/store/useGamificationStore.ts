@@ -67,45 +67,41 @@ export const carregarProgressoDoServidor = async (userId: string) => {
 
 /**
  * Carrega ranking de colaboradores e gestores (exclui fornecedores)
+ * Retorna TODOS os colaboradores, incluindo os que não têm progresso (score 0)
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
   try {
-    // Busca progresso de gamificação dos colaboradores e gestores
-    const { data: progressData, error: progressError } = await supabase
-      .from('gamification_progress')
-      .select(`
-        user_id,
-        total_score,
-        integrity_level
-      `)
-      .order('total_score', { ascending: false })
-      .limit(10);
-
-    if (progressError) throw progressError;
-    if (!progressData || progressData.length === 0) return [];
-
-    // Busca informações dos colaboradores
-    const userIds = progressData.map(p => p.user_id);
+    // Busca todos os colaboradores
     const { data: employeesData, error: employeesError } = await supabase
       .from('employees')
       .select('user_id, name')
-      .in('user_id', userIds);
+      .not('user_id', 'is', null);
 
     if (employeesError) throw employeesError;
+    if (!employeesData || employeesData.length === 0) return [];
 
-    // Mapeia progresso com nomes dos colaboradores
-    const ranking: RankingPlayer[] = progressData
-      .map(progress => {
-        const employee = employeesData?.find(e => e.user_id === progress.user_id);
-        if (!employee) return null;
+    // Busca progresso de todos os colaboradores
+    const userIds = employeesData.map(e => e.user_id);
+    const { data: progressData, error: progressError } = await supabase
+      .from('gamification_progress')
+      .select('user_id, total_score')
+      .in('user_id', userIds);
+
+    if (progressError) throw progressError;
+
+    // Mapeia colaboradores com seu progresso (ou 0 se não tiver)
+    const ranking: RankingPlayer[] = employeesData
+      .map(employee => {
+        const progress = progressData?.find(p => p.user_id === employee.user_id);
+        const totalScore = progress?.total_score || 0;
 
         return {
           name: employee.name,
-          totalScore: progress.total_score,
-          level: calculateLevel(progress.total_score)
+          totalScore,
+          level: calculateLevel(totalScore)
         };
       })
-      .filter((item): item is RankingPlayer => item !== null);
+      .sort((a, b) => b.totalScore - a.totalScore);
 
     return ranking;
   } catch (error) {
@@ -120,7 +116,8 @@ export const useGamificationStore = create<GamificationState>()(
       // Estado inicial
       user: {
         name: 'Carregando...',
-        avatarColor: '#4F46E5'
+        avatarColor: '#4F46E5',
+        avatarUrl: undefined
       },
       totalScore: 0,
       integrityLevel: 0,
@@ -199,18 +196,26 @@ export const useGamificationStore = create<GamificationState>()(
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
 
-          // Busca nome do colaborador
+          // Busca nome e avatar do colaborador
           const { data: employeeData } = await supabase
             .from('employees')
             .select('name')
             .eq('user_id', user.id)
             .maybeSingle();
 
+          // Busca avatar do perfil
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', user.id)
+            .maybeSingle();
+
           if (employeeData) {
             set({
               user: {
                 name: employeeData.name,
-                avatarColor: '#4F46E5'
+                avatarColor: '#4F46E5',
+                avatarUrl: profileData?.avatar_url || undefined
               }
             });
           }

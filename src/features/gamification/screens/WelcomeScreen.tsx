@@ -77,9 +77,9 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
           transition={{ delay: 0.3, duration: 0.8 }}
           className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent"
         >
-          Bem-vindo às
+          Bem-vindo ao
           <br />
-          Missões de Compliance
+          CompliancePlay
         </motion.h1>
 
         {/* Subtítulo */}
