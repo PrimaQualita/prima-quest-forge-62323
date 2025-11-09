@@ -2,25 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { GamificationState, Badge, GameProgress, RankingPlayer } from '../types';
 import { availableBadges } from '../data/gameData';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Store global de gamificação usando Zustand
- * Persiste dados no localStorage para manter progresso entre sessões
+ * Integrado com Supabase para persistência de dados
  */
-
-// Ranking simulado inicial
-const initialRanking: RankingPlayer[] = [
-  { name: 'Ana Silva', totalScore: 850, level: 'Mestre da Integridade' },
-  { name: 'Carlos Mendes', totalScore: 720, level: 'Guardião de Dados e Ética' },
-  { name: 'Beatriz Costa', totalScore: 680, level: 'Guardião de Dados e Ética' },
-  { name: 'Diego Santos', totalScore: 590, level: 'Guardião de Dados e Ética' },
-  { name: 'Elena Rodrigues', totalScore: 520, level: 'Guardião de Dados e Ética' },
-  { name: 'Fernando Lima', totalScore: 480, level: 'Guardião de Dados e Ética' },
-  { name: 'Gabriela Alves', totalScore: 420, level: 'Aliado da Integridade' },
-  { name: 'Henrique Souza', totalScore: 380, level: 'Aliado da Integridade' },
-  { name: 'Isabela Martins', totalScore: 340, level: 'Aliado da Integridade' },
-  { name: 'João Pedro', totalScore: 290, level: 'Aliado da Integridade' }
-];
 
 /**
  * Calcula o nível baseado na pontuação total
@@ -33,24 +20,98 @@ const calculateLevel = (score: number): string => {
 };
 
 /**
- * Função stub para registrar pontuação no servidor
- * TODO: Implementar integração com API
+ * Salva progresso de gamificação no Supabase
  */
-export const registrarPontuacaoNoServidor = async (gameId: string, points: number): Promise<void> => {
-  console.log(`TODO: Registrar pontuação no servidor - Game: ${gameId}, Points: ${points}`);
-  // Aqui virá a chamada à API quando o backend estiver pronto
-  // await fetch('/api/gamification/score', { ... })
+export const salvarProgressoNoServidor = async (
+  userId: string,
+  totalScore: number,
+  integrityLevel: number,
+  gamesProgress: Record<string, GameProgress>,
+  badges: Badge[]
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('gamification_progress')
+      .upsert({
+        user_id: userId,
+        total_score: totalScore,
+        integrity_level: integrityLevel,
+        games_progress: gamesProgress as any,
+        badges: badges as any
+      });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Erro ao salvar progresso:', error);
+  }
 };
 
 /**
- * Função stub para carregar ranking do servidor
- * TODO: Implementar integração com API
+ * Carrega progresso de gamificação do Supabase
+ */
+export const carregarProgressoDoServidor = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('gamification_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Erro ao carregar progresso:', error);
+    return null;
+  }
+};
+
+/**
+ * Carrega ranking de colaboradores e gestores (exclui fornecedores)
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
-  console.log('TODO: Carregar ranking do servidor');
-  // Retorna dados simulados por enquanto
-  // await fetch('/api/gamification/ranking')
-  return initialRanking;
+  try {
+    // Busca progresso de gamificação dos colaboradores e gestores
+    const { data: progressData, error: progressError } = await supabase
+      .from('gamification_progress')
+      .select(`
+        user_id,
+        total_score,
+        integrity_level
+      `)
+      .order('total_score', { ascending: false })
+      .limit(10);
+
+    if (progressError) throw progressError;
+    if (!progressData || progressData.length === 0) return [];
+
+    // Busca informações dos colaboradores
+    const userIds = progressData.map(p => p.user_id);
+    const { data: employeesData, error: employeesError } = await supabase
+      .from('employees')
+      .select('user_id, name')
+      .in('user_id', userIds);
+
+    if (employeesError) throw employeesError;
+
+    // Mapeia progresso com nomes dos colaboradores
+    const ranking: RankingPlayer[] = progressData
+      .map(progress => {
+        const employee = employeesData?.find(e => e.user_id === progress.user_id);
+        if (!employee) return null;
+
+        return {
+          name: employee.name,
+          totalScore: progress.total_score,
+          level: calculateLevel(progress.total_score)
+        };
+      })
+      .filter((item): item is RankingPlayer => item !== null);
+
+    return ranking;
+  } catch (error) {
+    console.error('Erro ao carregar ranking:', error);
+    return [];
+  }
 };
 
 export const useGamificationStore = create<GamificationState>()(
@@ -58,14 +119,14 @@ export const useGamificationStore = create<GamificationState>()(
     (set, get) => ({
       // Estado inicial
       user: {
-        name: 'Usuário de Demonstração',
+        name: 'Carregando...',
         avatarColor: '#4F46E5'
       },
       totalScore: 0,
       integrityLevel: 0,
       badges: availableBadges.map(badge => ({ ...badge, unlocked: false })),
       gamesProgress: {},
-      ranking: initialRanking,
+      ranking: [],
 
       /**
        * Atualiza pontuação de um jogo específico
@@ -73,13 +134,13 @@ export const useGamificationStore = create<GamificationState>()(
        * - Soma pontos ao score total
        * - Ajusta o nível de integridade
        * - Desbloqueia medalha de iniciante se for o primeiro jogo
+       * - Persiste no Supabase
        */
-      updateScore: (gameId: string, points: number) => {
+      updateScore: async (gameId: string, points: number) => {
         const state = get();
         const newTotalScore = state.totalScore + points;
         
         // Calcula novo nível de integridade (0-100)
-        // Fórmula: quanto maior o score, maior o nível, mas com crescimento logarítmico
         const newIntegrityLevel = Math.min(100, Math.floor((newTotalScore / 10)));
 
         // Atualiza progresso do jogo
@@ -96,11 +157,13 @@ export const useGamificationStore = create<GamificationState>()(
         // Conta quantos jogos foram completados
         const completedGames = Object.values(newGamesProgress).filter(g => g.completed).length;
 
-        set({
+        const newState = {
           totalScore: newTotalScore,
           integrityLevel: newIntegrityLevel,
           gamesProgress: newGamesProgress
-        });
+        };
+
+        set(newState);
 
         // Desbloqueia medalha de iniciante no primeiro jogo
         if (completedGames === 1 && !state.badges.find(b => b.id === 'iniciante_etico')?.unlocked) {
@@ -112,18 +175,67 @@ export const useGamificationStore = create<GamificationState>()(
           get().unlockBadge('mestre_integridade');
         }
 
+        // Salva no Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await salvarProgressoNoServidor(
+            user.id,
+            newTotalScore,
+            newIntegrityLevel,
+            newGamesProgress,
+            get().badges
+          );
+        }
+
         // Atualiza ranking
-        const currentUser = state.user;
-        const newLevel = calculateLevel(newTotalScore);
-        const updatedRanking = [
-          ...state.ranking.filter(p => p.name !== currentUser.name),
-          { name: currentUser.name, totalScore: newTotalScore, level: newLevel }
-        ].sort((a, b) => b.totalScore - a.totalScore);
+        await get().loadRanking();
+      },
 
-        set({ ranking: updatedRanking });
+      /**
+       * Carrega dados do servidor
+       */
+      loadUserData: async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
 
-        // Chama função stub do servidor (preparado para futura integração)
-        registrarPontuacaoNoServidor(gameId, points);
+          // Busca nome do colaborador
+          const { data: employeeData } = await supabase
+            .from('employees')
+            .select('name')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (employeeData) {
+            set({
+              user: {
+                name: employeeData.name,
+                avatarColor: '#4F46E5'
+              }
+            });
+          }
+
+          // Busca progresso de gamificação
+          const progressData = await carregarProgressoDoServidor(user.id);
+          if (progressData) {
+            set({
+              totalScore: progressData.total_score,
+              integrityLevel: progressData.integrity_level,
+              gamesProgress: (progressData.games_progress as any) || {},
+              badges: (progressData.badges as any) || availableBadges.map(badge => ({ ...badge, unlocked: false }))
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao carregar dados do usuário:', error);
+        }
+      },
+
+      /**
+       * Carrega ranking do servidor
+       */
+      loadRanking: async () => {
+        const ranking = await carregarRankingDoServidor();
+        set({ ranking });
       },
 
       /**
@@ -155,7 +267,7 @@ export const useGamificationStore = create<GamificationState>()(
           integrityLevel: 0,
           badges: availableBadges.map(badge => ({ ...badge, unlocked: false })),
           gamesProgress: {},
-          ranking: initialRanking
+          ranking: []
         });
       }
     }),

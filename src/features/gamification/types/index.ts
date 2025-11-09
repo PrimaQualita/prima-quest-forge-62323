@@ -33,10 +33,12 @@ export interface GamificationState {
   badges: Badge[];
   gamesProgress: Record<string, GameProgress>;
   ranking: RankingPlayer[];
-  updateScore: (gameId: string, points: number) => void;
+  updateScore: (gameId: string, points: number) => Promise<void>;
   unlockBadge: (badgeId: string) => void;
   getUserRankingPosition: () => number;
   resetProgress: () => void;
+  loadUserData: () => Promise<void>;
+  loadRanking: () => Promise<void>;
 }
 
 export interface GameInfo {

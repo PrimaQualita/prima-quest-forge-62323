@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { BadgesPanel } from '../components/BadgesPanel';
 import { useGamificationStore } from '../store/useGamificationStore';
 import { gamesInfo } from '../data/gameData';
 import { ArrowLeft } from 'lucide-react';
+import { useUserType } from '@/hooks/useUserType';
 
 interface MissionsMenuProps {
   onSelectGame: (gameId: string) => void;
@@ -18,7 +20,16 @@ interface MissionsMenuProps {
  * Menu principal de missões com grid de jogos e painéis de progresso
  */
 export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
-  const { user, totalScore, integrityLevel, badges, ranking } = useGamificationStore();
+  const { user, totalScore, integrityLevel, badges, ranking, loadUserData, loadRanking } = useGamificationStore();
+  const { isSupplier, loading: userTypeLoading } = useUserType();
+
+  // Carrega dados do usuário e ranking ao montar o componente
+  useEffect(() => {
+    loadUserData();
+    if (!isSupplier) {
+      loadRanking();
+    }
+  }, [loadUserData, loadRanking, isSupplier]);
 
   // Calcula nível textual baseado no score
   const getLevelText = (score: number): string => {
@@ -142,13 +153,16 @@ export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
 
           {/* Painéis laterais - 1 coluna */}
           <div className="space-y-6">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <RankingPanel ranking={ranking} currentUserName={user.name} />
-            </motion.div>
+            {/* Ranking apenas para colaboradores/gestores */}
+            {!isSupplier && !userTypeLoading && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <RankingPanel ranking={ranking} currentUserName={user.name} />
+              </motion.div>
+            )}
 
             <motion.div
               initial={{ opacity: 0, x: 20 }}

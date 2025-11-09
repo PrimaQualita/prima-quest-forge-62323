@@ -415,6 +415,39 @@ export type Database = {
           },
         ]
       }
+      gamification_progress: {
+        Row: {
+          badges: Json
+          created_at: string
+          games_progress: Json
+          id: string
+          integrity_level: number
+          total_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badges?: Json
+          created_at?: string
+          games_progress?: Json
+          id?: string
+          integrity_level?: number
+          total_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badges?: Json
+          created_at?: string
+          games_progress?: Json
+          id?: string
+          integrity_level?: number
+          total_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       management_contracts: {
         Row: {
           created_at: string | null
