@@ -24,6 +24,7 @@ import SupplierForm from "./pages/SupplierForm";
 import SupplierPortal from "./pages/SupplierPortal";
 import ProfilePage from "./pages/ProfilePage";
 import VerifyCertificate from "./pages/VerifyCertificate";
+import GamificationModule from "./pages/GamificationModule";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,7 @@ const App = () => (
           <Route path="/trainings" element={<ProtectedRoute allowSupplier><Layout><Trainings /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id" element={<ProtectedRoute allowSupplier><Layout><TrainingView /></Layout></ProtectedRoute>} />
           <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
+          <Route path="/missoes-compliance" element={<ProtectedRoute allowSupplier><Layout><GamificationModule /></Layout></ProtectedRoute>} />
           
           {/* Rotas apenas para gestores/admins */}
           <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />

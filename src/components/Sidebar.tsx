@@ -10,7 +10,8 @@ import {
   BarChart3,
   FileCheck,
   Briefcase,
-  LogOut
+  LogOut,
+  Gamepad2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +59,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/", adminOnly: false },
     { icon: FileText, label: "Regulamentos", path: "/documents", adminOnly: false },
     { icon: GraduationCap, label: "Treinamentos", path: "/trainings", adminOnly: false },
+    { icon: Gamepad2, label: "Missões de Compliance", path: "/missoes-compliance", adminOnly: false },
     { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
     { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
     { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
