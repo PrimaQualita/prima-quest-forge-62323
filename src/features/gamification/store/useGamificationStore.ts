@@ -71,7 +71,7 @@ export const carregarProgressoDoServidor = async (userId: string) => {
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
   try {
-    // Busca todos os colaboradores
+    // Busca todos os colaboradores que têm user_id válido
     const { data: employeesData, error: employeesError } = await supabase
       .from('employees')
       .select('user_id, name')
@@ -80,8 +80,11 @@ export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
     if (employeesError) throw employeesError;
     if (!employeesData || employeesData.length === 0) return [];
 
-    // Busca progresso de todos os colaboradores
-    const userIds = employeesData.map(e => e.user_id);
+    // Filtra user_ids válidos
+    const userIds = employeesData.map(e => e.user_id).filter(id => id != null);
+    
+    if (userIds.length === 0) return [];
+
     const { data: progressData, error: progressError } = await supabase
       .from('gamification_progress')
       .select('user_id, total_score')

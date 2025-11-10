@@ -18,9 +18,14 @@ export const ComplianceTycoonGame = ({ onExit }: { onExit: () => void }) => {
 
   const maxRounds = 5;
 
+  const [executingActions, setExecutingActions] = useState<Set<string>>(new Set());
+
   const handleAction = (action: typeof complianceActions[0]) => {
     if (budget < action.budgetCost || time < action.timeCost) return;
+    if (executingActions.has(action.id)) return; // Previne cliques múltiplos
 
+    setExecutingActions(prev => new Set(prev).add(action.id));
+    
     setBudget(b => b - action.budgetCost);
     setTime(t => t - action.timeCost);
     setMetrics(m => ({
@@ -29,6 +34,14 @@ export const ComplianceTycoonGame = ({ onExit }: { onExit: () => void }) => {
       engagement: Math.min(100, m.engagement + action.effects.engagement),
       maturity: Math.min(100, m.maturity + action.effects.maturity)
     }));
+
+    setTimeout(() => {
+      setExecutingActions(prev => {
+        const next = new Set(prev);
+        next.delete(action.id);
+        return next;
+      });
+    }, 500);
   };
 
   const nextRound = () => {
@@ -42,6 +55,7 @@ export const ComplianceTycoonGame = ({ onExit }: { onExit: () => void }) => {
       setRound(round + 1);
       setBudget(100);
       setTime(100);
+      setExecutingActions(new Set()); // Limpa ações executadas
     }
   };
 
@@ -93,7 +107,14 @@ export const ComplianceTycoonGame = ({ onExit }: { onExit: () => void }) => {
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">{action.description}</p>
                 <div className="flex gap-2 text-sm"><Badge variant="outline">💰 {action.budgetCost}</Badge><Badge variant="outline">⏰ {action.timeCost}</Badge></div>
-                <Button onClick={() => handleAction(action)} disabled={budget < action.budgetCost || time < action.timeCost} className="w-full" size="sm">Executar</Button>
+                <Button 
+                  onClick={() => handleAction(action)} 
+                  disabled={budget < action.budgetCost || time < action.timeCost || executingActions.has(action.id)} 
+                  className="w-full" 
+                  size="sm"
+                >
+                  {executingActions.has(action.id) ? '...' : 'Executar'}
+                </Button>
               </CardContent>
             </Card>
           ))}

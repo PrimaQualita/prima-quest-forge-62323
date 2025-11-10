@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Shield, Scale, Lock, Heart, CheckCircle, Users } from 'lucide-react';
+import { Shield, Scale, Lock, Heart, CheckCircle, Users, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface WelcomeScreenProps {
   onEnter: () => void;
@@ -10,6 +11,8 @@ interface WelcomeScreenProps {
  * Tela de boas-vindas do módulo de gamificação
  */
 export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
+  const navigate = useNavigate();
+
   // Ícones flutuantes de fundo
   const floatingIcons = [
     { Icon: Shield, delay: 0, x: '10%', y: '20%' },
@@ -22,6 +25,16 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 relative overflow-hidden">
+      {/* Botão voltar */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate('/dashboard')}
+        className="absolute top-4 left-4 z-20"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Voltar ao Dashboard
+      </Button>
+
       {/* Ícones flutuantes de fundo */}
       {floatingIcons.map(({ Icon, delay, x, y }, index) => (
         <motion.div
