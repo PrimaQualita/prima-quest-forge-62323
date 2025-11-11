@@ -29,11 +29,11 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
       {/* Botão voltar */}
       <Button
         variant="ghost"
-        onClick={() => navigate('/dashboard')}
+        onClick={() => navigate(-1)}
         className="absolute top-4 left-4 z-20"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Voltar ao Dashboard
+        Voltar
       </Button>
 
       {/* Ícones flutuantes de fundo */}

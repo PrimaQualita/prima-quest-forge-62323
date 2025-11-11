@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useGamificationStore } from '../store/useGamificationStore';
-import { integrityScenarios } from '../data/gameData';
+import { expandedIntegrityScenarios, shuffleArray, shuffleQuestionOptions } from '../data/expandedQuestions';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 
 interface IntegrityMissionGameProps {
@@ -14,8 +14,10 @@ interface IntegrityMissionGameProps {
 
 /**
  * Jogo 1: Missão Integridade - RPG de decisões éticas
+ * Cenários e opções embaralhadas para evitar repetição
  */
 export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
+  const [shuffledScenarios, setShuffledScenarios] = useState<any[]>([]);
   const [currentScenarioIndex, setCurrentScenarioIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -23,13 +25,29 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
   const [gameCompleted, setGameCompleted] = useState(false);
   const { updateScore, unlockBadge } = useGamificationStore();
 
-  const currentScenario = integrityScenarios[currentScenarioIndex];
-  const progress = ((currentScenarioIndex + 1) / integrityScenarios.length) * 100;
+  // Embaralha cenários ao iniciar o jogo
+  useEffect(() => {
+    const scenariosToUse = shuffleArray([...expandedIntegrityScenarios]).slice(0, 4);
+    const scenariosWithShuffledOptions = scenariosToUse.map(s => shuffleQuestionOptions(s));
+    setShuffledScenarios(scenariosWithShuffledOptions);
+  }, []);
+
+  const currentScenario = shuffledScenarios[currentScenarioIndex];
+  const progress = shuffledScenarios.length > 0 ? ((currentScenarioIndex + 1) / shuffledScenarios.length) * 100 : 0;
+
+  // Se ainda não carregou os cenários
+  if (shuffledScenarios.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
 
   // Expressões do personagem
   const getCharacterEmoji = () => {
     if (!showFeedback) return '🤔';
-    if (selectedOption === currentScenario.correctIndex) return '😊';
+    if (selectedOption === currentScenario.shuffledCorrectIndex) return '😊';
     return '😟';
   };
 
@@ -41,24 +59,23 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
   const handleConfirm = () => {
     if (selectedOption === null) return;
     
-    const isCorrect = selectedOption === currentScenario.correctIndex;
+    const isCorrect = selectedOption === currentScenario.shuffledCorrectIndex;
     setAnswers([...answers, isCorrect]);
     setShowFeedback(true);
   };
 
   const handleNext = () => {
-    if (currentScenarioIndex < integrityScenarios.length - 1) {
+    if (currentScenarioIndex < shuffledScenarios.length - 1) {
       setCurrentScenarioIndex(currentScenarioIndex + 1);
       setSelectedOption(null);
       setShowFeedback(false);
     } else {
-      // Finalizar jogo
-      const correctAnswers = answers.filter(a => a).length;
-      const score = correctAnswers * 25; // 25 pontos por acerto
-      updateScore('integrity-mission', score);
+      // Final do jogo - calcula score total
+      const correctCount = answers.filter(a => a).length + (selectedOption === currentScenario.shuffledCorrectIndex ? 1 : 0);
+      updateScore('integrity-mission', correctCount * 25);
       
       // Desbloquear medalha se acertar >= 75%
-      if (correctAnswers >= integrityScenarios.length * 0.75) {
+      if (correctCount >= shuffledScenarios.length * 0.75) {
         unlockBadge('mestre_integridade');
       }
       
@@ -67,6 +84,10 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
   };
 
   const handleRestart = () => {
+    // Embaralha novamente ao reiniciar
+    const scenariosToUse = shuffleArray([...expandedIntegrityScenarios]).slice(0, 4);
+    const scenariosWithShuffledOptions = scenariosToUse.map(s => shuffleQuestionOptions(s));
+    setShuffledScenarios(scenariosWithShuffledOptions);
     setCurrentScenarioIndex(0);
     setSelectedOption(null);
     setShowFeedback(false);
@@ -76,7 +97,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
 
   if (gameCompleted) {
     const correctAnswers = answers.filter(a => a).length;
-    const percentage = (correctAnswers / integrityScenarios.length) * 100;
+    const percentage = (correctAnswers / shuffledScenarios.length) * 100;
     
     return (
       <div className="min-h-screen bg-background p-4 md:p-8 flex items-center justify-center">
@@ -95,7 +116,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
             <CardContent className="space-y-6 text-center">
               <div>
                 <p className="text-5xl font-bold text-primary mb-2">
-                  {correctAnswers}/{integrityScenarios.length}
+                  {correctAnswers}/{shuffledScenarios.length}
                 </p>
                 <p className="text-muted-foreground">Acertos</p>
               </div>
@@ -132,7 +153,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          <Badge variant="outline">Cenário {currentScenarioIndex + 1}/{integrityScenarios.length}</Badge>
+          <Badge variant="outline">Cenário {currentScenarioIndex + 1}/{shuffledScenarios.length}</Badge>
         </div>
 
         {/* Progress */}
@@ -168,7 +189,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
 
                     {/* Options */}
                     <div className="space-y-3">
-                      {currentScenario.options.map((option, index) => (
+                      {currentScenario.options.map((option: string, index: number) => (
                         <motion.button
                           key={index}
                           onClick={() => handleSelectOption(index)}
@@ -178,19 +199,19 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
                           className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                             selectedOption === index
                               ? showFeedback
-                                ? index === currentScenario.correctIndex
+                                ? index === currentScenario.shuffledCorrectIndex
                                   ? 'border-green-500 bg-green-500/10'
                                   : 'border-red-500 bg-red-500/10'
                                 : 'border-primary bg-primary/10'
                               : 'border-border hover:border-primary/50'
-                          } ${showFeedback && index === currentScenario.correctIndex ? 'border-green-500 bg-green-500/10' : ''}`}
+                          } ${showFeedback && index === currentScenario.shuffledCorrectIndex ? 'border-green-500 bg-green-500/10' : ''}`}
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 mt-1">
-                              {showFeedback && index === currentScenario.correctIndex && (
+                              {showFeedback && index === currentScenario.shuffledCorrectIndex && (
                                 <CheckCircle className="w-5 h-5 text-green-500" />
                               )}
-                              {showFeedback && selectedOption === index && index !== currentScenario.correctIndex && (
+                              {showFeedback && selectedOption === index && index !== currentScenario.shuffledCorrectIndex && (
                                 <XCircle className="w-5 h-5 text-red-500" />
                               )}
                             </div>
@@ -210,7 +231,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
                           className="p-4 bg-muted rounded-lg"
                         >
                           <p className="font-medium mb-2">
-                            {selectedOption === currentScenario.correctIndex ? '✅ Correto!' : '❌ Incorreto'}
+                            {selectedOption === currentScenario.shuffledCorrectIndex ? '✅ Correto!' : '❌ Incorreto'}
                           </p>
                           <p className="text-sm text-muted-foreground">{currentScenario.explanation}</p>
                         </motion.div>
@@ -229,7 +250,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
                         </Button>
                       ) : (
                         <Button onClick={handleNext} className="flex-1">
-                          {currentScenarioIndex < integrityScenarios.length - 1 ? 'Próximo Cenário' : 'Ver Resultado'}
+                          {currentScenarioIndex < shuffledScenarios.length - 1 ? 'Próximo Cenário' : 'Ver Resultado'}
                         </Button>
                       )}
                     </div>

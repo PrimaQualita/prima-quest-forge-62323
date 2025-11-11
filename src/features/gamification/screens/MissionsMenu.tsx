@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { GameCard } from '../components/GameCard';
 import { ProgressBar } from '../components/ProgressBar';
 import { RankingPanel } from '../components/RankingPanel';
@@ -98,26 +99,21 @@ export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
                 )}
 
                 {/* Informações */}
-                <div className="flex-1 text-center md:text-left space-y-4 w-full">
-                  <div>
-                    <h2 className="text-2xl font-bold">{user.name}</h2>
-                    <p className="text-muted-foreground">{getLevelText(totalScore)}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <ProgressBar
-                        label="Nível de Integridade"
-                        value={integrityLevel}
-                        max={100}
-                      />
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2">{user.name}</h2>
+                  <Badge variant="secondary" className="mb-4">
+                    {getLevelText(totalScore)}
+                  </Badge>
+                  
+                  {/* XP Total - Sistema sem teto */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">XP Total</span>
+                      <span className="text-4xl font-bold text-primary">{totalScore}</span>
                     </div>
-                    <div className="flex items-center justify-center md:justify-end">
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-primary">{totalScore}</p>
-                        <p className="text-sm text-muted-foreground">XP Total</p>
-                      </div>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Continue jogando para acumular mais pontos!
+                    </p>
                   </div>
                 </div>
               </div>

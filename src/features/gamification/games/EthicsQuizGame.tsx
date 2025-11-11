@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useGamificationStore } from '../store/useGamificationStore';
-import { quizQuestions } from '../data/gameData';
+import { expandedQuizQuestions, shuffleArray, shuffleQuestionOptions } from '../data/expandedQuestions';
 import { ArrowLeft, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface EthicsQuizGameProps {
@@ -14,8 +14,10 @@ interface EthicsQuizGameProps {
 
 /**
  * Jogo 3: Quiz da Ética - Perguntas sobre ética, integridade e LGPD
+ * Perguntas e alternativas embaralhadas para evitar repetição
  */
 export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
+  const [shuffledQuestions, setShuffledQuestions] = useState<any[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -24,8 +26,24 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
   const [gameCompleted, setGameCompleted] = useState(false);
   const { updateScore } = useGamificationStore();
 
-  const currentQuestion = quizQuestions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+  // Embaralha perguntas ao iniciar o jogo
+  useEffect(() => {
+    const questionsToUse = shuffleArray([...expandedQuizQuestions]).slice(0, 4);
+    const questionsWithShuffledOptions = questionsToUse.map(q => shuffleQuestionOptions(q));
+    setShuffledQuestions(questionsWithShuffledOptions);
+  }, []);
+
+  const currentQuestion = shuffledQuestions[currentQuestionIndex];
+  const progress = shuffledQuestions.length > 0 ? ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100 : 0;
+
+  // Se ainda não carregou as perguntas
+  if (shuffledQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
 
   // Timer
   useEffect(() => {
@@ -59,27 +77,32 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
   const handleConfirm = () => {
     if (selectedAnswer === null) return;
 
-    const isCorrect = selectedAnswer === currentQuestion.correctIndex;
+    const isCorrect = selectedAnswer === currentQuestion.shuffledCorrectIndex;
     setAnswers([...answers, isCorrect]);
     setShowFeedback(true);
+    
+    if (isCorrect) {
+      const bonusPoints = timeLeft > 15 ? 10 : 0;
+      updateScore('ethics-quiz', 15 + bonusPoints);
+    }
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < quizQuestions.length - 1) {
+    if (currentQuestionIndex < shuffledQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSelectedAnswer(null);
       setShowFeedback(false);
       setTimeLeft(30);
     } else {
-      // Finalizar jogo
-      const correctAnswers = answers.filter(a => a).length;
-      const score = correctAnswers * 15 + (timeLeft > 15 ? 10 : 0); // Bônus por tempo
-      updateScore('ethics-quiz', score);
       setGameCompleted(true);
     }
   };
 
   const handleRestart = () => {
+    // Embaralha novamente ao reiniciar
+    const questionsToUse = shuffleArray([...expandedQuizQuestions]).slice(0, 4);
+    const questionsWithShuffledOptions = questionsToUse.map(q => shuffleQuestionOptions(q));
+    setShuffledQuestions(questionsWithShuffledOptions);
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setShowFeedback(false);
@@ -91,19 +114,19 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
   const getCharacterEmoji = () => {
     if (gameCompleted) {
       const correctAnswers = answers.filter(a => a).length;
-      const percentage = (correctAnswers / quizQuestions.length) * 100;
+      const percentage = (correctAnswers / shuffledQuestions.length) * 100;
       if (percentage >= 80) return '🌟';
       if (percentage >= 60) return '😊';
       return '🤔';
     }
     if (!showFeedback) return '🧠';
-    if (selectedAnswer === currentQuestion.correctIndex) return '🎉';
+    if (selectedAnswer === currentQuestion.shuffledCorrectIndex) return '🎉';
     return '💭';
   };
 
   if (gameCompleted) {
     const correctAnswers = answers.filter(a => a).length;
-    const percentage = (correctAnswers / quizQuestions.length) * 100;
+    const percentage = (correctAnswers / shuffledQuestions.length) * 100;
 
     return (
       <div className="min-h-screen bg-background p-4 md:p-8 flex items-center justify-center">
@@ -120,7 +143,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
             <CardContent className="space-y-6 text-center">
               <div>
                 <p className="text-5xl font-bold text-primary mb-2">
-                  {correctAnswers}/{quizQuestions.length}
+                  {correctAnswers}/{shuffledQuestions.length}
                 </p>
                 <p className="text-muted-foreground">Acertos ({Math.round(percentage)}%)</p>
               </div>
@@ -159,7 +182,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
           </Button>
           <div className="flex items-center gap-4">
             <Badge variant="outline">
-              Pergunta {currentQuestionIndex + 1}/{quizQuestions.length}
+              Pergunta {currentQuestionIndex + 1}/{shuffledQuestions.length}
             </Badge>
             <Badge variant={timeLeft <= 10 ? 'destructive' : 'default'}>
               <Clock className="w-4 h-4 mr-1" />
@@ -209,7 +232,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
                   <CardContent className="space-y-4">
                     {/* Alternatives */}
                     <div className="space-y-3">
-                      {currentQuestion.alternatives.map((alternative, index) => (
+                      {currentQuestion.alternatives.map((alternative: string, index: number) => (
                         <motion.button
                           key={index}
                           onClick={() => handleSelectAnswer(index)}
@@ -219,22 +242,22 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
                           className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                             selectedAnswer === index
                               ? showFeedback
-                                ? index === currentQuestion.correctIndex
+                                ? index === currentQuestion.shuffledCorrectIndex
                                   ? 'border-green-500 bg-green-500/10'
                                   : 'border-red-500 bg-red-500/10'
                                 : 'border-primary bg-primary/10'
                               : 'border-border hover:border-primary/50'
-                          } ${showFeedback && index === currentQuestion.correctIndex ? 'border-green-500 bg-green-500/10' : ''}`}
+                          } ${showFeedback && index === currentQuestion.shuffledCorrectIndex ? 'border-green-500 bg-green-500/10' : ''}`}
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold">
                               {String.fromCharCode(65 + index)}
                             </div>
                             <span className="flex-1 pt-1">{alternative}</span>
-                            {showFeedback && index === currentQuestion.correctIndex && (
+                            {showFeedback && index === currentQuestion.shuffledCorrectIndex && (
                               <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
                             )}
-                            {showFeedback && selectedAnswer === index && index !== currentQuestion.correctIndex && (
+                            {showFeedback && selectedAnswer === index && index !== currentQuestion.shuffledCorrectIndex && (
                               <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                             )}
                           </div>
@@ -252,7 +275,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
                           className="p-4 bg-muted rounded-lg"
                         >
                           <p className="font-medium mb-2">
-                            {selectedAnswer === currentQuestion.correctIndex ? '✅ Correto!' : '❌ Incorreto'}
+                            {selectedAnswer === currentQuestion.shuffledCorrectIndex ? '✅ Correto!' : '❌ Incorreto'}
                           </p>
                           <p className="text-sm text-muted-foreground">{currentQuestion.explanation}</p>
                         </motion.div>
@@ -271,7 +294,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
                         </Button>
                       ) : (
                         <Button onClick={handleNext} className="flex-1">
-                          {currentQuestionIndex < quizQuestions.length - 1 ? 'Próxima Pergunta' : 'Ver Resultado'}
+                          {currentQuestionIndex < shuffledQuestions.length - 1 ? 'Próxima Pergunta' : 'Ver Resultado'}
                         </Button>
                       )}
                     </div>
