@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Shield, Scale, Lock, Heart, CheckCircle, Users, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import primaQualitaLogo from '@/assets/logo-prima-qualita-animated.png';
 
 interface WelcomeScreenProps {
   onEnter: () => void;
@@ -60,7 +61,7 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
 
       {/* Conteúdo principal */}
       <div className="max-w-4xl mx-auto px-4 text-center z-10">
-        {/* Personagem animado */}
+        {/* Logo animado */}
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -69,17 +70,22 @@ export const WelcomeScreen = ({ onEnter }: WelcomeScreenProps) => {
         >
           <motion.div
             animate={{ 
-              rotate: [-5, 5, -5],
-              y: [0, -10, 0]
+              rotate: [-3, 3, -3],
+              y: [0, -15, 0],
+              scale: [1, 1.05, 1]
             }}
             transition={{
-              duration: 2,
+              duration: 3,
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="text-9xl inline-block"
+            className="inline-block"
           >
-            👋
+            <img 
+              src={primaQualitaLogo} 
+              alt="Prima Qualitá Saúde" 
+              className="w-64 h-auto mx-auto drop-shadow-2xl"
+            />
           </motion.div>
         </motion.div>
 

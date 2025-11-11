@@ -46,31 +46,33 @@ const instructionsData: Record<string, {
       'Quando em dúvida, escolha transparência e honestidade'
     ]
   },
-  'risk-hunt': {
-    title: 'Caça aos Riscos',
-    icon: '🔍',
+  'compliance-runner': {
+    title: 'Corrida Compliance',
+    icon: '🏃',
     difficulty: 'Intermediário',
     objectives: [
-      'Identificar riscos de compliance em cenários visuais',
-      'Desenvolver senso crítico para detecção de irregularidades',
-      'Compreender vulnerabilidades comuns no ambiente de trabalho'
+      'Responder perguntas sobre regulamentos institucionais',
+      'Avançar por 4 fases com dificuldade crescente',
+      'Acumular pontos XP em cada desafio completado'
     ],
     howToPlay: [
-      'Observe atentamente a cena apresentada',
-      'Clique nos pontos de exclamação (!) vermelhos espalhados',
-      'Cada ponto representa um risco de compliance',
-      'Leia a descrição e explicação de cada risco encontrado',
-      'Encontre todos os 5 riscos para completar o jogo'
+      'Clique em "Avançar" para correr até o próximo desafio',
+      'Responda corretamente a pergunta sobre regulamentos',
+      'Complete todos os desafios da fase atual',
+      'Avance para a próxima fase com mais desafios e recompensas',
+      'Perguntas nunca se repetem durante o jogo'
     ],
     scoring: [
-      '20 pontos por cada risco identificado',
-      'Total de 100 pontos disponíveis',
-      'Medalha "Caçador de Riscos" ao encontrar todos'
+      'Fase 1 (Iniciante): 20 XP por desafio - 5 desafios',
+      'Fase 2 (Intermediário): 30 XP por desafio - 7 desafios',
+      'Fase 3 (Avançado): 50 XP por desafio - 10 desafios',
+      'Fase 4 (Mestre): 75 XP por desafio - 12 desafios'
     ],
     tips: [
-      'Examine cada área da cena sistematicamente',
-      'Preste atenção em documentos, telas e objetos',
-      'Pense em: segurança da informação, organização, e processos'
+      'Leia cada pergunta com atenção antes de responder',
+      'Complete todas as 4 fases para maximizar seus pontos',
+      'Respostas erradas não dão pontos - pense bem!',
+      'Revise os regulamentos institucionais para melhor performance'
     ]
   },
   'ethics-quiz': {

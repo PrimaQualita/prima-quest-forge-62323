@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { WelcomeScreen } from '@/features/gamification/screens/WelcomeScreen';
 import { MissionsMenu } from '@/features/gamification/screens/MissionsMenu';
 import { IntegrityMissionGame } from '@/features/gamification/games/IntegrityMissionGame';
-import { RiskHuntGame } from '@/features/gamification/games/RiskHuntGame';
+import { ComplianceRunnerGame } from '@/features/gamification/games/ComplianceRunnerGame';
 import { EthicsQuizGame } from '@/features/gamification/games/EthicsQuizGame';
 import { DataGuardianGame } from '@/features/gamification/games/DataGuardianGame';
 import { WhistleblowerGame } from '@/features/gamification/games/WhistleblowerGame';
 import { ComplianceTycoonGame } from '@/features/gamification/games/ComplianceTycoonGame';
 import { GameInstructions } from '@/features/gamification/components/GameInstructions';
 
-type Screen = 'welcome' | 'menu' | 'instructions' | 'integrity-mission' | 'risk-hunt' | 'ethics-quiz' | 'data-guardian' | 'whistleblower-decision' | 'compliance-tycoon';
+type Screen = 'welcome' | 'menu' | 'instructions' | 'integrity-mission' | 'compliance-runner' | 'ethics-quiz' | 'data-guardian' | 'whistleblower-decision' | 'compliance-tycoon';
 
 const GamificationModule = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -25,8 +25,8 @@ const GamificationModule = () => {
         return <GameInstructions gameId={selectedGame} onStart={() => setCurrentScreen(selectedGame as Screen)} onBack={() => setCurrentScreen('menu')} />;
       case 'integrity-mission':
         return <IntegrityMissionGame onExit={() => setCurrentScreen('menu')} />;
-      case 'risk-hunt':
-        return <RiskHuntGame onExit={() => setCurrentScreen('menu')} />;
+      case 'compliance-runner':
+        return <ComplianceRunnerGame onExit={() => setCurrentScreen('menu')} />;
       case 'ethics-quiz':
         return <EthicsQuizGame onExit={() => setCurrentScreen('menu')} />;
       case 'data-guardian':

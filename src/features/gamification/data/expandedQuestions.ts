@@ -795,3 +795,158 @@ export const expandedQuizQuestions: QuizQuestion[] = [
   }
   // Por questão de espaço, incluí 30 questões. Em produção, continuaria até 100+
 ];
+
+// ============ CORRIDA COMPLIANCE - PERGUNTAS SOBRE REGULAMENTOS ============
+
+export const regulamentosQuestions = [
+  {
+    question: 'Qual é o prazo máximo para resposta a uma solicitação do titular de dados segundo a LGPD?',
+    options: ['5 dias úteis', '15 dias corridos', '30 dias', 'Não há prazo definido'],
+    correctIndex: 1,
+    explanation: 'A LGPD estabelece que o controlador deve fornecer informações sobre o tratamento de dados no prazo de até 15 dias corridos.'
+  },
+  {
+    question: 'Qual documento estabelece as diretrizes de conduta ética na organização?',
+    options: ['Regimento Interno', 'Código de Ética', 'Manual do Colaborador', 'Política de Privacidade'],
+    correctIndex: 1,
+    explanation: 'O Código de Ética é o documento que estabelece os princípios e diretrizes de conduta ética esperadas de todos os colaboradores.'
+  },
+  {
+    question: 'Quem é responsável pela proteção de dados pessoais na organização?',
+    options: ['Apenas o DPO', 'Apenas o departamento de TI', 'Todos os colaboradores', 'Apenas a alta direção'],
+    correctIndex: 2,
+    explanation: 'A proteção de dados é responsabilidade de todos os colaboradores, embora o DPO coordene as atividades de adequação à LGPD.'
+  },
+  {
+    question: 'Qual o valor máximo de brindes que pode ser aceito de fornecedores segundo a política da empresa?',
+    options: ['R$ 100,00', 'R$ 200,00', 'Não há valor específico, depende do contexto', 'Nenhum valor pode ser aceito'],
+    correctIndex: 0,
+    explanation: 'A política de integridade estabelece que brindes de valor superior a R$ 100,00 devem ser recusados ou reportados ao Compliance.'
+  },
+  {
+    question: 'Qual é o canal adequado para reportar suspeitas de fraude ou corrupção?',
+    options: ['E-mail direto ao gestor', 'Comentar com colegas', 'Canal de Denúncias/Compliance', 'Redes sociais internas'],
+    correctIndex: 2,
+    explanation: 'O Canal de Denúncias e o setor de Compliance são os canais adequados e seguros para reportar suspeitas de irregularidades.'
+  },
+  {
+    question: 'Documentos confidenciais impressos devem ser descartados como?',
+    options: ['Lixo comum', 'Reciclagem', 'Trituração em fragmentos', 'Queima'],
+    correctIndex: 2,
+    explanation: 'Documentos confidenciais devem ser triturados em fragmentos pequenos para evitar recuperação de informações sensíveis.'
+  },
+  {
+    question: 'Qual a periodicidade mínima obrigatória de treinamentos em compliance?',
+    options: ['Trimestral', 'Semestral', 'Anual', 'A cada 2 anos'],
+    correctIndex: 2,
+    explanation: 'A política de compliance determina que todos os colaboradores devem passar por treinamentos ao menos uma vez por ano.'
+  },
+  {
+    question: 'O que caracteriza conflito de interesses?',
+    options: ['Discordar do gestor', 'Ter interesses pessoais que afetam decisões profissionais', 'Trabalhar em mais de um local', 'Ter opiniões políticas'],
+    correctIndex: 1,
+    explanation: 'Conflito de interesses ocorre quando interesses pessoais, familiares ou financeiros podem comprometer a imparcialidade profissional.'
+  },
+  {
+    question: 'Ao se ausentar da estação de trabalho, o colaborador deve:',
+    options: ['Deixar tela aberta para produtividade', 'Bloquear o computador sempre', 'Desligar o computador', 'Apenas se ausentar por mais de 1 hora'],
+    correctIndex: 1,
+    explanation: 'Por segurança da informação, o computador deve ser bloqueado sempre que o colaborador se ausentar, mesmo por períodos curtos.'
+  },
+  {
+    question: 'Informações privilegiadas da empresa podem ser compartilhadas:',
+    options: ['Com familiares próximos', 'Com colegas de outros setores', 'Apenas com quem tem necessidade de conhecê-las', 'Em grupos fechados de WhatsApp'],
+    correctIndex: 2,
+    explanation: 'O princípio da necessidade de conhecer determina que informações sensíveis só podem ser compartilhadas com quem precisa delas para suas funções.'
+  },
+  {
+    question: 'Qual é a penalidade máxima prevista na LGPD para infrações graves?',
+    options: ['1% do faturamento', '2% do faturamento limitado a R$ 50 milhões', 'R$ 10 milhões', 'Não há penalidade financeira'],
+    correctIndex: 1,
+    explanation: 'A LGPD prevê multa de até 2% do faturamento da empresa no Brasil, limitada a R$ 50 milhões por infração.'
+  },
+  {
+    question: 'Uso de recursos da empresa para fins pessoais é permitido quando?',
+    options: ['Fora do horário de trabalho', 'Em casos emergenciais com autorização', 'Nunca é permitido', 'Apenas uso de internet'],
+    correctIndex: 1,
+    explanation: 'Recursos corporativos são para uso institucional, mas em emergências pontuais, uso pessoal pode ser autorizado pelo gestor.'
+  },
+  {
+    question: 'Quem deve ter acesso aos dados pessoais dos clientes?',
+    options: ['Toda a equipe', 'Apenas gestores', 'Apenas quem precisa para exercer sua função', 'Apenas o RH'],
+    correctIndex: 2,
+    explanation: 'Acesso a dados pessoais deve ser restrito apenas aos colaboradores que precisam deles para executar suas atividades.'
+  },
+  {
+    question: 'Relatórios de não conformidade devem ser tratados com qual prioridade?',
+    options: ['Baixa - resolver quando possível', 'Média - resolver no mês', 'Alta - ação imediata necessária', 'Depende do humor do gestor'],
+    correctIndex: 2,
+    explanation: 'Não conformidades representam riscos e devem ser tratadas com prioridade alta, com planos de ação imediatos.'
+  },
+  {
+    question: 'Parentes podem trabalhar na mesma área ou com relação de subordinação?',
+    options: ['Sim, sem restrições', 'Não, é proibido pela política antinepotismo', 'Apenas com autorização de Compliance', 'Apenas se forem competentes'],
+    correctIndex: 1,
+    explanation: 'Políticas antinepotismo vedam que parentes trabalhem no mesmo setor ou tenham relação hierárquica para evitar conflitos de interesse.'
+  },
+  {
+    question: 'Senhas de acesso aos sistemas devem ser:',
+    options: ['Compartilhadas com o gestor', 'Anotadas na mesa', 'Mantidas pessoais e intransferíveis', 'Simples para facilitar memorização'],
+    correctIndex: 2,
+    explanation: 'Senhas são credenciais pessoais e intransferíveis. Compartilhar senha compromete a rastreabilidade e segurança.'
+  },
+  {
+    question: 'Qual o procedimento correto ao identificar um erro grave cometido por você?',
+    options: ['Tentar corrigir sozinho sem avisar', 'Reportar imediatamente ao superior', 'Aguardar ser descoberto', 'Pedir demissão'],
+    correctIndex: 1,
+    explanation: 'Transparência e integridade exigem que erros sejam reportados imediatamente ao superior para que ações corretivas sejam tomadas.'
+  },
+  {
+    question: 'Fornecedores devem passar por processo de due diligence:',
+    options: ['Apenas se forem internacionais', 'Apenas acima de determinado valor', 'Todos os fornecedores', 'Apenas os suspeitos'],
+    correctIndex: 2,
+    explanation: 'Todos os fornecedores devem passar por due diligence para garantir conformidade ética, legal e reputacional.'
+  },
+  {
+    question: 'Ações de sustentabilidade e responsabilidade social são:',
+    options: ['Opcionais e não prioritárias', 'Parte essencial dos valores da organização', 'Apenas para marketing', 'Responsabilidade apenas do RH'],
+    correctIndex: 1,
+    explanation: 'Sustentabilidade e responsabilidade social são valores essenciais e devem ser praticados por todos os colaboradores.'
+  },
+  {
+    question: 'O que fazer se presenciar assédio moral no ambiente de trabalho?',
+    options: ['Ignorar se não for comigo', 'Reportar ao RH ou Canal de Denúncias', 'Comentar com colegas', 'Gravar e postar nas redes'],
+    correctIndex: 1,
+    explanation: 'Assédio moral é grave e deve ser reportado aos canais competentes (RH ou Canal de Denúncias) para investigação e providências.'
+  },
+  {
+    question: 'O princípio da finalidade da LGPD estabelece que:',
+    options: ['Dados podem ser usados para qualquer fim', 'Dados só podem ser usados para finalidade informada', 'Dados podem ter finalidade alterada livremente', 'Finalidade não precisa ser explícita'],
+    correctIndex: 1,
+    explanation: 'O princípio da finalidade exige que dados pessoais sejam coletados apenas para propósitos legítimos, específicos e informados ao titular.'
+  },
+  {
+    question: 'Um presente de fim de ano de fornecedor no valor de R$ 150 deve ser:',
+    options: ['Aceito sem restrições', 'Recusado ou reportado ao Compliance', 'Aceito se for comida', 'Compartilhado com a equipe'],
+    correctIndex: 1,
+    explanation: 'Presentes acima do limite estabelecido (R$ 100) devem ser recusados educadamente ou, se recebidos, reportados ao Compliance.'
+  },
+  {
+    question: 'A Lei Anticorrupção brasileira (Lei 12.846/2013) se aplica a:',
+    options: ['Apenas setor público', 'Apenas grandes empresas', 'Pessoas físicas e jurídicas que praticam atos lesivos', 'Apenas multinacionais'],
+    correctIndex: 2,
+    explanation: 'A Lei Anticorrupção se aplica a pessoas físicas e jurídicas brasileiras, independentemente do porte, que praticam atos lesivos contra a administração pública.'
+  },
+  {
+    question: 'Qual a validade máxima de uma senha de acesso aos sistemas corporativos?',
+    options: ['Sem validade - até trocar voluntariamente', '30 dias', '90 dias', '180 dias'],
+    correctIndex: 2,
+    explanation: 'A política de segurança da informação estabelece que senhas devem ser renovadas a cada 90 dias para manter a segurança dos sistemas.'
+  },
+  {
+    question: 'Backup de dados pessoais deve ser realizado:',
+    options: ['Apenas quando conveniente', 'Regularmente conforme política de segurança', 'Apenas dados de VIPs', 'Não é necessário fazer backup'],
+    correctIndex: 1,
+    explanation: 'Backups regulares são obrigatórios para garantir a disponibilidade dos dados e cumprir com o princípio de segurança da LGPD.'
+  }
+];

@@ -19,11 +19,11 @@ export const gamesInfo: GameInfo[] = [
     color: 'from-blue-500 to-blue-600'
   },
   {
-    id: 'risk-hunt',
-    name: 'Caça aos Riscos',
-    description: 'Identifique riscos de compliance em cenários visuais',
+    id: 'compliance-runner',
+    name: 'Corrida Compliance',
+    description: 'Avance por fases respondendo perguntas sobre regulamentos institucionais',
     difficulty: 'Intermediário',
-    icon: '🔍',
+    icon: '🏃',
     color: 'from-orange-500 to-orange-600'
   },
   {

@@ -10,12 +10,13 @@ import { supabase } from '@/integrations/supabase/client';
  */
 
 /**
- * Calcula o nível baseado na pontuação total
+ * Calcula o nível baseado na pontuação total (sistema de pontos infinitos)
  */
 const calculateLevel = (score: number): string => {
-  if (score >= 700) return 'Mestre da Integridade';
-  if (score >= 400) return 'Guardião de Dados e Ética';
-  if (score >= 200) return 'Aliado da Integridade';
+  if (score >= 5000) return 'Lenda Compliance';
+  if (score >= 3000) return 'Mestre da Integridade';
+  if (score >= 1500) return 'Guardião de Dados e Ética';
+  if (score >= 500) return 'Aliado da Integridade';
   return 'Iniciante Ético';
 };
 
@@ -140,8 +141,8 @@ export const useGamificationStore = create<GamificationState>()(
         const state = get();
         const newTotalScore = state.totalScore + points;
         
-        // Calcula novo nível de integridade (0-100)
-        const newIntegrityLevel = Math.min(100, Math.floor((newTotalScore / 10)));
+        // Calcula novo nível de integridade baseado em pontos (sistema infinito)
+        const newIntegrityLevel = Math.min(100, Math.floor((newTotalScore / 50)));
 
         // Atualiza progresso do jogo
         const newGamesProgress: Record<string, GameProgress> = {
@@ -170,8 +171,8 @@ export const useGamificationStore = create<GamificationState>()(
           get().unlockBadge('iniciante_etico');
         }
 
-        // Desbloqueia mestre da integridade se score >= 700
-        if (newTotalScore >= 700 && !state.badges.find(b => b.id === 'mestre_integridade')?.unlocked) {
+        // Desbloqueia mestre da integridade se score >= 3000
+        if (newTotalScore >= 3000 && !state.badges.find(b => b.id === 'mestre_integridade')?.unlocked) {
           get().unlockBadge('mestre_integridade');
         }
 
