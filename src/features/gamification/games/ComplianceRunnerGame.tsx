@@ -200,23 +200,22 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         });
 
         this.player = this.physics.add.sprite(100, 450, 'player');
-        this.player.setBounce(0.2);
+        this.player.setBounce(0.1);
         this.player.setCollideWorldBounds(true);
         this.player.setScale(0.8);
+        this.player.body!.setSize(40, 60);
 
         this.tokens = this.physics.add.group();
         const tokenPositions = [
-          { x: 200, y: 400 }, { x: 400, y: 330 }, { x: 600, y: 270 },
-          { x: 800, y: 330 }, { x: 1000, y: 400 }, { x: 300, y: 230 },
-          { x: 700, y: 170 }, { x: 900, y: 230 }, { x: 150, y: 500 },
-          { x: 450, y: 500 }, { x: 750, y: 500 }, { x: 1050, y: 500 }
+          { x: 200, y: 420 }, { x: 400, y: 350 }, { x: 600, y: 290 },
+          { x: 800, y: 350 }, { x: 1000, y: 420 }, { x: 300, y: 250 },
+          { x: 700, y: 190 }, { x: 900, y: 250 }, { x: 150, y: 520 },
+          { x: 450, y: 520 }, { x: 750, y: 520 }, { x: 1050, y: 520 }
         ];
 
         tokenPositions.slice(0, phase.tokensRequired).forEach(pos => {
           const token = this.tokens!.create(pos.x, pos.y, 'token') as Phaser.Physics.Arcade.Sprite;
-          token.setBounce(0.3);
           token.setCollideWorldBounds(true);
-          token.setVelocity(Phaser.Math.Between(-50, 50), 20);
         });
 
         this.enemies = this.physics.add.group();
@@ -378,14 +377,30 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
 
         const phase = PHASES[currentPhase];
 
-        if (tokensCollected >= phase.tokensRequired) {
+        if (tokensCollected >= phase.tokensRequired && !this.isPaused) {
+          this.isPaused = true;
           this.physics.pause();
-          this.time.delayedCall(1000, async () => {
+          
+          const completeText = this.add.text(
+            this.cameras.main.scrollX + 640,
+            this.cameras.main.scrollY + 300,
+            `FASE ${currentPhase + 1} COMPLETA!\n+${phase.xpReward} XP`,
+            {
+              fontSize: '48px',
+              color: '#fff',
+              backgroundColor: '#10b981',
+              padding: { x: 20, y: 10 },
+              align: 'center'
+            }
+          ).setOrigin(0.5);
+
+          this.time.delayedCall(2000, async () => {
             if (currentPhase < PHASES.length - 1) {
               await updateScore('compliance-runner', phase.xpReward);
               toast.success(`Fase ${currentPhase + 1} completa! +${phase.xpReward} XP`);
               setCurrentPhase(prev => prev + 1);
               setTokensCollected(0);
+              setUsedQuestions(new Set());
               this.scene.restart();
             } else {
               await updateScore('compliance-runner', phase.xpReward);
@@ -406,12 +421,14 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         }
 
         if (this.cursors.up.isDown && this.player.body?.touching.down) {
-          this.player.setVelocityY(-400);
+          this.player.setVelocityY(-550);
         }
 
-        if (this.cursors.down.isDown) {
+        if (this.cursors.down.isDown && this.player.body?.touching.down) {
+          this.player.body.setSize(40, 30);
           this.player.setScale(0.8, 0.5);
         } else {
+          this.player.body.setSize(40, 60);
           this.player.setScale(0.8, 0.8);
         }
 
