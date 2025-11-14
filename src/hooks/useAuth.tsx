@@ -6,7 +6,11 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Inicializa com cache do localStorage para evitar delay visual
+  const [isAdmin, setIsAdmin] = useState(() => {
+    const cached = localStorage.getItem('isAdmin');
+    return cached === 'true';
+  });
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -52,13 +56,18 @@ export const useAuth = () => {
       if (error) {
         console.error("Error checking admin status:", error);
         setIsAdmin(false);
+        localStorage.setItem('isAdmin', 'false');
         return;
       }
 
-      setIsAdmin(!!data);
+      const adminStatus = !!data;
+      setIsAdmin(adminStatus);
+      // Salva no cache para próximas visitas
+      localStorage.setItem('isAdmin', String(adminStatus));
     } catch (error) {
       console.error("Error in checkAdminStatus:", error);
       setIsAdmin(false);
+      localStorage.setItem('isAdmin', 'false');
     }
   };
 
@@ -67,6 +76,8 @@ export const useAuth = () => {
     setUser(null);
     setSession(null);
     setIsAdmin(false);
+    // Limpa o cache ao fazer logout
+    localStorage.removeItem('isAdmin');
   };
 
   return {
