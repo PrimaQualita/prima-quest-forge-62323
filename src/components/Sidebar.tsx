@@ -26,7 +26,7 @@ interface SidebarProps {
 export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, loading } = useAuth();
 
   const { data: isSupplier } = useQuery({
     queryKey: ['is-supplier', user?.id],
@@ -66,7 +66,8 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
   ];
 
-  const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
+  // Aguarda carregar o status de admin antes de filtrar para evitar delay visual
+  const visibleMenuItems = loading ? [] : menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border overflow-y-auto z-50">
