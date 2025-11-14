@@ -53,6 +53,8 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
   const [score, setScore] = useState(0);
   const [tokensCollected, setTokensCollected] = useState(0);
   const [isGameComplete, setIsGameComplete] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [lives, setLives] = useState(2);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [showQuestion, setShowQuestion] = useState(false);
   const [usedQuestions, setUsedQuestions] = useState<Set<number>>(new Set());
@@ -70,9 +72,11 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       private powerUps?: Phaser.Physics.Arcade.Group;
       private scoreText?: Phaser.GameObjects.Text;
       private phaseText?: Phaser.GameObjects.Text;
+      private livesText?: Phaser.GameObjects.Text;
       private isPaused = false;
       private tokensCollectedInScene = 0;
       private phaseCompleteTriggered = false;
+      private invulnerable = false;
 
       constructor() {
         super({ key: 'MainScene' });
@@ -285,6 +289,13 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           padding: { x: 10, y: 5 }
         });
 
+        this.livesText = this.add.text(16, 84, `Vidas: ${lives}`, {
+          fontSize: '18px',
+          color: '#000',
+          backgroundColor: '#fff',
+          padding: { x: 10, y: 5 }
+        });
+
         this.cameras.main.setBounds(0, 0, 1280, 600);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
       }
@@ -329,15 +340,51 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       ) {
         const playerSprite = player as Phaser.Physics.Arcade.Sprite;
         
-        if (playerSprite.tint !== 0x3b82f6) {
+        // Só perde vida se não estiver com power-up e não estiver invulnerável
+        if (playerSprite.tint !== 0x3b82f6 && !this.invulnerable) {
+          this.invulnerable = true;
+          
+          setLives(prev => {
+            const newLives = prev - 1;
+            this.livesText?.setText(`Vidas: ${newLives}`);
+            
+            if (newLives <= 0) {
+              this.triggerGameOver();
+            }
+            return newLives;
+          });
+
           playerSprite.setTint(0xff0000);
           playerSprite.setVelocityY(-300);
-          setScore(prev => Math.max(0, prev - 25));
 
-          this.time.delayedCall(1000, () => {
+          this.time.delayedCall(2000, () => {
             playerSprite.clearTint();
+            this.invulnerable = false;
           });
         }
+      }
+
+      triggerGameOver() {
+        this.isPaused = true;
+        this.physics.pause();
+        
+        const gameOverText = this.add.text(
+          this.cameras.main.scrollX + 640,
+          this.cameras.main.scrollY + 300,
+          `GAME OVER\nPontuação Final: ${score}`,
+          {
+            fontSize: '48px',
+            color: '#fff',
+            backgroundColor: '#ef4444',
+            padding: { x: 20, y: 10 },
+            align: 'center'
+          }
+        ).setOrigin(0.5);
+
+        this.time.delayedCall(2000, async () => {
+          await updateScore('compliance-runner', score);
+          setIsGameOver(true);
+        });
       }
 
       showRandomQuestion() {
@@ -377,6 +424,12 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       update() {
         if (!this.player || !this.cursors) return;
 
+        // Verificar queda no buraco
+        if (this.player.y > 650) {
+          this.triggerGameOver();
+          return;
+        }
+
         const phase = PHASES[currentPhase];
 
         // Verificar fase completa mesmo quando pausado
@@ -404,6 +457,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
               toast.success(`Fase ${currentPhase + 1} completa! +${phase.xpReward} XP`);
               setCurrentPhase(prev => prev + 1);
               setTokensCollected(0);
+              setLives(2);
               setUsedQuestions(new Set());
               this.scene.restart();
             } else {
@@ -531,6 +585,36 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
     );
   }
 
+  if (isGameOver) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-destructive/10 to-secondary/10 p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <Card className="p-8 max-w-md border-destructive">
+            <h2 className="text-3xl font-bold mb-4 text-destructive">Game Over</h2>
+            <p className="text-lg mb-6">
+              Você perdeu todas as vidas na Fase {currentPhase + 1}
+            </p>
+            <div className="space-y-2 mb-6">
+              <p className="text-2xl font-bold text-primary">
+                Pontuação Final: {score}
+              </p>
+              <p className="text-lg">
+                XP Ganho: +{score}
+              </p>
+            </div>
+            <Button onClick={onExit} size="lg" className="w-full">
+              Voltar ao Menu
+            </Button>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="p-4 flex items-center justify-between bg-card border-b">
@@ -546,6 +630,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         </div>
         <div className="text-right">
           <p className="font-bold">Pontuação: {score}</p>
+          <p className="text-sm text-muted-foreground">Vidas: {lives}</p>
         </div>
       </div>
 
