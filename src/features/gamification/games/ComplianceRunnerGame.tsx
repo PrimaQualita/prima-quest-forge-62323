@@ -71,6 +71,8 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       private scoreText?: Phaser.GameObjects.Text;
       private phaseText?: Phaser.GameObjects.Text;
       private isPaused = false;
+      private tokensCollectedInScene = 0;
+      private phaseCompleteTriggered = false;
 
       constructor() {
         super({ key: 'MainScene' });
@@ -294,12 +296,12 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         const tokenSprite = token as Phaser.Physics.Arcade.Sprite;
         tokenSprite.disableBody(true, true);
 
-        const newTokens = tokensCollected + 1;
-        setTokensCollected(newTokens);
+        this.tokensCollectedInScene++;
+        setTokensCollected(this.tokensCollectedInScene);
         setScore(prev => prev + 50);
 
         const phase = PHASES[currentPhase];
-        this.scoreText?.setText(`Tokens: ${newTokens}/${phase.tokensRequired}`);
+        this.scoreText?.setText(`Tokens: ${this.tokensCollectedInScene}/${phase.tokensRequired}`);
 
         this.isPaused = true;
         this.physics.pause();
@@ -373,11 +375,13 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       }
 
       update() {
-        if (this.isPaused || !this.player || !this.cursors) return;
+        if (!this.player || !this.cursors) return;
 
         const phase = PHASES[currentPhase];
 
-        if (tokensCollected >= phase.tokensRequired && !this.isPaused) {
+        // Verificar fase completa mesmo quando pausado
+        if (this.tokensCollectedInScene >= phase.tokensRequired && !this.phaseCompleteTriggered) {
+          this.phaseCompleteTriggered = true;
           this.isPaused = true;
           this.physics.pause();
           
@@ -409,6 +413,8 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           });
           return;
         }
+
+        if (this.isPaused) return;
 
         if (this.cursors.left.isDown) {
           this.player.setVelocityX(-200);
