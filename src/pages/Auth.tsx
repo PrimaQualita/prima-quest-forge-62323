@@ -27,6 +27,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetCooldown, setResetCooldown] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -126,6 +127,16 @@ const Auth = () => {
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (resetCooldown > 0) {
+      toast({
+        title: "Aguarde",
+        description: `Você pode solicitar novamente em ${resetCooldown} segundos.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setResetLoading(true);
 
     try {
@@ -139,6 +150,18 @@ const Auth = () => {
       }
 
       if (data?.error) {
+        if (data.rateLimited) {
+          setResetCooldown(60);
+          const interval = setInterval(() => {
+            setResetCooldown((prev) => {
+              if (prev <= 1) {
+                clearInterval(interval);
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        }
         throw new Error(data.error);
       }
 
@@ -146,6 +169,19 @@ const Auth = () => {
         title: "E-mail enviado!",
         description: "Verifique sua caixa de entrada e spam para redefinir sua senha.",
       });
+      
+      // Iniciar cooldown de 60 segundos após sucesso
+      setResetCooldown(60);
+      const interval = setInterval(() => {
+        setResetCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
       setResetDialogOpen(false);
       setResetEmail("");
     } catch (error: any) {
@@ -261,9 +297,9 @@ const Auth = () => {
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={resetLoading}>
+                  <Button type="submit" className="w-full" disabled={resetLoading || resetCooldown > 0}>
                     {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Enviar E-mail
+                    {resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Enviar E-mail'}
                   </Button>
                 </form>
               </DialogContent>

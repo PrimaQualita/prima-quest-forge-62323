@@ -90,6 +90,18 @@ serve(async (req) => {
 
     if (resetError) {
       console.error('Erro ao enviar email de reset:', resetError);
+      
+      // Tratar erro de rate limiting especificamente
+      if (resetError.message?.includes('For security purposes') || resetError.message?.includes('request this after')) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Por segurança, você deve aguardar 60 segundos entre cada solicitação de recuperação de senha.',
+            rateLimited: true
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       throw resetError;
     }
 
