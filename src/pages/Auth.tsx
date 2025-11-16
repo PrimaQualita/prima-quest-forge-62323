@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 const Auth = () => {
@@ -272,44 +271,50 @@ const Auth = () => {
               )}
             </div>
             
-            <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="link" className="w-full text-xs">
-                  Esqueci minha senha
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Redefinir Senha</DialogTitle>
-                  <DialogDescription>
-                    Digite seu e-mail cadastrado para receber instruções de redefinição de senha.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handlePasswordReset} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">E-mail</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={resetLoading || resetCooldown > 0}>
-                    {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Enviar E-mail'}
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
           </form>
+
+          <div className="mt-4">
+            <Button 
+              type="button" 
+              variant="link" 
+              className="w-full text-xs"
+              onClick={() => setResetDialogOpen(true)}
+            >
+              Esqueci minha senha
+            </Button>
+          </div>
+
+          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Redefinir Senha</DialogTitle>
+                <DialogDescription>
+                  Digite seu e-mail cadastrado para receber instruções de redefinição de senha.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handlePasswordReset} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">E-mail</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={resetLoading || resetCooldown > 0}>
+                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Enviar E-mail'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <div className="mt-6 pt-6 border-t text-center">
             <p className="text-sm text-muted-foreground mb-2">É um fornecedor?</p>
