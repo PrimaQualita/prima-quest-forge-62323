@@ -130,21 +130,29 @@ const Auth = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('reset-user-password-by-email', {
-        body: { email: resetEmail.trim() },
+        body: { email: resetEmail.trim().toLowerCase() },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na função de reset:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "E-mail enviado!",
-        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        description: "Verifique sua caixa de entrada e spam para redefinir sua senha.",
       });
       setResetDialogOpen(false);
       setResetEmail("");
     } catch (error: any) {
+      console.error('Erro ao resetar senha:', error);
       toast({
         title: "Erro ao enviar e-mail",
-        description: error.message || "Verifique se o email está correto",
+        description: error.message || "Verifique se o email está cadastrado no sistema",
         variant: "destructive",
       });
     } finally {
