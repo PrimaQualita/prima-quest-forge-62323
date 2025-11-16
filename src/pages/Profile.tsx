@@ -78,7 +78,7 @@ const Profile = () => {
       // Buscar dados do employee
       const { data: employeeData, error: employeeError } = await supabase
         .from('employees')
-        .select('phone')
+        .select('phone, email')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -94,7 +94,8 @@ const Profile = () => {
         birth_date: profileData?.birth_date || "",
       });
 
-      setEmail(user.email || "");
+      // Usar email do employee se existir, senão do auth
+      setEmail(employeeData?.email || user.email || "");
     } catch (error: any) {
       console.error('Error fetching profile:', error);
       toast({
@@ -226,10 +227,8 @@ const Profile = () => {
       setSaving(true);
       setErrors({});
 
-      console.log('Atualizando email para:', email);
-
       // Verificar se o email é diferente do atual
-      if (email === user?.email) {
+      if (email === profile.phone) {
         toast({
           title: "Atenção",
           description: "O novo email é igual ao email atual",
@@ -253,17 +252,26 @@ const Profile = () => {
         return;
       }
 
-      console.log('Chamando supabase.auth.updateUser...');
-      const { data, error } = await supabase.auth.updateUser({ email });
+      // Atualizar email na tabela employees primeiro
+      const { error: employeeError } = await supabase
+        .from('employees')
+        .update({ email: email.trim() })
+        .eq('user_id', user?.id);
 
-      console.log('Resposta:', { data, error });
+      if (employeeError) throw employeeError;
 
-      if (error) throw error;
+      // Depois atualizar no auth (requer confirmação)
+      const { error: authError } = await supabase.auth.updateUser({ email });
+
+      if (authError) throw authError;
 
       toast({
         title: "Sucesso",
-        description: "Email atualizado com sucesso! Verifique seu novo email para confirmar.",
+        description: "Email atualizado! Verifique seu novo email para confirmar.",
       });
+      
+      // Atualizar o estado local
+      await fetchProfile();
     } catch (error: any) {
       console.error('Erro ao atualizar email:', error);
       toast({

@@ -129,8 +129,8 @@ const Auth = () => {
     setResetLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/change-password`,
+      const { data, error } = await supabase.functions.invoke('reset-user-password-by-email', {
+        body: { email: resetEmail.trim() },
       });
 
       if (error) throw error;
@@ -144,7 +144,7 @@ const Auth = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao enviar e-mail",
-        description: error.message || "Ocorreu um erro inesperado",
+        description: error.message || "Verifique se o email está correto",
         variant: "destructive",
       });
     } finally {
