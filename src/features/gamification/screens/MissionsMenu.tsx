@@ -30,7 +30,8 @@ export const MissionsMenu = ({ onSelectGame, onBack }: MissionsMenuProps) => {
     if (!isSupplier) {
       loadRanking();
     }
-  }, [loadUserData, loadRanking, isSupplier]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupplier]);
 
   // Calcula nível textual baseado no score
   const getLevelText = (score: number): string => {
