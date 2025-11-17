@@ -335,6 +335,84 @@ export const whistleblowerCases: WhistleblowerCase[] = [
     idealIndex: 1,
     impacts: { trust: 20, risk: -35, reputation: 25 },
     explanation: 'Acesso indevido a dados pessoais viola a LGPD e deve ser tratado com urgência pelo DPO e Compliance, com auditoria de acessos e medidas corretivas imediatas.'
+  },
+  {
+    id: 'case-5',
+    report: 'Denúncia de discriminação: colaboradora relata não ter sido promovida devido ao seu gênero, enquanto colegas homens menos qualificados foram promovidos.',
+    options: [
+      'Arquivar se não houver testemunhas',
+      'Encaminhar ao RH e Compliance para análise de processos seletivos',
+      'Recomendar que a colaboradora busque advogado',
+      'Orientar a colaboradora a conversar com RH informalmente'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 25, risk: -30, reputation: 20 },
+    explanation: 'Discriminação de gênero é grave e ilegal. Requer investigação formal do RH e Compliance, com análise de processos de promoção e possíveis medidas corretivas.'
+  },
+  {
+    id: 'case-6',
+    report: 'Relato de conflito de interesses: gerente possui participação societária em empresa fornecedora sem ter declarado formalmente.',
+    options: [
+      'Ignorar se o trabalho dele é bom',
+      'Encaminhar ao Compliance para investigação e aplicação de políticas',
+      'Pedir ao gerente que venda suas ações',
+      'Alertar apenas o superior imediato'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 20, risk: -25, reputation: 15 },
+    explanation: 'Conflito de interesses não declarado compromete a imparcialidade. Deve ser investigado pelo Compliance com aplicação das políticas de conflito de interesses.'
+  },
+  {
+    id: 'case-7',
+    report: 'Denúncia de vazamento de informações confidenciais da empresa para concorrentes por colaborador do setor comercial.',
+    options: [
+      'Monitorar o colaborador discretamente',
+      'Encaminhar ao Compliance e TI para investigação urgente com análise de logs',
+      'Demitir o colaborador imediatamente',
+      'Alertar apenas a liderança comercial'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 15, risk: -40, reputation: 10 },
+    explanation: 'Vazamento de informações confidenciais é grave. Requer investigação urgente com análise técnica de logs, preservação de evidências e possíveis medidas legais.'
+  },
+  {
+    id: 'case-8',
+    report: 'Funcionário relata irregularidades contábeis: notas fiscais sendo emitidas sem correspondência com serviços realmente prestados.',
+    options: [
+      'Aguardar auditoria externa de rotina',
+      'Encaminhar imediatamente à auditoria interna e Compliance',
+      'Pedir ao funcionário para reunir mais provas primeiro',
+      'Consultar o departamento financeiro sobre os procedimentos'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 20, risk: -35, reputation: 25 },
+    explanation: 'Irregularidades fiscais são graves e podem configurar crime. Devem ser investigadas imediatamente pela auditoria interna com rigor e sigilo.'
+  },
+  {
+    id: 'case-9',
+    report: 'Denúncia de assédio sexual: colaboradora relata abordagens e comentários inadequados de superior hierárquico.',
+    options: [
+      'Orientar a colaboradora a evitar o assediador',
+      'Encaminhar ao RH e Compliance com medidas de proteção imediatas',
+      'Aguardar se há outras denúncias similares',
+      'Sugerir transferência da colaboradora para outro setor'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 30, risk: -35, reputation: 25 },
+    explanation: 'Assédio sexual é crime e requer ação imediata. Deve ser encaminhado ao RH e Compliance com proteção à vítima, afastamento cautelar do agressor e investigação rigorosa.'
+  },
+  {
+    id: 'case-10',
+    report: 'Relato de manipulação de indicadores de performance para ocultar metas não atingidas pela equipe.',
+    options: [
+      'Ignorar se as metas foram ajustadas depois',
+      'Encaminhar ao Compliance para verificação de dados e processos',
+      'Alertar apenas o gestor responsável',
+      'Arquivar se não houve prejuízo financeiro'
+    ],
+    idealIndex: 1,
+    impacts: { trust: 15, risk: -20, reputation: 10 },
+    explanation: 'Manipulação de indicadores compromete a transparência e pode mascarar problemas graves. Deve ser investigada pelo Compliance com análise de dados e processos.'
   }
 ];
 

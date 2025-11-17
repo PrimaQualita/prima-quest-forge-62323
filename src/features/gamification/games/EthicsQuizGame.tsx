@@ -33,21 +33,9 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
     setShuffledQuestions(questionsWithShuffledOptions);
   }, []);
 
-  const currentQuestion = shuffledQuestions[currentQuestionIndex];
-  const progress = shuffledQuestions.length > 0 ? ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100 : 0;
-
-  // Se ainda não carregou as perguntas
-  if (shuffledQuestions.length === 0) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Carregando...</p>
-      </div>
-    );
-  }
-
-  // Timer
+  // Timer - MOVIDO PARA ANTES DO RETURN CONDICIONAL
   useEffect(() => {
-    if (showFeedback || gameCompleted) return;
+    if (showFeedback || gameCompleted || shuffledQuestions.length === 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -61,13 +49,37 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentQuestionIndex, showFeedback, gameCompleted]);
+  }, [currentQuestionIndex, showFeedback, gameCompleted, shuffledQuestions.length]);
 
   const handleTimeout = () => {
     setAnswers([...answers, false]);
     setShowFeedback(true);
     setSelectedAnswer(null);
   };
+
+  const currentQuestion = shuffledQuestions[currentQuestionIndex];
+  const progress = shuffledQuestions.length > 0 ? ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100 : 0;
+
+  // Se ainda não carregou as perguntas
+  if (shuffledQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+    if (showFeedback || gameCompleted) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Tempo esgotado
+          handleTimeout();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
   const handleSelectAnswer = (index: number) => {
     if (showFeedback) return;

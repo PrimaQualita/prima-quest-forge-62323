@@ -141,6 +141,8 @@ export const useGamificationStore = create<GamificationState>()(
         const state = get();
         const newTotalScore = state.totalScore + points;
         
+        console.log(`[Gamification] Atualizando score - Game: ${gameId}, Points: ${points}, Old Total: ${state.totalScore}, New Total: ${newTotalScore}`);
+        
         // Calcula novo nível de integridade baseado em pontos (sistema infinito)
         const newIntegrityLevel = Math.min(100, Math.floor((newTotalScore / 50)));
 
@@ -165,6 +167,8 @@ export const useGamificationStore = create<GamificationState>()(
         };
 
         set(newState);
+        
+        console.log('[Gamification] Estado atualizado localmente:', newState);
 
         // Desbloqueia medalha de iniciante no primeiro jogo
         if (completedGames === 1 && !state.badges.find(b => b.id === 'iniciante_etico')?.unlocked) {
@@ -179,6 +183,7 @@ export const useGamificationStore = create<GamificationState>()(
         // Salva no Supabase
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          console.log('[Gamification] Salvando no Supabase para user:', user.id);
           await salvarProgressoNoServidor(
             user.id,
             newTotalScore,
@@ -186,6 +191,9 @@ export const useGamificationStore = create<GamificationState>()(
             newGamesProgress,
             get().badges
           );
+          console.log('[Gamification] Salvo no Supabase com sucesso');
+        } else {
+          console.error('[Gamification] Usuário não autenticado, não foi possível salvar no servidor');
         }
 
         // Atualiza ranking
@@ -282,7 +290,13 @@ export const useGamificationStore = create<GamificationState>()(
     }),
     {
       name: 'gamification-storage',
-      version: 1
+      version: 2,
+      // Não persiste pontuação e nível - sempre vem do servidor
+      partialize: (state) => ({
+        user: state.user
+        // totalScore, integrityLevel, gamesProgress, badges e ranking NÃO são persistidos
+        // Tudo deve vir do servidor via loadUserData
+      })
     }
   )
 );
