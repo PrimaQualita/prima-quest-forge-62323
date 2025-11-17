@@ -9,7 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { shuffleArray } from '../data/expandedQuestions';
 
 export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
-  const [shuffledCases, setShuffledCases] = useState<typeof whistleblowerCases>([]);
+  const [shuffledCases, setShuffledCases] = useState<Array<typeof whistleblowerCases[0] & { correctIndex?: number }>>([]);
   const [caseIndex, setCaseIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -17,10 +17,22 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
   const [gameOver, setGameOver] = useState(false);
   const { updateScore, unlockBadge } = useGamificationStore();
 
-  // Embaralha casos ao iniciar
+  // Embaralha casos e opções ao iniciar
   useEffect(() => {
     const casesToUse = shuffleArray([...whistleblowerCases]).slice(0, 8);
-    setShuffledCases(casesToUse);
+    // Embaralha as opções de cada caso
+    const casesWithShuffledOptions = casesToUse.map(caseItem => {
+      const originalCorrectAnswer = caseItem.options[0]; // A primeira opção é sempre a correta
+      const shuffledOptions = shuffleArray([...caseItem.options]);
+      const newCorrectIndex = shuffledOptions.indexOf(originalCorrectAnswer);
+      
+      return {
+        ...caseItem,
+        options: shuffledOptions,
+        correctIndex: newCorrectIndex
+      };
+    });
+    setShuffledCases(casesWithShuffledOptions);
   }, []);
 
   // Se ainda não carregou os casos
