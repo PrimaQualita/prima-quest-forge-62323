@@ -68,18 +68,6 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
       </div>
     );
   }
-    if (showFeedback || gameCompleted) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          // Tempo esgotado
-          handleTimeout();
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
 
   const handleSelectAnswer = (index: number) => {
     if (showFeedback) return;

@@ -31,17 +31,41 @@ export const salvarProgressoNoServidor = async (
   badges: Badge[]
 ): Promise<void> => {
   try {
-    const { error } = await supabase
+    // Primeiro, tenta fazer UPDATE
+    const { data: existing } = await supabase
       .from('gamification_progress')
-      .upsert({
-        user_id: userId,
-        total_score: totalScore,
-        integrity_level: integrityLevel,
-        games_progress: gamesProgress as any,
-        badges: badges as any
-      });
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (error) throw error;
+    if (existing) {
+      // Se já existe, faz UPDATE
+      const { error } = await supabase
+        .from('gamification_progress')
+        .update({
+          total_score: totalScore,
+          integrity_level: integrityLevel,
+          games_progress: gamesProgress as any,
+          badges: badges as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } else {
+      // Se não existe, faz INSERT
+      const { error } = await supabase
+        .from('gamification_progress')
+        .insert({
+          user_id: userId,
+          total_score: totalScore,
+          integrity_level: integrityLevel,
+          games_progress: gamesProgress as any,
+          badges: badges as any
+        });
+
+      if (error) throw error;
+    }
   } catch (error) {
     console.error('Erro ao salvar progresso:', error);
   }
@@ -81,17 +105,23 @@ export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
     if (employeesError) throw employeesError;
     if (!employeesData || employeesData.length === 0) return [];
 
-    // Filtra user_ids válidos
-    const userIds = employeesData.map(e => e.user_id).filter(id => id != null);
+    // Filtra user_ids válidos e garante que são strings
+    const userIds = employeesData
+      .map(e => e.user_id)
+      .filter((id): id is string => id !== null && id !== undefined);
     
     if (userIds.length === 0) return [];
 
+    // Busca progresso apenas dos usuários que existem
     const { data: progressData, error: progressError } = await supabase
       .from('gamification_progress')
       .select('user_id, total_score')
       .in('user_id', userIds);
 
-    if (progressError) throw progressError;
+    if (progressError) {
+      console.error('Erro ao buscar progresso:', progressError);
+      // Mesmo com erro no progresso, retorna colaboradores com score 0
+    }
 
     // Mapeia colaboradores com seu progresso (ou 0 se não tiver)
     const ranking: RankingPlayer[] = employeesData
