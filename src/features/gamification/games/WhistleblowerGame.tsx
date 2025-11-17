@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,10 @@ import { Progress } from '@/components/ui/progress';
 import { useGamificationStore } from '../store/useGamificationStore';
 import { whistleblowerCases } from '../data/gameData';
 import { ArrowLeft } from 'lucide-react';
+import { shuffleArray } from '../data/expandedQuestions';
 
 export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
+  const [shuffledCases, setShuffledCases] = useState<typeof whistleblowerCases>([]);
   const [caseIndex, setCaseIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -15,7 +17,22 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
   const [gameOver, setGameOver] = useState(false);
   const { updateScore, unlockBadge } = useGamificationStore();
 
-  const currentCase = whistleblowerCases[caseIndex];
+  // Embaralha casos ao iniciar
+  useEffect(() => {
+    const casesToUse = shuffleArray([...whistleblowerCases]).slice(0, 8);
+    setShuffledCases(casesToUse);
+  }, []);
+
+  // Se ainda não carregou os casos
+  if (shuffledCases.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+
+  const currentCase = shuffledCases[caseIndex];
 
   const handleConfirm = () => {
     if (selectedOption === null) return;
@@ -29,7 +46,7 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
   };
 
   const handleNext = () => {
-    if (caseIndex < whistleblowerCases.length - 1) {
+    if (caseIndex < shuffledCases.length - 1) {
       setCaseIndex(caseIndex + 1);
       setSelectedOption(null);
       setShowFeedback(false);
@@ -85,7 +102,7 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Caso {caseIndex + 1}: Denúncia Recebida</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Caso {caseIndex + 1} de {shuffledCases.length}: Denúncia Recebida</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p className="p-4 bg-muted rounded-lg">{currentCase.report}</p>
             <div className="space-y-3">

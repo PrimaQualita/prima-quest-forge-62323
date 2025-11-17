@@ -438,6 +438,10 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           this.isPaused = true;
           this.physics.pause();
           
+          // Fechar pergunta se estiver aberta
+          setShowQuestion(false);
+          setCurrentQuestion(null);
+          
           const completeText = this.add.text(
             this.cameras.main.scrollX + 640,
             this.cameras.main.scrollY + 300,
