@@ -798,23 +798,23 @@ const Trainings = () => {
                     </>
                   )}
                   
-                  <div className={`grid gap-2 ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                  <div className="flex flex-col gap-2">
                     <Button 
                       className="w-full"
                       onClick={() => navigate(`/trainings/${training.id}`)}
                     >
-                      <Video className="w-4 h-4 mr-2" />
+                      <Video className="w-4 h-4 mr-2 flex-shrink-0" />
                       Acessar
                     </Button>
 
                     {isAdmin && (
-                      <>
+                      <div className="grid grid-cols-2 gap-2">
                         <Button 
                           variant="outline"
                           className="w-full"
                           onClick={() => openEditPage(training.id)}
                         >
-                          <Pencil className="w-4 h-4 mr-2" />
+                          <Pencil className="w-4 h-4 mr-2 flex-shrink-0" />
                           Editar
                         </Button>
                         <Button 
@@ -822,10 +822,10 @@ const Trainings = () => {
                           className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
                           onClick={() => setDeleteTrainingId(training.id)}
                         >
-                          <Trash2 className="w-4 h-4 mr-2" />
+                          <Trash2 className="w-4 h-4 mr-2 flex-shrink-0" />
                           Excluir
                         </Button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
