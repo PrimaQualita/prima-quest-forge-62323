@@ -9,6 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GraduationCap, Plus, CheckCircle, Clock, Video, Trash2, MoveUp, MoveDown, FileText, Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +64,7 @@ const Trainings = () => {
   }]);
   const [documents, setDocuments] = useState<File[]>([]);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [deleteTrainingId, setDeleteTrainingId] = useState<string | null>(null);
 
   const { data: trainings } = useQuery({
     queryKey: ['trainings'],
@@ -270,6 +281,85 @@ const Trainings = () => {
     onError: (error: any) => {
       toast({
         title: "Erro ao criar treinamento",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTrainingMutation = useMutation({
+    mutationFn: async (trainingId: string) => {
+      // Deletar as questões relacionadas
+      await supabase
+        .from('training_questions')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Deletar as avaliações relacionadas
+      await supabase
+        .from('training_assessments')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Deletar as participações relacionadas
+      await supabase
+        .from('training_participations')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Deletar o progresso de vídeos relacionado
+      await supabase
+        .from('video_progress')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Buscar e deletar os vídeos do storage
+      const { data: videos } = await supabase
+        .from('training_videos')
+        .select('url')
+        .eq('training_id', trainingId);
+
+      // Deletar os vídeos da tabela
+      await supabase
+        .from('training_videos')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Buscar e deletar os documentos do storage
+      const { data: docs } = await supabase
+        .from('training_documents')
+        .select('file_path')
+        .eq('training_id', trainingId);
+
+      if (docs && docs.length > 0) {
+        const filePaths = docs.map(d => d.file_path);
+        await supabase.storage
+          .from('compliance-documents')
+          .remove(filePaths);
+      }
+
+      // Deletar os documentos da tabela
+      await supabase
+        .from('training_documents')
+        .delete()
+        .eq('training_id', trainingId);
+
+      // Deletar o treinamento
+      const { error } = await supabase
+        .from('trainings')
+        .delete()
+        .eq('id', trainingId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Treinamento excluído com sucesso!" });
+      setDeleteTrainingId(null);
+      queryClient.invalidateQueries({ queryKey: ['trainings'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir treinamento",
         description: error.message,
         variant: "destructive",
       });
@@ -708,7 +798,7 @@ const Trainings = () => {
                     </>
                   )}
                   
-                  <div className={`grid gap-2 ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <div className={`grid gap-2 ${isAdmin ? 'grid-cols-3' : 'grid-cols-1'}`}>
                     <Button 
                       className="w-full"
                       onClick={() => navigate(`/trainings/${training.id}`)}
@@ -718,14 +808,24 @@ const Trainings = () => {
                     </Button>
 
                     {isAdmin && (
-                      <Button 
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => openEditPage(training.id)}
-                      >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Editar
-                      </Button>
+                      <>
+                        <Button 
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => openEditPage(training.id)}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
+                          onClick={() => setDeleteTrainingId(training.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -734,6 +834,38 @@ const Trainings = () => {
           );
         })}
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={!!deleteTrainingId} onOpenChange={(open) => !open && setDeleteTrainingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este treinamento? Esta ação não pode ser desfeita.
+              Todos os dados relacionados (vídeos, documentos, questões, avaliações e participações de colaboradores) também serão excluídos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTrainingId && deleteTrainingMutation.mutate(deleteTrainingId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteTrainingMutation.isPending ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
