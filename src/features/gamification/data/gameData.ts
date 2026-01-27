@@ -49,14 +49,6 @@ export const gamesInfo: GameInfo[] = [
     difficulty: 'Avançado',
     icon: '📢',
     color: 'from-red-500 to-red-600'
-  },
-  {
-    id: 'compliance-tycoon',
-    name: 'Compliance Tycoon',
-    description: 'Gerencie recursos e construa um programa de compliance robusto',
-    difficulty: 'Avançado',
-    icon: '💼',
-    color: 'from-indigo-500 to-indigo-600'
   }
 ];
 
@@ -95,13 +87,6 @@ export const availableBadges: Badge[] = [
     name: 'Mestre da Integridade',
     description: 'Alta pontuação geral em todos os jogos',
     icon: '👑',
-    unlocked: false
-  },
-  {
-    id: 'estrategista_compliance',
-    name: 'Estrategista Compliance',
-    description: 'Excelência no Compliance Tycoon',
-    icon: '💼',
     unlocked: false
   }
 ];

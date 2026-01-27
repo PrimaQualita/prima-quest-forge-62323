@@ -124,6 +124,7 @@ export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
     }
 
     // Mapeia colaboradores com seu progresso (ou 0 se não tiver)
+    // Ordena por totalScore decrescente (maior primeiro), depois por nome alfabético para desempate
     const ranking: RankingPlayer[] = employeesData
       .map(employee => {
         const progress = progressData?.find(p => p.user_id === employee.user_id);
@@ -135,7 +136,14 @@ export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
           level: calculateLevel(totalScore)
         };
       })
-      .sort((a, b) => b.totalScore - a.totalScore);
+      .sort((a, b) => {
+        // Primeiro ordena por pontuação decrescente
+        if (b.totalScore !== a.totalScore) {
+          return b.totalScore - a.totalScore;
+        }
+        // Em caso de empate, ordena alfabeticamente pelo nome
+        return a.name.localeCompare(b.name);
+      });
 
     return ranking;
   } catch (error) {
