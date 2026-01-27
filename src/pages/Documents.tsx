@@ -6,7 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, Plus, CheckCircle, Loader2, Pencil } from "lucide-react";
+import { FileText, Plus, CheckCircle, Loader2, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -28,6 +38,7 @@ const Documents = () => {
   const [quizResult, setQuizResult] = useState<'correct' | 'incorrect' | null>(null);
   const [isGeneratingNewQuestion, setIsGeneratingNewQuestion] = useState(false);
   const [isGeneratingAllQuestions, setIsGeneratingAllQuestions] = useState(false);
+  const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -388,6 +399,56 @@ const Documents = () => {
     },
   });
 
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      // Primeiro deletar as questões relacionadas
+      await supabase
+        .from('document_questions')
+        .delete()
+        .eq('document_id', docId);
+
+      // Deletar os acknowledgments relacionados
+      await supabase
+        .from('document_acknowledgments')
+        .delete()
+        .eq('document_id', docId);
+
+      // Buscar o documento para obter o file_path
+      const { data: doc } = await supabase
+        .from('compliance_documents')
+        .select('file_path')
+        .eq('id', docId)
+        .single();
+
+      // Deletar o arquivo do storage se existir
+      if (doc?.file_path) {
+        await supabase.storage
+          .from('compliance-documents')
+          .remove([doc.file_path]);
+      }
+
+      // Deletar o documento
+      const { error } = await supabase
+        .from('compliance_documents')
+        .delete()
+        .eq('id', docId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Documento excluído com sucesso!" });
+      setDeleteDocId(null);
+      queryClient.invalidateQueries({ queryKey: ['compliance-documents'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao excluir documento",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleEditDoc = (doc: any) => {
     setEditingDoc(doc);
     setFormData({
@@ -584,14 +645,24 @@ const Documents = () => {
                   <FileText className="w-8 h-8 text-primary" />
                   <div className="flex items-center gap-2">
                     {isAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditDoc(doc)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditDoc(doc)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteDocId(doc.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
                     )}
                     <Badge variant="secondary">{doc.category}</Badge>
                   </div>
@@ -802,6 +873,38 @@ const Documents = () => {
           );
         })}
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={!!deleteDocId} onOpenChange={(open) => !open && setDeleteDocId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este regulamento? Esta ação não pode ser desfeita.
+              Todos os dados relacionados (questões, aceites de colaboradores) também serão excluídos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteDocId && deleteDocumentMutation.mutate(deleteDocId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteDocumentMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
