@@ -6,10 +6,9 @@ import { ComplianceRunnerGame } from '@/features/gamification/games/ComplianceRu
 import { EthicsQuizGame } from '@/features/gamification/games/EthicsQuizGame';
 import { DataGuardianGame } from '@/features/gamification/games/DataGuardianGame';
 import { WhistleblowerGame } from '@/features/gamification/games/WhistleblowerGame';
-import { ComplianceTycoonGame } from '@/features/gamification/games/ComplianceTycoonGame';
 import { GameInstructions } from '@/features/gamification/components/GameInstructions';
 
-type Screen = 'welcome' | 'menu' | 'instructions' | 'integrity-mission' | 'compliance-runner' | 'ethics-quiz' | 'data-guardian' | 'whistleblower-decision' | 'compliance-tycoon';
+type Screen = 'welcome' | 'menu' | 'instructions' | 'integrity-mission' | 'compliance-runner' | 'ethics-quiz' | 'data-guardian' | 'whistleblower-decision';
 
 const GamificationModule = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
@@ -33,8 +32,6 @@ const GamificationModule = () => {
         return <DataGuardianGame onExit={() => setCurrentScreen('menu')} />;
       case 'whistleblower-decision':
         return <WhistleblowerGame onExit={() => setCurrentScreen('menu')} />;
-      case 'compliance-tycoon':
-        return <ComplianceTycoonGame onExit={() => setCurrentScreen('menu')} />;
       default:
         return <WelcomeScreen onEnter={() => setCurrentScreen('menu')} />;
     }

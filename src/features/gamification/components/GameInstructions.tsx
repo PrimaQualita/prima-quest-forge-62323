@@ -159,37 +159,6 @@ const instructionsData: Record<string, {
       'Preserve sigilo e proteja denunciantes',
       'Aja com urgência em casos graves (assédio, corrupção)'
     ]
-  },
-  'compliance-tycoon': {
-    title: 'Compliance Tycoon',
-    icon: '💼',
-    difficulty: 'Avançado',
-    objectives: [
-      'Gerenciar recursos para construir programa de compliance',
-      'Equilibrar orçamento, tempo e resultados',
-      'Desenvolver maturidade do programa de integridade'
-    ],
-    howToPlay: [
-      'Você tem 5 rodadas para desenvolver o programa',
-      'Cada rodada fornece 100 de Orçamento e 100 de Tempo',
-      'Escolha ações para executar (cada uma consome recursos)',
-      'Clique em "Executar" APENAS UMA VEZ por ação desejada',
-      'Acompanhe 4 métricas: Compliance, Reputação, Engajamento e Maturidade',
-      'Clique em "Próxima Rodada" quando terminar',
-      'Ao final de 5 rodadas, veja a maturidade do programa'
-    ],
-    scoring: [
-      'Pontuação final baseada na média das 4 métricas',
-      'Objetivo: alcançar nível "Avançado" (média 80+)',
-      'Cada ação impacta métricas diferentemente',
-      'Medalha "Estrategista Compliance" com alta maturidade'
-    ],
-    tips: [
-      'Planeje bem - recursos são limitados por rodada',
-      'Balance investimentos entre todas as métricas',
-      'Ações mais caras geralmente têm mais impacto',
-      'Clique "Executar" apenas UMA vez - aguarde a atualização visual'
-    ]
   }
 };
 
