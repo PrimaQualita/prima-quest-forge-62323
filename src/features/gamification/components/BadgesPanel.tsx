@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge as BadgeType } from '../types';
 import { Award } from 'lucide-react';
+import { availableBadges } from '../data/gameData';
 
 interface BadgesPanelProps {
   badges: BadgeType[];
@@ -8,21 +9,34 @@ interface BadgesPanelProps {
 
 /**
  * Painel de medalhas conquistadas
+ * Filtra para mostrar apenas badges que existem nos jogos atuais
  */
 export const BadgesPanel = ({ badges }: BadgesPanelProps) => {
-  const unlockedBadges = badges.filter(b => b.unlocked);
+  // Filtra para mostrar apenas badges que existem na lista atual de jogos
+  const validBadgeIds = availableBadges.map(b => b.id);
+  
+  // Mescla badges do usuário com os badges válidos atuais
+  const filteredBadges = availableBadges.map(validBadge => {
+    const userBadge = badges.find(b => b.id === validBadge.id);
+    return {
+      ...validBadge,
+      unlocked: userBadge?.unlocked || false
+    };
+  });
+
+  const unlockedBadges = filteredBadges.filter(b => b.unlocked);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="w-5 h-5" />
-          Conquistas ({unlockedBadges.length}/{badges.length})
+          Conquistas ({unlockedBadges.length}/{filteredBadges.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {badges.map((badge) => (
+          {filteredBadges.map((badge) => (
             <div
               key={badge.id}
               className={`p-4 rounded-lg border-2 text-center transition-all ${

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { WelcomeScreen } from '@/features/gamification/screens/WelcomeScreen';
 import { MissionsMenu } from '@/features/gamification/screens/MissionsMenu';
 import { IntegrityMissionGame } from '@/features/gamification/games/IntegrityMissionGame';
@@ -11,15 +12,21 @@ import { GameInstructions } from '@/features/gamification/components/GameInstruc
 type Screen = 'welcome' | 'menu' | 'instructions' | 'integrity-mission' | 'compliance-runner' | 'ethics-quiz' | 'data-guardian' | 'whistleblower-decision';
 
 const GamificationModule = () => {
+  const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
   const [selectedGame, setSelectedGame] = useState<string>('');
+
+  // Função para voltar ao dashboard/menu principal
+  const handleBackToMain = () => {
+    navigate('/');
+  };
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'welcome':
         return <WelcomeScreen onEnter={() => setCurrentScreen('menu')} />;
       case 'menu':
-        return <MissionsMenu onSelectGame={(id) => { setSelectedGame(id); setCurrentScreen('instructions'); }} onBack={() => setCurrentScreen('welcome')} />;
+        return <MissionsMenu onSelectGame={(id) => { setSelectedGame(id); setCurrentScreen('instructions'); }} onBack={handleBackToMain} />;
       case 'instructions':
         return <GameInstructions gameId={selectedGame} onStart={() => setCurrentScreen(selectedGame as Screen)} onBack={() => setCurrentScreen('menu')} />;
       case 'integrity-mission':
