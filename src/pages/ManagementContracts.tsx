@@ -911,37 +911,16 @@ const ManagementContracts = () => {
                                   size="icon"
                                   variant="ghost"
                                   className="h-8 w-8 text-primary hover:text-primary"
-                                  onClick={async () => {
-                                    try {
-                                      // Download the file as blob to handle special characters in filenames
-                                      const { data, error } = await supabase.storage
-                                        .from('compliance-documents')
-                                        .download(doc.file_path);
-                                      
-                                      if (error) {
-                                        console.error('Error downloading document:', error);
-                                        toast({
-                                          title: "Erro ao abrir documento",
-                                          description: `Não foi possível baixar o documento: ${error.message}`,
-                                          variant: "destructive"
-                                        });
-                                        return;
-                                      }
-                                      
-                                      // Create a blob URL and open it in a new tab
-                                      const blobUrl = URL.createObjectURL(data);
-                                      window.open(blobUrl, '_blank');
-                                      
-                                      // Clean up the blob URL after a delay
-                                      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-                                    } catch (err) {
-                                      console.error('Error opening document:', err);
-                                      toast({
-                                        title: "Erro ao abrir documento",
-                                        description: "Ocorreu um erro ao tentar abrir o documento.",
-                                        variant: "destructive"
-                                      });
-                                    }
+                                  onClick={() => {
+                                    // Construir URL pública direta - o bucket é público
+                                    // Codificar cada segmento do path separadamente
+                                    const encodedPath = doc.file_path
+                                      .split('/')
+                                      .map((segment: string) => encodeURIComponent(segment))
+                                      .join('/');
+                                    
+                                    const publicUrl = `https://todailzrkkjocufffbmi.supabase.co/storage/v1/object/public/compliance-documents/${encodedPath}`;
+                                    window.open(publicUrl, '_blank');
                                   }}
                                   title="Visualizar documento"
                                 >
