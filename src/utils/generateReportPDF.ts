@@ -54,28 +54,29 @@ export const generateReportPDF = async (
     console.warn('Could not load footer image');
   }
 
+  const sideMargin = 4; // 4mm margin from edges
+
   const addHeader = () => {
     if (logoImg) {
-      // Calculate proportional dimensions
-      const logoHeight = 20;
-      const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
-      doc.addImage(logoImg, 'PNG', margin, 8, logoWidth, logoHeight);
+      // Full width minus 4mm on each side
+      const logoWidth = pageWidth - (sideMargin * 2);
+      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+      doc.addImage(logoImg, 'PNG', sideMargin, sideMargin, logoWidth, logoHeight);
     }
   };
 
   const addFooter = (pageNum: number, totalPages: number) => {
     if (footerImg) {
-      // Calculate proportional dimensions
-      const footerHeight = 18;
-      const footerWidth = (footerImg.width / footerImg.height) * footerHeight;
-      const footerX = (pageWidth - footerWidth) / 2;
-      doc.addImage(footerImg, 'PNG', footerX, pageHeight - footerHeight - 5, footerWidth, footerHeight);
+      // Full width minus 4mm on each side
+      const footerWidth = pageWidth - (sideMargin * 2);
+      const footerHeight = (footerImg.height / footerImg.width) * footerWidth;
+      doc.addImage(footerImg, 'PNG', sideMargin, pageHeight - footerHeight - sideMargin, footerWidth, footerHeight);
     }
     
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(128, 128, 128);
-    doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+    doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, pageHeight - 3, { align: 'right' });
     doc.setTextColor(0, 0, 0);
   };
 
