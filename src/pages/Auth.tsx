@@ -142,8 +142,8 @@ const Auth = () => {
 
           {showForgotPasswordAlert && (
             <Alert className="mt-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-sm">
+              <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-sm text-justify">
                 Caso tenha esquecido sua senha, entre em contato com o departamento de Compliance através do e-mail:{" "}
                 <a 
                   href="mailto:compliance@primaqualitasaude.org" 
