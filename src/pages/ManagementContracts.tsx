@@ -892,16 +892,22 @@ const ManagementContracts = () => {
                                   size="icon"
                                   variant="ghost"
                                   className="h-8 w-8 text-primary hover:text-primary"
-                                  onClick={() => {
-                                    // Encode each path segment properly
-                                    const encodedPath = doc.file_path
-                                      .split('/')
-                                      .map(segment => encodeURIComponent(segment))
-                                      .join('/');
-                                    const { data } = supabase.storage
+                                  onClick={async () => {
+                                    // Use the original file_path without any encoding - Supabase SDK handles it
+                                    const { data, error } = await supabase.storage
                                       .from('compliance-documents')
-                                      .getPublicUrl(encodedPath);
-                                    window.open(data.publicUrl, '_blank');
+                                      .createSignedUrl(doc.file_path, 3600);
+                                    
+                                    if (error) {
+                                      console.error('Error creating signed URL:', error);
+                                      toast({
+                                        title: "Erro ao abrir documento",
+                                        description: `Não foi possível gerar a URL do documento: ${error.message}`,
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    window.open(data.signedUrl, '_blank');
                                   }}
                                   title="Visualizar documento"
                                 >
