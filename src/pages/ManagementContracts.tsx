@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText, Upload, Edit2, Calendar, RotateCw, Trash2 } from "lucide-react";
+import { Plus, FileText, Upload, Edit2, Calendar, RotateCw, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -891,8 +891,23 @@ const ManagementContracts = () => {
                                 <Button
                                   size="icon"
                                   variant="ghost"
+                                  className="h-8 w-8 text-primary hover:text-primary"
+                                  onClick={async () => {
+                                    const { data } = await supabase.storage
+                                      .from('compliance-documents')
+                                      .getPublicUrl(doc.file_path);
+                                    window.open(data.publicUrl, '_blank');
+                                  }}
+                                  title="Visualizar documento"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
                                   className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                                   onClick={() => setDocumentToDelete(doc)}
+                                  title="Excluir documento"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
