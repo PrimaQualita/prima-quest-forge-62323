@@ -24,6 +24,7 @@ const ManagementContracts = () => {
   const [renewalToDelete, setRenewalToDelete] = useState<any>(null);
   const [renewalToEdit, setRenewalToEdit] = useState<any>(null);
   const [contractToDelete, setContractToDelete] = useState<any>(null);
+  const [documentToDelete, setDocumentToDelete] = useState<any>(null);
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -238,6 +239,47 @@ const ManagementContracts = () => {
       setContractToDelete(null);
       setSelectedContract(null);
     },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir contrato",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async (document: { id: string; file_path: string }) => {
+      // Primeiro, tenta deletar o arquivo do storage
+      const { error: storageError } = await supabase.storage
+        .from('compliance-documents')
+        .remove([document.file_path]);
+      
+      // Ignora erros de storage (arquivo pode não existir)
+      if (storageError) {
+        console.warn('Aviso ao deletar arquivo do storage:', storageError);
+      }
+
+      // Depois, deleta o registro do banco
+      const { error } = await supabase
+        .from('contract_documents')
+        .delete()
+        .eq('id', document.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
+      toast({ title: "Parecer excluído com sucesso!" });
+      setDocumentToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir parecer",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -680,6 +722,47 @@ const ManagementContracts = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Alert Dialog de Confirmar Exclusão de Parecer/Documento */}
+        <AlertDialog open={!!documentToDelete} onOpenChange={(open) => !open && setDocumentToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-destructive" />
+                Excluir Parecer
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-2">
+                <p>Tem certeza que deseja excluir este parecer?</p>
+                {documentToDelete && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="font-medium text-foreground">{documentToDelete.file_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Enviado em: {new Date(documentToDelete.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                )}
+                <p className="text-destructive font-medium">Esta ação é permanente e não pode ser desfeita.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (documentToDelete) {
+                    deleteDocumentMutation.mutate({
+                      id: documentToDelete.id,
+                      file_path: documentToDelete.file_path
+                    });
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={deleteDocumentMutation.isPending}
+              >
+                {deleteDocumentMutation.isPending ? 'Excluindo...' : 'Excluir Parecer'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Seção de Contratos */}
@@ -796,14 +879,24 @@ const ManagementContracts = () => {
                           </p>
                         ) : (
                           documents?.map((doc) => (
-                            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg group hover:bg-muted/50 transition-colors">
                               <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">{doc.file_name}</span>
                               </div>
-                              <Badge variant="outline">
-                                {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                                </Badge>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => setDocumentToDelete(doc)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))
                         )}
