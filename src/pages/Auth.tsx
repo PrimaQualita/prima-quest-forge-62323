@@ -6,27 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Loader2, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
   const [isSupplierLogin, setIsSupplierLogin] = useState(false);
+  const [showForgotPasswordAlert, setShowForgotPasswordAlert] = useState(false);
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetCooldown, setResetCooldown] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -124,77 +115,6 @@ const Auth = () => {
     }
   };
 
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (resetCooldown > 0) {
-      toast({
-        title: "Aguarde",
-        description: `Você pode solicitar novamente em ${resetCooldown} segundos.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setResetLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-user-password-by-email', {
-        body: { email: resetEmail.trim().toLowerCase() },
-      });
-
-      if (error) {
-        console.error('Erro na função de reset:', error);
-        throw error;
-      }
-
-      if (data?.error) {
-        if (data.rateLimited) {
-          setResetCooldown(60);
-          const interval = setInterval(() => {
-            setResetCooldown((prev) => {
-              if (prev <= 1) {
-                clearInterval(interval);
-                return 0;
-              }
-              return prev - 1;
-            });
-          }, 1000);
-        }
-        throw new Error(data.error);
-      }
-
-      toast({
-        title: "E-mail enviado!",
-        description: "Verifique sua caixa de entrada e spam para redefinir sua senha.",
-      });
-      
-      // Iniciar cooldown de 60 segundos após sucesso
-      setResetCooldown(60);
-      const interval = setInterval(() => {
-        setResetCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-      setResetDialogOpen(false);
-      setResetEmail("");
-    } catch (error: any) {
-      console.error('Erro ao resetar senha:', error);
-      toast({
-        title: "Erro ao enviar e-mail",
-        description: error.message || "Verifique se o email está cadastrado no sistema",
-        variant: "destructive",
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
       <Card className="w-full max-w-md">
@@ -282,39 +202,27 @@ const Auth = () => {
               type="button" 
               variant="link" 
               className="w-full text-xs"
-              onClick={() => setResetDialogOpen(true)}
+              onClick={() => setShowForgotPasswordAlert(!showForgotPasswordAlert)}
             >
               Esqueci minha senha
             </Button>
           </div>
 
-          <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Redefinir Senha</DialogTitle>
-                <DialogDescription>
-                  Digite seu e-mail cadastrado para receber instruções de redefinição de senha.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handlePasswordReset} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">E-mail</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={resetLoading || resetCooldown > 0}>
-                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {resetCooldown > 0 ? `Aguarde ${resetCooldown}s` : 'Enviar E-mail'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {showForgotPasswordAlert && (
+            <Alert className="mt-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800 dark:text-yellow-200 text-sm">
+                Caso tenha esquecido sua senha, entre em contato com o departamento de Compliance através do e-mail:{" "}
+                <a 
+                  href="mailto:compliance@primaqualitasaude.org" 
+                  className="font-semibold underline hover:text-yellow-900 dark:hover:text-yellow-100"
+                >
+                  compliance@primaqualitasaude.org
+                </a>
+                {" "}informando seu <strong>nome completo</strong> e <strong>CPF</strong> e solicitando uma nova senha provisória.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="mt-6 pt-6 border-t text-center">
             <p className="text-sm text-muted-foreground mb-2">É um fornecedor?</p>
