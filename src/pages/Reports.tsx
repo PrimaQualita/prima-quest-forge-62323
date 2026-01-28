@@ -240,14 +240,20 @@ const Reports = () => {
     setCurrentPage(1);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!employeesCompliance || !stats) {
       toast.error("Aguarde o carregamento dos dados");
       return;
     }
     
-    generateReportPDF(employeesCompliance, stats);
-    toast.success("PDF gerado com sucesso!");
+    toast.loading("Gerando PDF...", { id: "pdf-loading" });
+    try {
+      await generateReportPDF(employeesCompliance, stats);
+      toast.success("PDF gerado com sucesso!", { id: "pdf-loading" });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF", { id: "pdf-loading" });
+    }
   };
 
   // Calcular colaboradores 100% compliant

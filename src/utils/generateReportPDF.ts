@@ -17,7 +17,17 @@ interface ReportStats {
   completedTrainings: number;
 }
 
-export const generateReportPDF = (
+const loadImage = (src: string): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
+export const generateReportPDF = async (
   employees: EmployeeCompliance[],
   stats: ReportStats
 ) => {
@@ -28,24 +38,75 @@ export const generateReportPDF = (
   let yPosition = 20;
   const lineHeight = 7;
 
-  // Header
-  doc.setFontSize(18);
+  // Load images
+  let logoImg: HTMLImageElement | null = null;
+  let footerImg: HTMLImageElement | null = null;
+
+  try {
+    logoImg = await loadImage('/images/report-logo.png');
+  } catch (e) {
+    console.warn('Could not load logo image');
+  }
+
+  try {
+    footerImg = await loadImage('/images/report-footer.png');
+  } catch (e) {
+    console.warn('Could not load footer image');
+  }
+
+  const addHeader = () => {
+    if (logoImg) {
+      // Calculate proportional dimensions
+      const logoHeight = 20;
+      const logoWidth = (logoImg.width / logoImg.height) * logoHeight;
+      doc.addImage(logoImg, 'PNG', margin, 8, logoWidth, logoHeight);
+    }
+  };
+
+  const addFooter = (pageNum: number, totalPages: number) => {
+    if (footerImg) {
+      // Calculate proportional dimensions
+      const footerHeight = 18;
+      const footerWidth = (footerImg.width / footerImg.height) * footerHeight;
+      const footerX = (pageWidth - footerWidth) / 2;
+      doc.addImage(footerImg, 'PNG', footerX, pageHeight - footerHeight - 5, footerWidth, footerHeight);
+    }
+    
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128, 128, 128);
+    doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+  };
+
+  // Add header to first page
+  addHeader();
+  yPosition = 35;
+
+  // Title
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 102, 153);
   doc.text('RELATÓRIO DE COMPLIANCE', pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 10;
-
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += 15;
-
-  // Summary section
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.text('RESUMO GERAL', margin, yPosition);
+  doc.setTextColor(0, 0, 0);
   yPosition += 8;
 
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, yPosition, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  yPosition += 12;
+
+  // Summary section
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 102, 153);
+  doc.text('RESUMO GERAL', margin, yPosition);
+  doc.setTextColor(0, 0, 0);
+  yPosition += 7;
+
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
 
   const summaryData = [
@@ -58,19 +119,21 @@ export const generateReportPDF = (
 
   summaryData.forEach(line => {
     doc.text(line, margin, yPosition);
-    yPosition += lineHeight;
+    yPosition += 6;
   });
 
-  yPosition += 10;
+  yPosition += 8;
 
   // Table header
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 102, 153);
   doc.text('STATUS POR COLABORADOR', margin, yPosition);
-  yPosition += 10;
+  doc.setTextColor(0, 0, 0);
+  yPosition += 8;
 
   // Table column headers
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   
   const colWidths = {
@@ -82,40 +145,59 @@ export const generateReportPDF = (
   };
 
   const startX = margin;
+  
+  // Header background
+  doc.setFillColor(0, 102, 153);
+  doc.rect(margin - 2, yPosition - 4, pageWidth - (margin * 2) + 4, 6, 'F');
+  
+  doc.setTextColor(255, 255, 255);
   doc.text('Colaborador', startX, yPosition);
   doc.text('Reg. OK', startX + colWidths.name, yPosition);
   doc.text('Reg. Pend.', startX + colWidths.name + colWidths.docsOk, yPosition);
   doc.text('Trein. OK', startX + colWidths.name + colWidths.docsOk + colWidths.docsPend, yPosition);
   doc.text('Trein. Pend.', startX + colWidths.name + colWidths.docsOk + colWidths.docsPend + colWidths.trainOk, yPosition);
+  doc.setTextColor(0, 0, 0);
   
-  yPosition += 3;
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 5;
 
   // Table rows
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
 
+  const footerSpace = 30; // Space for footer
+
   employees.forEach((employee, index) => {
     // Check if we need a new page
-    if (yPosition > pageHeight - 20) {
+    if (yPosition > pageHeight - footerSpace) {
       doc.addPage();
-      yPosition = 20;
+      yPosition = 35;
       
-      // Repeat header on new page
-      doc.setFontSize(9);
+      // Add header to new page
+      addHeader();
+      
+      // Repeat table header on new page
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
+      
+      // Header background
+      doc.setFillColor(0, 102, 153);
+      doc.rect(margin - 2, yPosition - 4, pageWidth - (margin * 2) + 4, 6, 'F');
+      
+      doc.setTextColor(255, 255, 255);
       doc.text('Colaborador', startX, yPosition);
       doc.text('Reg. OK', startX + colWidths.name, yPosition);
       doc.text('Reg. Pend.', startX + colWidths.name + colWidths.docsOk, yPosition);
       doc.text('Trein. OK', startX + colWidths.name + colWidths.docsOk + colWidths.docsPend, yPosition);
       doc.text('Trein. Pend.', startX + colWidths.name + colWidths.docsOk + colWidths.docsPend + colWidths.trainOk, yPosition);
-      yPosition += 3;
-      doc.line(margin, yPosition, pageWidth - margin, yPosition);
+      doc.setTextColor(0, 0, 0);
       yPosition += 5;
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+    }
+
+    // Alternating row background
+    if (index % 2 === 0) {
+      doc.setFillColor(240, 248, 255); // Light blue shade
+      doc.rect(margin - 2, yPosition - 4, pageWidth - (margin * 2) + 4, 6, 'F');
     }
 
     // Truncate name if too long
@@ -123,22 +205,31 @@ export const generateReportPDF = (
       ? employee.name.substring(0, 37) + '...' 
       : employee.name;
 
+    doc.setTextColor(0, 0, 0);
     doc.text(truncatedName, startX, yPosition);
+    
+    // Color code the values
+    doc.setTextColor(34, 139, 34); // Green for completed
     doc.text(String(employee.docsAccepted), startX + colWidths.name + 5, yPosition);
+    
+    doc.setTextColor(employee.docsPending > 0 ? 205 : 100, employee.docsPending > 0 ? 92 : 100, employee.docsPending > 0 ? 92 : 100); // Red if pending
     doc.text(String(employee.docsPending), startX + colWidths.name + colWidths.docsOk + 10, yPosition);
+    
+    doc.setTextColor(34, 139, 34); // Green for completed
     doc.text(String(employee.trainingsCompleted), startX + colWidths.name + colWidths.docsOk + colWidths.docsPend + 5, yPosition);
+    
+    doc.setTextColor(employee.trainingsPending > 0 ? 205 : 100, employee.trainingsPending > 0 ? 92 : 100, employee.trainingsPending > 0 ? 92 : 100); // Red if pending
     doc.text(String(employee.trainingsPending), startX + colWidths.name + colWidths.docsOk + colWidths.docsPend + colWidths.trainOk + 10, yPosition);
     
+    doc.setTextColor(0, 0, 0);
     yPosition += lineHeight;
   });
 
-  // Footer with page numbers
+  // Add footer to all pages
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    addFooter(i, pageCount);
   }
 
   // Save the PDF
