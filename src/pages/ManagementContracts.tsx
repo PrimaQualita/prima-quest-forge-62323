@@ -285,52 +285,72 @@ const ManagementContracts = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedContract) return;
     
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Sanitizar o nome do arquivo removendo caracteres especiais problemáticos
-      const sanitizedFileName = file.name
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-        .replace(/[^\w\s.-]/g, '_') // Substitui caracteres especiais por _
-        .replace(/\s+/g, '_'); // Substitui espaços por _
-      
-      const filePath = `contracts/${selectedContract.id}/${selectedYear}/${selectedMonth}/${sanitizedFileName}`;
-      
-      // Upload do arquivo para o storage
-      const { error: uploadError } = await supabase.storage
-        .from('compliance-documents')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let successCount = 0;
+    let errorCount = 0;
 
-      if (uploadError) throw uploadError;
+    for (const file of Array.from(files)) {
+      try {
+        // Sanitizar o nome do arquivo removendo caracteres especiais problemáticos
+        const sanitizedFileName = file.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+          .replace(/[^\w\s.-]/g, '_') // Substitui caracteres especiais por _
+          .replace(/\s+/g, '_'); // Substitui espaços por _
+        
+        const filePath = `contracts/${selectedContract.id}/${selectedYear}/${selectedMonth}/${sanitizedFileName}`;
+        
+        // Upload do arquivo para o storage
+        const { error: uploadError } = await supabase.storage
+          .from('compliance-documents')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
 
-      // Salvar registro no banco
-      const { error } = await supabase
-        .from('contract_documents')
-        .insert({
-          contract_id: selectedContract.id,
-          file_name: file.name, // Nome original para exibição
-          file_path: filePath, // Path sanitizado para storage
-          year: selectedYear,
-          month: selectedMonth,
-          uploaded_by: user?.id,
-        });
+        if (uploadError) throw uploadError;
 
-      if (error) throw error;
+        // Salvar registro no banco
+        const { error } = await supabase
+          .from('contract_documents')
+          .insert({
+            contract_id: selectedContract.id,
+            file_name: file.name, // Nome original para exibição
+            file_path: filePath, // Path sanitizado para storage
+            year: selectedYear,
+            month: selectedMonth,
+            uploaded_by: user?.id,
+          });
 
-      queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
-      toast({ title: "Documento enviado com sucesso!" });
-    } catch (error: any) {
-      console.error('Erro no upload:', error);
+        if (error) throw error;
+        successCount++;
+      } catch (error: any) {
+        console.error('Erro no upload:', file.name, error);
+        errorCount++;
+      }
+    }
+
+    // Limpar o input para permitir reselecionar os mesmos arquivos
+    e.target.value = '';
+
+    queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
+    
+    if (successCount > 0 && errorCount === 0) {
+      toast({ title: `${successCount} documento(s) enviado(s) com sucesso!` });
+    } else if (successCount > 0 && errorCount > 0) {
+      toast({ 
+        title: `${successCount} enviado(s), ${errorCount} erro(s)`,
+        description: "Alguns documentos não puderam ser enviados.",
+        variant: "destructive"
+      });
+    } else {
       toast({
-        title: "Erro ao enviar documento",
-        description: error.message,
+        title: "Erro ao enviar documentos",
+        description: "Nenhum documento foi enviado com sucesso.",
         variant: "destructive",
       });
     }
@@ -886,6 +906,7 @@ const ManagementContracts = () => {
                               className="hidden"
                               onChange={handleFileUpload}
                               accept=".pdf,.doc,.docx"
+                              multiple
                             />
                           </label>
                         </Button>
@@ -929,7 +950,7 @@ const ManagementContracts = () => {
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="h-8 w-8 text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
                                   onClick={() => setDocumentToDelete(doc)}
                                   title="Excluir documento"
                                 >
