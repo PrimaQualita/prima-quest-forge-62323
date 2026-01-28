@@ -6,15 +6,51 @@ import { Progress } from "@/components/ui/progress";
 import { ComplianceCharts } from "@/components/dashboard/ComplianceCharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { generateReportPDF } from "@/utils/generateReportPDF";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+
 const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const { user } = useAuth();
+  const [userName, setUserName] = useState("Usuário");
+
+  // Fetch user name
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user?.id) return;
+      
+      // Try to get from employees first
+      const { data: employeeData } = await supabase
+        .from('employees')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (employeeData?.name) {
+        setUserName(employeeData.name);
+        return;
+      }
+      
+      // Try profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (profileData?.full_name) {
+        setUserName(profileData.full_name);
+      }
+    };
+    
+    fetchUserName();
+  }, [user?.id]);
 
   const { data: stats } = useQuery({
     queryKey: ['compliance-stats'],
@@ -248,8 +284,11 @@ const Reports = () => {
     
     toast.loading("Gerando PDF...", { id: "pdf-loading" });
     try {
-      await generateReportPDF(employeesCompliance, stats);
-      toast.success("PDF gerado com sucesso!", { id: "pdf-loading" });
+      const protocol = await generateReportPDF(employeesCompliance, stats, {
+        userName,
+        baseUrl: window.location.origin
+      });
+      toast.success(`PDF gerado! Protocolo: ${protocol}`, { id: "pdf-loading" });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       toast.error("Erro ao gerar PDF", { id: "pdf-loading" });
