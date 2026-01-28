@@ -21,6 +21,7 @@ import ChangePassword from "./pages/ChangePassword";
 import ManagementContracts from "./pages/ManagementContracts";
 import ProfilePage from "./pages/ProfilePage";
 import VerifyCertificate from "./pages/VerifyCertificate";
+import VerifyReport from "./pages/VerifyReport";
 import GamificationModule from "./pages/GamificationModule";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/verificar-certificado" element={<VerifyCertificate />} />
+          <Route path="/verify-report/:protocol" element={<VerifyReport />} />
           <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
           
           {/* Rotas acessíveis a todos os usuários autenticados */}
