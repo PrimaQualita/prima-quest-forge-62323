@@ -893,10 +893,18 @@ const ManagementContracts = () => {
                                   variant="ghost"
                                   className="h-8 w-8 text-primary hover:text-primary"
                                   onClick={async () => {
-                                    const { data } = await supabase.storage
+                                    const { data, error } = await supabase.storage
                                       .from('compliance-documents')
-                                      .getPublicUrl(doc.file_path);
-                                    window.open(data.publicUrl, '_blank');
+                                      .createSignedUrl(doc.file_path, 3600);
+                                    if (error) {
+                                      toast({
+                                        title: "Erro ao abrir documento",
+                                        description: "Não foi possível gerar a URL do documento.",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    window.open(data.signedUrl, '_blank');
                                   }}
                                   title="Visualizar documento"
                                 >
