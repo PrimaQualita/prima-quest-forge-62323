@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, PieChart, TrendingUp, Users } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, Users, Download, FileText, GraduationCap } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ComplianceCharts } from "@/components/dashboard/ComplianceCharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,7 +10,8 @@ import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
-
+import { generateReportPDF } from "@/utils/generateReportPDF";
+import { toast } from "sonner";
 const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -239,11 +240,40 @@ const Reports = () => {
     setCurrentPage(1);
   };
 
+  const handleExportPDF = () => {
+    if (!employeesCompliance || !stats) {
+      toast.error("Aguarde o carregamento dos dados");
+      return;
+    }
+    
+    generateReportPDF(employeesCompliance, stats);
+    toast.success("PDF gerado com sucesso!");
+  };
+
+  // Calcular colaboradores 100% compliant
+  const fullyCompliantEmployees = employeesCompliance?.filter(
+    e => e.docsPending === 0 && e.trainingsPending === 0
+  ).length || 0;
+
+  const docFullyCompliantEmployees = employeesCompliance?.filter(
+    e => e.docsPending === 0
+  ).length || 0;
+
+  const trainingFullyCompliantEmployees = employeesCompliance?.filter(
+    e => e.trainingsPending === 0
+  ).length || 0;
+
   return (
     <div className="space-y-6 pt-6">
-      <div>
-        <h1 className="text-4xl font-bold text-foreground uppercase">RELATÓRIOS DE COMPLIANCE</h1>
-        <p className="text-muted-foreground mt-1">Análise detalhada de indicadores de conformidade</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground uppercase">RELATÓRIOS DE COMPLIANCE</h1>
+          <p className="text-muted-foreground mt-1">Análise detalhada de indicadores de conformidade</p>
+        </div>
+        <Button onClick={handleExportPDF} className="gap-2">
+          <Download className="h-4 w-4" />
+          Exportar PDF
+        </Button>
       </div>
 
       <ComplianceCharts 
@@ -256,36 +286,44 @@ const Reports = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-primary" />
-              Taxa de Conformidade - Documentos
+              <FileText className="w-5 h-5 text-primary" />
+              Regulamentos
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center">
-              <p className="text-5xl font-bold text-primary">{String(documentComplianceRate).replace('.', ',')}%</p>
-              <p className="text-sm text-muted-foreground mt-2">Documentos aceitos com sucesso</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30">
+                <p className="text-3xl font-bold text-green-600">{docFullyCompliantEmployees}</p>
+                <p className="text-sm text-muted-foreground mt-1">Colaboradores com TODOS os regulamentos aceitos</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                <p className="text-3xl font-bold text-orange-600">{(stats?.totalEmployees || 0) - docFullyCompliantEmployees}</p>
+                <p className="text-sm text-muted-foreground mt-1">Colaboradores com regulamentos pendentes</p>
+              </div>
             </div>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Total de Colaboradores</span>
-                  <span className="font-medium">{stats?.totalEmployees || 0}</span>
-                </div>
-                <Progress value={100} className="h-2" />
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de Colaboradores</span>
+                <span className="font-semibold">{stats?.totalEmployees || 0}</span>
               </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Documentos Disponíveis</span>
-                  <span className="font-medium">{stats?.totalDocuments || 0}</span>
-                </div>
-                <Progress value={100} className="h-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Regulamentos Disponíveis</span>
+                <span className="font-semibold">{stats?.totalDocuments || 0}</span>
               </div>
-              <div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de Aceites Registrados</span>
+                <span className="font-semibold">{stats?.acknowledgedDocs || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Aceites Necessários (100%)</span>
+                <span className="font-semibold">{(stats?.totalEmployees || 0) * (stats?.totalDocuments || 0)}</span>
+              </div>
+              <div className="pt-2">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm">Aceites Completos</span>
-                  <span className="font-medium">{stats?.acknowledgedDocs || 0}</span>
+                  <span className="text-sm font-medium">Progresso Geral</span>
+                  <span className="text-sm font-bold text-primary">{String(documentComplianceRate).replace('.', ',')}%</span>
                 </div>
-                <Progress value={parseFloat(String(documentComplianceRate))} className="h-2" />
+                <Progress value={parseFloat(String(documentComplianceRate))} className="h-3" />
               </div>
             </div>
           </CardContent>
@@ -294,36 +332,44 @@ const Reports = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-secondary" />
-              Taxa de Conclusão - Treinamentos
+              <GraduationCap className="w-5 h-5 text-secondary" />
+              Treinamentos
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center">
-              <p className="text-5xl font-bold text-secondary">{String(trainingComplianceRate).replace('.', ',')}%</p>
-              <p className="text-sm text-muted-foreground mt-2">Treinamentos concluídos</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30">
+                <p className="text-3xl font-bold text-green-600">{trainingFullyCompliantEmployees}</p>
+                <p className="text-sm text-muted-foreground mt-1">Colaboradores com TODOS os treinamentos concluídos</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                <p className="text-3xl font-bold text-orange-600">{(stats?.totalEmployees || 0) - trainingFullyCompliantEmployees}</p>
+                <p className="text-sm text-muted-foreground mt-1">Colaboradores com treinamentos pendentes</p>
+              </div>
             </div>
-            <div className="space-y-3">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Total de Colaboradores</span>
-                  <span className="font-medium">{stats?.totalEmployees || 0}</span>
-                </div>
-                <Progress value={100} className="h-2" />
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de Colaboradores</span>
+                <span className="font-semibold">{stats?.totalEmployees || 0}</span>
               </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Treinamentos Disponíveis</span>
-                  <span className="font-medium">{stats?.totalTrainings || 0}</span>
-                </div>
-                <Progress value={100} className="h-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Treinamentos Disponíveis</span>
+                <span className="font-semibold">{stats?.totalTrainings || 0}</span>
               </div>
-              <div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Total de Conclusões Registradas</span>
+                <span className="font-semibold">{stats?.completedTrainings || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Conclusões Necessárias (100%)</span>
+                <span className="font-semibold">{(stats?.totalEmployees || 0) * (stats?.totalTrainings || 0)}</span>
+              </div>
+              <div className="pt-2">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm">Conclusões Registradas</span>
-                  <span className="font-medium">{stats?.completedTrainings || 0}</span>
+                  <span className="text-sm font-medium">Progresso Geral</span>
+                  <span className="text-sm font-bold text-secondary">{String(trainingComplianceRate).replace('.', ',')}%</span>
                 </div>
-                <Progress value={parseFloat(String(trainingComplianceRate))} className="h-2" />
+                <Progress value={parseFloat(String(trainingComplianceRate))} className="h-3" />
               </div>
             </div>
           </CardContent>
@@ -334,28 +380,35 @@ const Reports = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-accent" />
-            Indicadores Chave de Compliance
+            Resumo de Compliance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center p-4 rounded-lg bg-primary/5">
-              <p className="text-3xl font-bold text-primary">
-                {String(avgDocPerEmployee).replace('.', ',')}%
+            <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+              <p className="text-4xl font-bold text-green-600">{fullyCompliantEmployees}</p>
+              <p className="text-sm text-muted-foreground mt-2">Colaboradores 100% em Dia</p>
+              <p className="text-xs text-green-600 mt-1">
+                ({stats?.totalEmployees ? ((fullyCompliantEmployees / stats.totalEmployees) * 100).toFixed(1).replace('.', ',') : 0}% do total)
               </p>
-              <p className="text-sm text-muted-foreground mt-2">Média de Aceite por Colaborador</p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-secondary/5">
-              <p className="text-3xl font-bold text-secondary">
-                {String(avgTrainingPerEmployee).replace('.', ',')}%
+            <div className="text-center p-4 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-4xl font-bold text-primary">
+                {String(documentComplianceRate).replace('.', ',')}%
               </p>
-              <p className="text-sm text-muted-foreground mt-2">Média de Treinamento por Colaborador</p>
+              <p className="text-sm text-muted-foreground mt-2">Aceites de Regulamentos</p>
+              <p className="text-xs text-primary mt-1">
+                {stats?.acknowledgedDocs || 0} de {(stats?.totalEmployees || 0) * (stats?.totalDocuments || 0)}
+              </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-accent/5">
-              <p className="text-3xl font-bold text-accent">
-                {String(overallCompliance).replace('.', ',')}%
+            <div className="text-center p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+              <p className="text-4xl font-bold text-secondary">
+                {String(trainingComplianceRate).replace('.', ',')}%
               </p>
-              <p className="text-sm text-muted-foreground mt-2">Taxa Geral de Compliance</p>
+              <p className="text-sm text-muted-foreground mt-2">Conclusões de Treinamentos</p>
+              <p className="text-xs text-secondary mt-1">
+                {stats?.completedTrainings || 0} de {(stats?.totalEmployees || 0) * (stats?.totalTrainings || 0)}
+              </p>
             </div>
           </div>
         </CardContent>
