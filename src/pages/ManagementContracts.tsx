@@ -892,19 +892,16 @@ const ManagementContracts = () => {
                                   size="icon"
                                   variant="ghost"
                                   className="h-8 w-8 text-primary hover:text-primary"
-                                  onClick={async () => {
-                                    const { data, error } = await supabase.storage
+                                  onClick={() => {
+                                    // Encode each path segment properly
+                                    const encodedPath = doc.file_path
+                                      .split('/')
+                                      .map(segment => encodeURIComponent(segment))
+                                      .join('/');
+                                    const { data } = supabase.storage
                                       .from('compliance-documents')
-                                      .createSignedUrl(doc.file_path, 3600);
-                                    if (error) {
-                                      toast({
-                                        title: "Erro ao abrir documento",
-                                        description: "Não foi possível gerar a URL do documento.",
-                                        variant: "destructive"
-                                      });
-                                      return;
-                                    }
-                                    window.open(data.signedUrl, '_blank');
+                                      .getPublicUrl(encodedPath);
+                                    window.open(data.publicUrl, '_blank');
                                   }}
                                   title="Visualizar documento"
                                 >
