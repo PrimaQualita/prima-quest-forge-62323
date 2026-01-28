@@ -893,21 +893,36 @@ const ManagementContracts = () => {
                                   variant="ghost"
                                   className="h-8 w-8 text-primary hover:text-primary"
                                   onClick={async () => {
-                                    // Use the original file_path without any encoding - Supabase SDK handles it
-                                    const { data, error } = await supabase.storage
-                                      .from('compliance-documents')
-                                      .createSignedUrl(doc.file_path, 3600);
-                                    
-                                    if (error) {
-                                      console.error('Error creating signed URL:', error);
+                                    try {
+                                      // Download the file as blob to handle special characters in filenames
+                                      const { data, error } = await supabase.storage
+                                        .from('compliance-documents')
+                                        .download(doc.file_path);
+                                      
+                                      if (error) {
+                                        console.error('Error downloading document:', error);
+                                        toast({
+                                          title: "Erro ao abrir documento",
+                                          description: `Não foi possível baixar o documento: ${error.message}`,
+                                          variant: "destructive"
+                                        });
+                                        return;
+                                      }
+                                      
+                                      // Create a blob URL and open it in a new tab
+                                      const blobUrl = URL.createObjectURL(data);
+                                      window.open(blobUrl, '_blank');
+                                      
+                                      // Clean up the blob URL after a delay
+                                      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                                    } catch (err) {
+                                      console.error('Error opening document:', err);
                                       toast({
                                         title: "Erro ao abrir documento",
-                                        description: `Não foi possível gerar a URL do documento: ${error.message}`,
+                                        description: "Ocorreu um erro ao tentar abrir o documento.",
                                         variant: "destructive"
                                       });
-                                      return;
                                     }
-                                    window.open(data.signedUrl, '_blank');
                                   }}
                                   title="Visualizar documento"
                                 >
