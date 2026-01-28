@@ -291,14 +291,32 @@ const ManagementContracts = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Aqui você implementaria o upload para storage
-      // Por enquanto, apenas simulando o registro no banco
+      // Sanitizar o nome do arquivo removendo caracteres especiais problemáticos
+      const sanitizedFileName = file.name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^\w\s.-]/g, '_') // Substitui caracteres especiais por _
+        .replace(/\s+/g, '_'); // Substitui espaços por _
+      
+      const filePath = `contracts/${selectedContract.id}/${selectedYear}/${selectedMonth}/${sanitizedFileName}`;
+      
+      // Upload do arquivo para o storage
+      const { error: uploadError } = await supabase.storage
+        .from('compliance-documents')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Salvar registro no banco
       const { error } = await supabase
         .from('contract_documents')
         .insert({
           contract_id: selectedContract.id,
-          file_name: file.name,
-          file_path: `contracts/${selectedContract.id}/${selectedYear}/${selectedMonth}/${file.name}`,
+          file_name: file.name, // Nome original para exibição
+          file_path: filePath, // Path sanitizado para storage
           year: selectedYear,
           month: selectedMonth,
           uploaded_by: user?.id,
@@ -309,6 +327,7 @@ const ManagementContracts = () => {
       queryClient.invalidateQueries({ queryKey: ['contract_documents'] });
       toast({ title: "Documento enviado com sucesso!" });
     } catch (error: any) {
+      console.error('Erro no upload:', error);
       toast({
         title: "Erro ao enviar documento",
         description: error.message,
