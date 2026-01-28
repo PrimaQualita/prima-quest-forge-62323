@@ -96,38 +96,70 @@ export const carregarProgressoDoServidor = async (userId: string) => {
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
   try {
-    // Busca todos os colaboradores que têm user_id válido
-    const { data: employeesData, error: employeesError } = await supabase
-      .from('employees')
-      .select('user_id, name')
-      .not('user_id', 'is', null);
+    // Busca TODOS os colaboradores que têm user_id válido (sem limite de 1000)
+    let allEmployees: { user_id: string | null; name: string }[] = [];
+    let offset = 0;
+    const batchSize = 1000;
+    let hasMore = true;
 
-    if (employeesError) throw employeesError;
-    if (!employeesData || employeesData.length === 0) return [];
+    // Pagina através de todos os colaboradores
+    while (hasMore) {
+      const { data: employeesData, error: employeesError } = await supabase
+        .from('employees')
+        .select('user_id, name')
+        .not('user_id', 'is', null)
+        .range(offset, offset + batchSize - 1);
+
+      if (employeesError) throw employeesError;
+      
+      if (!employeesData || employeesData.length === 0) {
+        hasMore = false;
+      } else {
+        allEmployees = [...allEmployees, ...employeesData];
+        offset += batchSize;
+        if (employeesData.length < batchSize) {
+          hasMore = false;
+        }
+      }
+    }
+
+    if (allEmployees.length === 0) return [];
 
     // Filtra user_ids válidos e garante que são strings
-    const userIds = employeesData
+    const userIds = allEmployees
       .map(e => e.user_id)
       .filter((id): id is string => id !== null && id !== undefined);
     
     if (userIds.length === 0) return [];
 
-    // Busca progresso apenas dos usuários que existem
-    const { data: progressData, error: progressError } = await supabase
-      .from('gamification_progress')
-      .select('user_id, total_score')
-      .in('user_id', userIds);
+    // Busca progresso de TODOS os usuários (paginado também)
+    let allProgress: { user_id: string; total_score: number }[] = [];
+    
+    // Divide userIds em lotes de 500 para evitar limites de query
+    const userIdBatches = [];
+    for (let i = 0; i < userIds.length; i += 500) {
+      userIdBatches.push(userIds.slice(i, i + 500));
+    }
 
-    if (progressError) {
-      console.error('Erro ao buscar progresso:', progressError);
-      // Mesmo com erro no progresso, retorna colaboradores com score 0
+    for (const batch of userIdBatches) {
+      const { data: progressData, error: progressError } = await supabase
+        .from('gamification_progress')
+        .select('user_id, total_score')
+        .in('user_id', batch);
+
+      if (progressError) {
+        console.error('Erro ao buscar progresso:', progressError);
+        // Mesmo com erro no progresso, continua
+      } else if (progressData) {
+        allProgress = [...allProgress, ...progressData];
+      }
     }
 
     // Mapeia colaboradores com seu progresso (ou 0 se não tiver)
     // Ordena por totalScore decrescente (maior primeiro), depois por nome alfabético para desempate
-    const ranking: RankingPlayer[] = employeesData
+    const ranking: RankingPlayer[] = allEmployees
       .map(employee => {
-        const progress = progressData?.find(p => p.user_id === employee.user_id);
+        const progress = allProgress.find(p => p.user_id === employee.user_id);
         const totalScore = progress?.total_score || 0;
 
         return {

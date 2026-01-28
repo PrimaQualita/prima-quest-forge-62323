@@ -52,7 +52,7 @@ export const gamesInfo: GameInfo[] = [
   }
 ];
 
-// Medalhas disponíveis
+// Medalhas disponíveis - correspondem aos jogos atuais
 export const availableBadges: Badge[] = [
   {
     id: 'iniciante_etico',
@@ -62,17 +62,31 @@ export const availableBadges: Badge[] = [
     unlocked: false
   },
   {
+    id: 'heroi_integridade',
+    name: 'Herói da Integridade',
+    description: 'Excelente performance na Missão Integridade',
+    icon: '🎯',
+    unlocked: false
+  },
+  {
+    id: 'corredor_compliance',
+    name: 'Corredor Compliance',
+    description: 'Complete todas as fases da Corrida Compliance',
+    icon: '🏃',
+    unlocked: false
+  },
+  {
+    id: 'mestre_quiz',
+    name: 'Mestre do Quiz',
+    description: 'Acerte 100% das perguntas no Quiz da Ética',
+    icon: '❓',
+    unlocked: false
+  },
+  {
     id: 'guardiao_dados',
     name: 'Guardião de Dados',
     description: 'Excelente performance no Guardião dos Dados',
     icon: '🛡️',
-    unlocked: false
-  },
-  {
-    id: 'cacador_riscos',
-    name: 'Caçador de Riscos',
-    description: 'Encontre todos os riscos no jogo Caça aos Riscos',
-    icon: '🔍',
     unlocked: false
   },
   {
@@ -85,7 +99,7 @@ export const availableBadges: Badge[] = [
   {
     id: 'mestre_integridade',
     name: 'Mestre da Integridade',
-    description: 'Alta pontuação geral em todos os jogos',
+    description: 'Alcance 3000+ XP total em todos os jogos',
     icon: '👑',
     unlocked: false
   }
