@@ -6,9 +6,7 @@ import {
   Users, 
   FileText, 
   GraduationCap, 
-  MessageSquare,
   BarChart3,
-  FileCheck,
   Briefcase,
   LogOut,
   Gamepad2
@@ -63,7 +61,6 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
     { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
     { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
-    { icon: FileCheck, label: "Due Diligence", path: "/due-diligence", adminOnly: true },
   ];
 
   const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
