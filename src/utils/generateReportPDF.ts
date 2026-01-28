@@ -55,34 +55,49 @@ export const generateReportPDF = async (
   }
 
   const sideMargin = 4; // 4mm margin from edges
+  
+  // Calculate logo height dynamically
+  let logoHeight = 0;
+  if (logoImg) {
+    const logoWidth = pageWidth - (sideMargin * 2);
+    logoHeight = (logoImg.height / logoImg.width) * logoWidth;
+  }
+  
+  // Calculate footer height dynamically
+  let footerHeight = 0;
+  if (footerImg) {
+    const footerWidth = pageWidth - (sideMargin * 2);
+    footerHeight = (footerImg.height / footerImg.width) * footerWidth;
+  }
+
+  const contentStartY = sideMargin + logoHeight + 10; // Start after logo + 10mm spacing
+  const footerSpace = footerHeight + sideMargin + 10; // Footer height + margin + 10mm spacing
 
   const addHeader = () => {
     if (logoImg) {
-      // Full width minus 4mm on each side
       const logoWidth = pageWidth - (sideMargin * 2);
-      const logoHeight = (logoImg.height / logoImg.width) * logoWidth;
-      doc.addImage(logoImg, 'PNG', sideMargin, sideMargin, logoWidth, logoHeight);
+      const lHeight = (logoImg.height / logoImg.width) * logoWidth;
+      doc.addImage(logoImg, 'PNG', sideMargin, sideMargin, logoWidth, lHeight);
     }
   };
 
   const addFooter = (pageNum: number, totalPages: number) => {
     if (footerImg) {
-      // Full width minus 4mm on each side
       const footerWidth = pageWidth - (sideMargin * 2);
-      const footerHeight = (footerImg.height / footerImg.width) * footerWidth;
-      doc.addImage(footerImg, 'PNG', sideMargin, pageHeight - footerHeight - sideMargin, footerWidth, footerHeight);
+      const fHeight = (footerImg.height / footerImg.width) * footerWidth;
+      doc.addImage(footerImg, 'PNG', sideMargin, pageHeight - fHeight - sideMargin, footerWidth, fHeight);
     }
     
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(128, 128, 128);
-    doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, pageHeight - 3, { align: 'right' });
+    doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - margin, pageHeight - footerHeight - sideMargin - 2, { align: 'right' });
     doc.setTextColor(0, 0, 0);
   };
 
   // Add header to first page
   addHeader();
-  yPosition = 35;
+  yPosition = contentStartY;
 
   // Title
   doc.setFontSize(16);
@@ -165,13 +180,11 @@ export const generateReportPDF = async (
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
 
-  const footerSpace = 30; // Space for footer
-
   employees.forEach((employee, index) => {
     // Check if we need a new page
     if (yPosition > pageHeight - footerSpace) {
       doc.addPage();
-      yPosition = 35;
+      yPosition = contentStartY;
       
       // Add header to new page
       addHeader();
