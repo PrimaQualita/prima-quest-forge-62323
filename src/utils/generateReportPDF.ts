@@ -261,60 +261,68 @@ export const generateReportPDF = async (
     yPosition += lineHeight;
   });
 
-  // Add certification page at the end
-  doc.addPage();
-  addHeader();
-  
-  let certY = contentStartY + 20;
-  
-  // Certification title
-  doc.setFontSize(18);
+  // Calculate space needed for certification section
+  const certificationHeight = 100; // Approximate height needed for certification box
+  const availableSpace = pageHeight - footerSpace - yPosition;
+
+  // Only add new page if certification won't fit
+  if (availableSpace < certificationHeight) {
+    doc.addPage();
+    addHeader();
+    yPosition = contentStartY;
+  } else {
+    yPosition += 15; // Add some spacing before certification
+  }
+
+  // Certification section
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 102, 153);
-  doc.text('CERTIFICADO DE AUTENTICIDADE', pageWidth / 2, certY, { align: 'center' });
-  certY += 20;
+  doc.text('CERTIFICADO DE AUTENTICIDADE', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 10;
   
   // Certification box
+  const boxHeight = 70;
   doc.setDrawColor(0, 102, 153);
   doc.setLineWidth(0.5);
-  doc.roundedRect(margin, certY, pageWidth - (margin * 2), 80, 3, 3, 'S');
+  doc.roundedRect(margin, yPosition, pageWidth - (margin * 2), boxHeight, 3, 3, 'S');
   
-  certY += 15;
+  yPosition += 12;
   
-  doc.setFontSize(11);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  doc.text('Este relatório foi emitido eletronicamente e possui validade legal.', pageWidth / 2, certY, { align: 'center' });
-  certY += 15;
+  doc.text('Este relatório foi emitido eletronicamente e possui validade legal.', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 10;
   
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('Emitido por:', margin + 10, certY);
+  doc.text('Emitido por:', margin + 10, yPosition);
   doc.setFont('helvetica', 'normal');
-  doc.text(options.userName, margin + 45, certY);
-  certY += 10;
+  doc.text(options.userName, margin + 40, yPosition);
+  yPosition += 8;
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Data/Hora:', margin + 10, certY);
+  doc.text('Data/Hora:', margin + 10, yPosition);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, margin + 45, certY);
-  certY += 10;
+  doc.text(`${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, margin + 40, yPosition);
+  yPosition += 8;
   
   doc.setFont('helvetica', 'bold');
-  doc.text('Protocolo:', margin + 10, certY);
+  doc.text('Protocolo:', margin + 10, yPosition);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 102, 153);
-  doc.text(protocol, margin + 45, certY);
-  certY += 15;
+  doc.text(protocol, margin + 40, yPosition);
+  yPosition += 10;
   
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(100, 100, 100);
-  doc.text('Para verificar a autenticidade deste documento, acesse:', pageWidth / 2, certY, { align: 'center' });
-  certY += 7;
+  doc.text('Para verificar a autenticidade, acesse:', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 5;
   
   doc.setTextColor(0, 102, 153);
   doc.setFont('helvetica', 'bold');
-  doc.text(verificationUrl, pageWidth / 2, certY, { align: 'center' });
+  doc.text(verificationUrl, pageWidth / 2, yPosition, { align: 'center' });
   
   // Add footer to all pages including certification page
   const pageCount = doc.getNumberOfPages();
