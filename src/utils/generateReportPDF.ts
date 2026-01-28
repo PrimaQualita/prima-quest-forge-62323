@@ -17,6 +17,24 @@ interface ReportStats {
   completedTrainings: number;
 }
 
+interface ReportOptions {
+  userName: string;
+  baseUrl: string;
+}
+
+// Generate protocol in format XXXX-XXXX-XXXX-XXXX
+const generateProtocol = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const generateSegment = () => {
+    let segment = '';
+    for (let i = 0; i < 4; i++) {
+      segment += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return segment;
+  };
+  return `${generateSegment()}-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
+};
+
 const loadImage = (src: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -29,8 +47,12 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
 
 export const generateReportPDF = async (
   employees: EmployeeCompliance[],
-  stats: ReportStats
+  stats: ReportStats,
+  options: ReportOptions
 ) => {
+  const protocol = generateProtocol();
+  const verificationUrl = `${options.baseUrl}/verify-report/${protocol}`;
+  
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -239,7 +261,62 @@ export const generateReportPDF = async (
     yPosition += lineHeight;
   });
 
-  // Add footer to all pages
+  // Add certification page at the end
+  doc.addPage();
+  addHeader();
+  
+  let certY = contentStartY + 20;
+  
+  // Certification title
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 102, 153);
+  doc.text('CERTIFICADO DE AUTENTICIDADE', pageWidth / 2, certY, { align: 'center' });
+  certY += 20;
+  
+  // Certification box
+  doc.setDrawColor(0, 102, 153);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, certY, pageWidth - (margin * 2), 80, 3, 3, 'S');
+  
+  certY += 15;
+  
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  doc.text('Este relatório foi emitido eletronicamente e possui validade legal.', pageWidth / 2, certY, { align: 'center' });
+  certY += 15;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('Emitido por:', margin + 10, certY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(options.userName, margin + 45, certY);
+  certY += 10;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.text('Data/Hora:', margin + 10, certY);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, margin + 45, certY);
+  certY += 10;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.text('Protocolo:', margin + 10, certY);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 102, 153);
+  doc.text(protocol, margin + 45, certY);
+  certY += 15;
+  
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  doc.text('Para verificar a autenticidade deste documento, acesse:', pageWidth / 2, certY, { align: 'center' });
+  certY += 7;
+  
+  doc.setTextColor(0, 102, 153);
+  doc.setFont('helvetica', 'bold');
+  doc.text(verificationUrl, pageWidth / 2, certY, { align: 'center' });
+  
+  // Add footer to all pages including certification page
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -247,6 +324,8 @@ export const generateReportPDF = async (
   }
 
   // Save the PDF
-  const fileName = `relatorio-compliance-${new Date().toISOString().split('T')[0]}.pdf`;
+  const fileName = `relatorio-compliance-${protocol}.pdf`;
   doc.save(fileName);
+  
+  return protocol;
 };
