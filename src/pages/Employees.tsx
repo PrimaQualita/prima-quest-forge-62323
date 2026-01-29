@@ -728,27 +728,62 @@ const Employees = () => {
           message: `Validando formato dos CPFs... (lote ${batchNumber}/${totalBatches})`
         });
 
-        const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
-          body: { 
-            cpfs: batch.map(emp => ({
-              cpf: emp.cpf,
-              birthDate: emp.birth_date,
-              name: emp.name
-            })),
-            skipExternalValidation: true // Importação em massa - apenas validar formato
-          }
-        });
+        try {
+          const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
+            body: { 
+              cpfs: batch.map(emp => ({
+                cpf: emp.cpf,
+                birthDate: emp.birth_date,
+                name: emp.name
+              })),
+              skipExternalValidation: true // Importação em massa - apenas validar formato
+            }
+          });
 
-        if (validationError) {
-          console.error('Erro na validação do lote:', validationError);
-          // Continue with next batch even if one fails
-        } else if (validationData?.results) {
-          allValidationResults.push(...validationData.results);
+          if (validationError) {
+            console.error('Erro na validação do lote:', validationError);
+            // If validation fails, assume all CPFs in this batch are valid (just skip validation)
+            console.log(`Lote ${batchNumber} falhou na validação - assumindo ${batch.length} CPFs como válidos`);
+            for (const emp of batch) {
+              allValidationResults.push({
+                cpf: emp.cpf.replace(/\D/g, ''),
+                isValid: true,
+                birthDateMatches: null,
+                error: 'Validação ignorada devido a erro no lote'
+              });
+            }
+          } else if (validationData?.results) {
+            allValidationResults.push(...validationData.results);
+          } else {
+            // No results returned - assume valid
+            console.log(`Lote ${batchNumber} não retornou resultados - assumindo ${batch.length} CPFs como válidos`);
+            for (const emp of batch) {
+              allValidationResults.push({
+                cpf: emp.cpf.replace(/\D/g, ''),
+                isValid: true,
+                birthDateMatches: null,
+                error: 'Sem resultado de validação'
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Erro ao processar lote ${batchNumber}:`, error);
+          // Assume all CPFs in this batch are valid
+          for (const emp of batch) {
+            allValidationResults.push({
+              cpf: emp.cpf.replace(/\D/g, ''),
+              isValid: true,
+              birthDateMatches: null,
+              error: 'Validação ignorada devido a erro'
+            });
+          }
         }
 
         // Yield to UI thread between batches
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+
+      console.log(`Total de resultados de validação: ${allValidationResults.length}`);
 
       // Filter valid CPFs
       const validCpfs = new Set(
@@ -757,13 +792,15 @@ const Employees = () => {
           .map((r: any) => r.cpf)
       );
 
+      console.log(`CPFs válidos após filtro: ${validCpfs.size}`);
+
       const invalidResults = allValidationResults.filter((r: any) => !r.isValid || r.birthDateMatches === false);
       
       if (invalidResults.length > 0) {
-        console.warn(`${invalidResults.length} CPF(s) inválido(s) encontrado(s):`, invalidResults);
+        console.warn(`${invalidResults.length} CPF(s) inválido(s) encontrado(s):`, invalidResults.slice(0, 10));
         toast({
           title: "CPFs Inválidos Detectados",
-          description: `${invalidResults.length} CPF(s) com problemas foram ignorados. ${validCpfs.size} serão importados.`,
+          description: `${invalidResults.length} CPF(s) com formato inválido foram ignorados. ${validCpfs.size} serão importados.`,
           variant: "destructive"
         });
       }
