@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { analyzeCsvDuplicates } from "@/utils/analyzeDuplicates";
-import { fixCsvEncoding } from "@/utils/fixCsvEncoding";
+import { decodeCSVFile } from "@/utils/fixCsvEncoding";
 
 interface ImportProgress {
   step: 'idle' | 'validating' | 'importing' | 'creating-users' | 'done';
@@ -481,11 +481,10 @@ const Employees = () => {
     setPendingCsvText('');
     setIsAnalysisDialogOpen(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      console.log('File read complete');
-      try {
-        let text = event.target?.result as string;
+    // Use proper encoding detection and decoding
+    decodeCSVFile(file)
+      .then((text) => {
+        console.log('File decoded successfully');
         
         if (!text || text.trim().length === 0) {
           toast({ 
@@ -497,10 +496,6 @@ const Employees = () => {
           return;
         }
         
-        // Fix encoding issues - replace common problematic characters
-        // This handles cases where the file was saved with different encodings
-        text = fixCsvEncoding(text);
-        
         console.log('Analyzing CSV, length:', text.length);
         
         // Analyze the CSV for duplicates
@@ -509,27 +504,16 @@ const Employees = () => {
         
         setCsvAnalysis(analysis);
         setPendingCsvText(text);
-      } catch (error: any) {
-        console.error('Error analyzing CSV:', error);
+      })
+      .catch((error: any) => {
+        console.error('Error reading/analyzing CSV:', error);
         setIsAnalysisDialogOpen(false);
         toast({ 
           title: "Erro ao analisar planilha", 
           description: error.message || "Erro desconhecido ao processar a planilha",
           variant: "destructive" 
         });
-      }
-    };
-    reader.onerror = (error) => {
-      console.error('File read error:', error);
-      setIsAnalysisDialogOpen(false);
-      toast({ 
-        title: "Erro ao ler arquivo", 
-        description: "Não foi possível ler o arquivo CSV.",
-        variant: "destructive" 
       });
-    };
-    // Try reading with UTF-8 first (most common modern encoding)
-    reader.readAsText(file, 'UTF-8');
   };
 
   const validateAllExistingEmployees = async () => {
