@@ -467,6 +467,9 @@ const Employees = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset the input so the same file can be selected again
+    e.target.value = '';
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -480,12 +483,20 @@ const Employees = () => {
         // Show analysis dialog
         setIsAnalysisDialogOpen(true);
       } catch (error: any) {
+        console.error('Error analyzing CSV:', error);
         toast({ 
           title: "Erro ao analisar planilha", 
           description: error.message,
           variant: "destructive" 
         });
       }
+    };
+    reader.onerror = () => {
+      toast({ 
+        title: "Erro ao ler arquivo", 
+        description: "Não foi possível ler o arquivo CSV.",
+        variant: "destructive" 
+      });
     };
     reader.readAsText(file);
   };
