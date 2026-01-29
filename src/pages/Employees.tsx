@@ -454,8 +454,11 @@ const Employees = () => {
 
   const handleDownloadTemplate = () => {
     const headers = ['Nome', 'CPF', 'Data de Nascimento (AAAA-MM-DD)', 'Telefone', 'E-mail', 'Departamento', 'Cargo/Função', 'ID do Contrato de Gestão'];
-    const csv = headers.join(';') + '\n';
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const exampleRow = ['EXEMPLO COLABORADOR', '12345678901', '1990-01-15', '21999999999', 'exemplo@email.com', 'RECURSOS HUMANOS', 'ANALISTA DE FARMÁCIA III', 'PRIMA QUALITA SAÚDE - EXEMPLO'];
+    const csv = headers.join(';') + '\n' + exampleRow.join(';') + '\n';
+    // Add UTF-8 BOM for Excel to recognize the encoding correctly
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
