@@ -160,6 +160,21 @@ export const AnnualContractComparisonChart = ({ contracts, year }: AnnualContrac
                   radius={[6, 6, 0, 0]}
                   filter="url(#shadow-annual)"
                   maxBarSize={80}
+                  label={({ x, y, width, value }) => {
+                    const percentage = totalDocuments > 0 ? ((value / totalDocuments) * 100).toFixed(1) : '0';
+                    return (
+                      <text
+                        x={x + width / 2}
+                        y={y - 8}
+                        fill="#374151"
+                        textAnchor="middle"
+                        fontSize={11}
+                        fontWeight={500}
+                      >
+                        {percentage}%
+                      </text>
+                    );
+                  }}
                 >
                   {annualData?.map((entry, index) => {
                     const colors = getBarColor(entry.count, entry.average);
