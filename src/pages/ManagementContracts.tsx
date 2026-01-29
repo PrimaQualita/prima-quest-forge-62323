@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ContractCandlestickChart } from "@/components/contracts/ContractCandlestickChart";
+import { AnnualContractComparisonChart } from "@/components/contracts/AnnualContractComparisonChart";
 
 const ManagementContracts = () => {
   const { toast } = useToast();
@@ -983,7 +984,15 @@ const ManagementContracts = () => {
         </Tabs>
       </div>
 
-      {/* Seção de Gráficos - Todos os Contratos */}
+      {/* Gráfico Comparativo Anual - Largura Total */}
+      {contracts && contracts.length > 0 && (
+        <AnnualContractComparisonChart 
+          contracts={contracts}
+          year={selectedYear}
+        />
+      )}
+
+      {/* Seção de Gráficos Mensais - Todos os Contratos */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {contracts?.map((contract) => (
             <ContractCandlestickChart 
