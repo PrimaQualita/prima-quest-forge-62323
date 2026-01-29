@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ export const useAuth = () => {
   const previousUserIdRef = useRef<string | null>(null);
 
   // Function to clear all cached data when user changes
-  const clearUserCache = () => {
+  const clearUserCache = useCallback(() => {
     // Clear React Query cache
     queryClient.clear();
     // Clear localStorage items related to user session
@@ -21,13 +21,38 @@ export const useAuth = () => {
     localStorage.removeItem('gamification-storage');
     // Reset admin state
     setIsAdmin(false);
-  };
+  }, [queryClient]);
+
+  const checkAdminStatus = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking admin status:", error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error("Error in checkAdminStatus:", error);
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
       const newUserId = session?.user?.id ?? null;
       const previousUserId = previousUserIdRef.current;
 
@@ -40,61 +65,50 @@ export const useAuth = () => {
       // Update previous user ID reference
       previousUserIdRef.current = newUserId;
 
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      // Check if user is admin after state is set
+      // If user is logging in, check admin status BEFORE updating state
       if (session?.user) {
-        setTimeout(() => {
-          checkAdminStatus(session.user.id);
-        }, 0);
+        const adminStatus = await checkAdminStatus(session.user.id);
+        if (!mounted) return;
+        
+        setIsAdmin(adminStatus);
+        localStorage.setItem('isAdmin', String(adminStatus));
       } else {
         setIsAdmin(false);
         localStorage.removeItem('isAdmin');
       }
+
+      setSession(session);
+      setUser(session?.user ?? null);
     });
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+
       previousUserIdRef.current = session?.user?.id ?? null;
-      setSession(session);
-      setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminStatus(session.user.id);
+        // Check admin status before setting loading to false
+        const adminStatus = await checkAdminStatus(session.user.id);
+        if (!mounted) return;
+        
+        setIsAdmin(adminStatus);
+        localStorage.setItem('isAdmin', String(adminStatus));
       }
+
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
-  }, [queryClient]);
+    initializeAuth();
 
-  const checkAdminStatus = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error checking admin status:", error);
-        setIsAdmin(false);
-        localStorage.setItem('isAdmin', 'false');
-        return;
-      }
-
-      const adminStatus = !!data;
-      setIsAdmin(adminStatus);
-      // Salva no cache para próximas visitas
-      localStorage.setItem('isAdmin', String(adminStatus));
-    } catch (error) {
-      console.error("Error in checkAdminStatus:", error);
-      setIsAdmin(false);
-      localStorage.setItem('isAdmin', 'false');
-    }
-  };
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [queryClient, clearUserCache, checkAdminStatus]);
 
   const signOut = async () => {
     // Clear all cached data before signing out
