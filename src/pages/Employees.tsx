@@ -793,14 +793,58 @@ const Employees = () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Get existing employees with ALL their data to preserve everything
-      const { data: existingEmployees } = await supabase
-        .from('employees')
-        .select('id, cpf, name, birth_date, phone, email, department, job_title, management_contract_id, is_manager, user_id, is_active')
-        .eq('is_active', true); // Only get currently active employees
+      // IMPORTANT: Supabase has a default limit of 1000 rows, so we need to fetch ALL with pagination
+      setImportProgress(prev => ({
+        ...prev,
+        message: 'Buscando colaboradores existentes no banco de dados...'
+      }));
+      
+      const existingEmployees: Array<{
+        id: string;
+        cpf: string;
+        name: string;
+        birth_date: string;
+        phone: string | null;
+        email: string | null;
+        department: string | null;
+        job_title: string | null;
+        management_contract_id: string | null;
+        is_manager: boolean | null;
+        user_id: string | null;
+        is_active: boolean;
+      }> = [];
+      
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data: pageData, error: pageError } = await supabase
+          .from('employees')
+          .select('id, cpf, name, birth_date, phone, email, department, job_title, management_contract_id, is_manager, user_id, is_active')
+          .eq('is_active', true)
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        
+        if (pageError) {
+          console.error('Error fetching employees page:', pageError);
+          break;
+        }
+        
+        if (pageData && pageData.length > 0) {
+          existingEmployees.push(...pageData);
+          console.log(`Fetched page ${page + 1}: ${pageData.length} employees (total: ${existingEmployees.length})`);
+          page++;
+          hasMore = pageData.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      console.log(`Total existing active employees fetched: ${existingEmployees.length}`);
 
       // Create a map of existing employees with all their data
       const existingMap = new Map(
-        existingEmployees?.map(emp => [emp.cpf, emp]) || []
+        existingEmployees.map(emp => [emp.cpf, emp])
       );
 
       // Create a set of CPFs in the new import
