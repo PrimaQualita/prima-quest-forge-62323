@@ -15,7 +15,16 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { analyzeCsvDuplicates } from "@/utils/analyzeDuplicates";
+
+interface ImportProgress {
+  step: 'idle' | 'validating' | 'importing' | 'creating-users' | 'done';
+  current: number;
+  total: number;
+  percent: number;
+  message: string;
+}
 
 const Employees = () => {
   const { toast } = useToast();
@@ -41,6 +50,13 @@ const Employees = () => {
   const [resettingPasswordFor, setResettingPasswordFor] = useState<string | null>(null);
   const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [employeeToResetPassword, setEmployeeToResetPassword] = useState<{ cpf: string; name: string } | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress>({
+    step: 'idle',
+    current: 0,
+    total: 0,
+    percent: 0,
+    message: ''
+  });
   const [newEmployee, setNewEmployee] = useState({
     name: "",
     cpf: "",
@@ -576,6 +592,8 @@ const Employees = () => {
   };
 
   const handleConfirmImport = async () => {
+    const CPF_BATCH_SIZE = 10; // Process 10 CPFs at a time for validation
+    
     try {
       const text = pendingCsvText;
       const rows = text.split('\n').slice(1); // Skip header
@@ -635,35 +653,63 @@ const Employees = () => {
         throw new Error('Nenhum registro válido encontrado na planilha');
       }
 
-      // Validar CPFs junto à Receita Federal antes de importar
-      toast({
-        title: "Validando CPFs...",
-        description: `Verificando ${employeesData.length} CPF(s) junto à Receita Federal. Isso pode levar alguns minutos...`
+      // ========== STEP 1: Validate CPFs in batches with progress ==========
+      setImportProgress({
+        step: 'validating',
+        current: 0,
+        total: employeesData.length,
+        percent: 0,
+        message: `Preparando validação de ${employeesData.length} CPF(s)...`
       });
 
-      const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
-        body: { 
-          cpfs: employeesData.map(emp => ({
-            cpf: emp.cpf,
-            birthDate: emp.birth_date,
-            name: emp.name
-          }))
+      // Yield to UI
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const allValidationResults: any[] = [];
+      const totalBatches = Math.ceil(employeesData.length / CPF_BATCH_SIZE);
+
+      for (let i = 0; i < employeesData.length; i += CPF_BATCH_SIZE) {
+        const batch = employeesData.slice(i, i + CPF_BATCH_SIZE);
+        const batchNumber = Math.floor(i / CPF_BATCH_SIZE) + 1;
+        const processedCount = Math.min(i + CPF_BATCH_SIZE, employeesData.length);
+        
+        setImportProgress({
+          step: 'validating',
+          current: processedCount,
+          total: employeesData.length,
+          percent: Math.round((processedCount / employeesData.length) * 100),
+          message: `Verificando CPFs na Receita Federal... (lote ${batchNumber}/${totalBatches})`
+        });
+
+        const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
+          body: { 
+            cpfs: batch.map(emp => ({
+              cpf: emp.cpf,
+              birthDate: emp.birth_date,
+              name: emp.name
+            }))
+          }
+        });
+
+        if (validationError) {
+          console.error('Erro na validação do lote:', validationError);
+          // Continue with next batch even if one fails
+        } else if (validationData?.results) {
+          allValidationResults.push(...validationData.results);
         }
-      });
 
-      if (validationError) {
-        console.error('Erro na validação:', validationError);
-        throw new Error('Erro ao validar CPFs. Tente novamente.');
+        // Yield to UI thread between batches
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      // Filtrar apenas colaboradores com CPF válido E data de nascimento coincidente
+      // Filter valid CPFs
       const validCpfs = new Set(
-        validationData.results
+        allValidationResults
           .filter((r: any) => r.isValid && r.birthDateMatches !== false)
           .map((r: any) => r.cpf)
       );
 
-      const invalidResults = validationData.results.filter((r: any) => !r.isValid || r.birthDateMatches === false);
+      const invalidResults = allValidationResults.filter((r: any) => !r.isValid || r.birthDateMatches === false);
       
       if (invalidResults.length > 0) {
         console.warn(`${invalidResults.length} CPF(s) inválido(s) encontrado(s):`, invalidResults);
@@ -680,6 +726,17 @@ const Employees = () => {
         throw new Error('Nenhum colaborador com CPF válido para importar');
       }
 
+      // ========== STEP 2: Import employees to database ==========
+      setImportProgress({
+        step: 'importing',
+        current: 0,
+        total: validEmployeesData.length,
+        percent: 0,
+        message: 'Importando colaboradores para o banco de dados...'
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
       // Get existing employees with ALL their data to preserve everything
       const { data: existingEmployees } = await supabase
         .from('employees')
@@ -695,7 +752,6 @@ const Employees = () => {
       const newEmployees: typeof validEmployeesData = [];
       const employeesToUpdate: Array<{ id: string; updates: Record<string, any> }> = [];
       let skippedCount = 0;
-      let updatedFieldsCount = 0;
 
       for (const emp of validEmployeesData) {
         const existing = existingMap.get(emp.cpf);
@@ -708,32 +764,16 @@ const Employees = () => {
           } as any);
         } else {
           // Existing employee - always update these fields from CSV (if CSV has values)
-          // This preserves the employee record and all their activity history
-          // (document acknowledgments, training progress, etc. are linked by employee ID)
           const updates: Record<string, any> = {};
           
-          // Always update these fields if the CSV has values
-          // (overwrite existing data to keep it synced with the source spreadsheet)
-          if (emp.phone) {
-            updates.phone = emp.phone;
-          }
-          if (emp.email) {
-            updates.email = emp.email;
-          }
-          if (emp.department) {
-            updates.department = emp.department;
-          }
-          if (emp.job_title) {
-            updates.job_title = emp.job_title;
-          }
-          if (emp.management_contract_id) {
-            updates.management_contract_id = emp.management_contract_id;
-          }
+          if (emp.phone) updates.phone = emp.phone;
+          if (emp.email) updates.email = emp.email;
+          if (emp.department) updates.department = emp.department;
+          if (emp.job_title) updates.job_title = emp.job_title;
+          if (emp.management_contract_id) updates.management_contract_id = emp.management_contract_id;
           
-          // Only add to update list if there are fields to update
           if (Object.keys(updates).length > 0) {
             employeesToUpdate.push({ id: existing.id, updates });
-            updatedFieldsCount += Object.keys(updates).length;
           } else {
             skippedCount++;
           }
@@ -743,6 +783,11 @@ const Employees = () => {
       // Insert new employees
       let insertedEmployees: any[] = [];
       if (newEmployees.length > 0) {
+        setImportProgress(prev => ({
+          ...prev,
+          message: `Inserindo ${newEmployees.length} novo(s) colaborador(es)...`
+        }));
+
         const { data: inserted, error: insertError } = await supabase
           .from('employees')
           .insert(newEmployees)
@@ -752,38 +797,78 @@ const Employees = () => {
         insertedEmployees = inserted || [];
       }
 
-      // Update existing employees with missing fields only
-      for (const { id, updates } of employeesToUpdate) {
-        const { error: updateError } = await supabase
-          .from('employees')
-          .update(updates)
-          .eq('id', id);
+      // Update existing employees
+      if (employeesToUpdate.length > 0) {
+        setImportProgress(prev => ({
+          ...prev,
+          message: `Atualizando ${employeesToUpdate.length} colaborador(es) existente(s)...`
+        }));
 
-        if (updateError) {
-          console.error(`Error updating employee ${id}:`, updateError);
+        for (const { id, updates } of employeesToUpdate) {
+          const { error: updateError } = await supabase
+            .from('employees')
+            .update(updates)
+            .eq('id', id);
+
+          if (updateError) {
+            console.error(`Error updating employee ${id}:`, updateError);
+          }
         }
       }
 
-      // Create user accounts only for NEW employees
+      // ========== STEP 3: Create user accounts for new employees ==========
       let userCreationErrors = 0;
       let usersCreated = 0;
-      for (const employee of insertedEmployees) {
-        try {
-          const { error: userError } = await supabase.functions.invoke('create-employee-user', {
-            body: { employees: [employee] }
-          });
+
+      if (insertedEmployees.length > 0) {
+        setImportProgress({
+          step: 'creating-users',
+          current: 0,
+          total: insertedEmployees.length,
+          percent: 0,
+          message: 'Criando contas de usuário...'
+        });
+
+        for (let i = 0; i < insertedEmployees.length; i++) {
+          const employee = insertedEmployees[i];
           
-          if (userError) {
-            console.error(`Error creating user for ${employee.name}:`, userError);
+          setImportProgress({
+            step: 'creating-users',
+            current: i + 1,
+            total: insertedEmployees.length,
+            percent: Math.round(((i + 1) / insertedEmployees.length) * 100),
+            message: `Criando usuário ${i + 1}/${insertedEmployees.length}...`
+          });
+
+          try {
+            const { error: userError } = await supabase.functions.invoke('create-employee-user', {
+              body: { employees: [employee] }
+            });
+            
+            if (userError) {
+              console.error(`Error creating user for ${employee.name}:`, userError);
+              userCreationErrors++;
+            } else {
+              usersCreated++;
+            }
+          } catch (err) {
+            console.error(`Failed to create user for ${employee.name}:`, err);
             userCreationErrors++;
-          } else {
-            usersCreated++;
           }
-        } catch (err) {
-          console.error(`Failed to create user for ${employee.name}:`, err);
-          userCreationErrors++;
+
+          // Yield to UI
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
+
+      // ========== DONE ==========
+      setImportProgress({
+        step: 'done',
+        current: validEmployeesData.length,
+        total: validEmployeesData.length,
+        percent: 100,
+        message: 'Importação concluída!'
+      });
 
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       
@@ -793,10 +878,10 @@ const Employees = () => {
         messages.push(`${newEmployees.length} novo(s) colaborador(es) criado(s)`);
       }
       if (employeesToUpdate.length > 0) {
-        messages.push(`${employeesToUpdate.length} colaborador(es) atualizado(s) com dados faltantes`);
+        messages.push(`${employeesToUpdate.length} colaborador(es) atualizado(s)`);
       }
       if (skippedCount > 0) {
-        messages.push(`${skippedCount} colaborador(es) já existentes sem alterações`);
+        messages.push(`${skippedCount} já existente(s) sem alterações`);
       }
       if (usersCreated > 0) {
         messages.push(`${usersCreated} usuário(s) criado(s)`);
@@ -808,10 +893,15 @@ const Employees = () => {
         variant: userCreationErrors > 0 ? "destructive" : "default"
       });
       
+      // Wait a bit before closing dialog so user sees success
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       setIsAnalysisDialogOpen(false);
       setCsvAnalysis(null);
       setPendingCsvText("");
+      setImportProgress({ step: 'idle', current: 0, total: 0, percent: 0, message: '' });
     } catch (error: any) {
+      setImportProgress({ step: 'idle', current: 0, total: 0, percent: 0, message: '' });
       toast({ 
         title: "Erro ao importar planilha", 
         description: error.message,
@@ -1077,6 +1167,37 @@ const Employees = () => {
                 </div>
               )}
 
+              {/* Progress Bar during import */}
+              {importProgress.step !== 'idle' && (
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      {importProgress.step === 'validating' && '🔍 Validando CPFs...'}
+                      {importProgress.step === 'importing' && '📥 Importando dados...'}
+                      {importProgress.step === 'creating-users' && '👤 Criando usuários...'}
+                      {importProgress.step === 'done' && '✅ Concluído!'}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {importProgress.percent}%
+                    </span>
+                  </div>
+                  <Progress value={importProgress.percent} className="h-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {importProgress.message}
+                  </p>
+                  {importProgress.step === 'validating' && (
+                    <p className="text-xs text-muted-foreground">
+                      Processado: {importProgress.current} de {importProgress.total} CPF(s)
+                    </p>
+                  )}
+                  {importProgress.step === 'creating-users' && (
+                    <p className="text-xs text-muted-foreground">
+                      Usuário: {importProgress.current} de {importProgress.total}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2 pt-4">
                 <Button
                   variant="outline"
@@ -1084,19 +1205,24 @@ const Employees = () => {
                     setIsAnalysisDialogOpen(false);
                     setCsvAnalysis(null);
                     setPendingCsvText("");
+                    setImportProgress({ step: 'idle', current: 0, total: 0, percent: 0, message: '' });
                   }}
                   className="flex-1"
+                  disabled={importProgress.step !== 'idle' && importProgress.step !== 'done'}
                 >
-                  Cancelar
+                  {importProgress.step !== 'idle' && importProgress.step !== 'done' ? 'Processando...' : 'Cancelar'}
                 </Button>
                 <Button
                   onClick={handleConfirmImport}
                   className="flex-1"
+                  disabled={importProgress.step !== 'idle'}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {csvAnalysis.duplicates.length > 0 
-                    ? `Importar ${csvAnalysis.uniqueCpfs} CPFs Únicos` 
-                    : 'Confirmar Importação'}
+                  {importProgress.step !== 'idle' 
+                    ? 'Importando...'
+                    : csvAnalysis.duplicates.length > 0 
+                      ? `Importar ${csvAnalysis.uniqueCpfs} CPFs Únicos` 
+                      : 'Confirmar Importação'}
                 </Button>
               </div>
             </div>
