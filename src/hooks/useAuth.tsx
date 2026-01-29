@@ -11,15 +11,13 @@ export const useAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   // Track previous user ID to detect user changes
   const previousUserIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
 
   // Function to clear all cached data when user changes
   const clearUserCache = useCallback(() => {
-    // Clear React Query cache
     queryClient.clear();
-    // Clear localStorage items related to user session
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('gamification-storage');
-    // Reset admin state
     setIsAdmin(false);
   }, [queryClient]);
 
@@ -44,59 +42,64 @@ export const useAuth = () => {
     }
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
+  // Separate function to handle auth state changes asynchronously
+  const handleAuthChange = useCallback(async (newSession: Session | null) => {
+    if (!mountedRef.current) return;
 
-    // Set up auth state listener FIRST
+    const newUserId = newSession?.user?.id ?? null;
+    const previousUserId = previousUserIdRef.current;
+
+    // Detect user change
+    if (previousUserId !== null && previousUserId !== newUserId) {
+      console.log('[Auth] User changed, clearing cache');
+      clearUserCache();
+    }
+
+    previousUserIdRef.current = newUserId;
+
+    if (newSession?.user) {
+      const adminStatus = await checkAdminStatus(newSession.user.id);
+      if (!mountedRef.current) return;
+      
+      setIsAdmin(adminStatus);
+      localStorage.setItem('isAdmin', String(adminStatus));
+    } else {
+      setIsAdmin(false);
+      localStorage.removeItem('isAdmin');
+    }
+
+    if (!mountedRef.current) return;
+    setSession(newSession);
+    setUser(newSession?.user ?? null);
+  }, [clearUserCache, checkAdminStatus]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    // Set up auth state listener - keep callback synchronous
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      const newUserId = session?.user?.id ?? null;
-      const previousUserId = previousUserIdRef.current;
-
-      // Detect user change (including logout and login as different user)
-      if (previousUserId !== null && previousUserId !== newUserId) {
-        console.log('[Auth] User changed, clearing cache');
-        clearUserCache();
-      }
-
-      // Update previous user ID reference
-      previousUserIdRef.current = newUserId;
-
-      // If user is logging in, check admin status BEFORE updating state
-      if (session?.user) {
-        const adminStatus = await checkAdminStatus(session.user.id);
-        if (!mounted) return;
-        
-        setIsAdmin(adminStatus);
-        localStorage.setItem('isAdmin', String(adminStatus));
-      } else {
-        setIsAdmin(false);
-        localStorage.removeItem('isAdmin');
-      }
-
-      setSession(session);
-      setUser(session?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Trigger async handling without awaiting
+      handleAuthChange(session);
     });
 
-    // THEN check for existing session
+    // Check for existing session
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!mounted) return;
+      if (!mountedRef.current) return;
 
       previousUserIdRef.current = session?.user?.id ?? null;
       
       if (session?.user) {
-        // Check admin status before setting loading to false
         const adminStatus = await checkAdminStatus(session.user.id);
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
         setIsAdmin(adminStatus);
         localStorage.setItem('isAdmin', String(adminStatus));
       }
 
+      if (!mountedRef.current) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -105,13 +108,12 @@ export const useAuth = () => {
     initializeAuth();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [queryClient, clearUserCache, checkAdminStatus]);
+  }, [handleAuthChange, checkAdminStatus]);
 
   const signOut = async () => {
-    // Clear all cached data before signing out
     clearUserCache();
     await supabase.auth.signOut();
     setUser(null);
