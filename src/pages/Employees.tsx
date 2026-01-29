@@ -778,28 +778,53 @@ const Employees = () => {
         }
       }
 
+      // ========== OPTIMIZATION: Fetch ALL inactive employees at once ==========
+      setImportProgress(prev => ({
+        ...prev,
+        message: 'Buscando colaboradores inativos para reativação...'
+      }));
+      
+      // Get CPFs that might need reactivation (not in active map)
+      const cpfsToCheck = validEmployeesData
+        .filter(emp => !existingMap.has(emp.cpf))
+        .map(emp => emp.cpf);
+
+      // Fetch all inactive employees with these CPFs in ONE query
+      const inactiveMap = new Map<string, string>();
+      if (cpfsToCheck.length > 0) {
+        // Batch the query to avoid URL length limits (max 500 per query)
+        const BATCH_SIZE = 500;
+        for (let i = 0; i < cpfsToCheck.length; i += BATCH_SIZE) {
+          const batchCpfs = cpfsToCheck.slice(i, i + BATCH_SIZE);
+          const { data: inactiveEmployees } = await supabase
+            .from('employees')
+            .select('id, cpf')
+            .eq('is_active', false)
+            .in('cpf', batchCpfs);
+          
+          if (inactiveEmployees) {
+            for (const emp of inactiveEmployees) {
+              inactiveMap.set(emp.cpf, emp.id);
+            }
+          }
+        }
+      }
+
       // Separate new employees from existing ones
       const newEmployees: typeof validEmployeesData = [];
       const employeesToUpdate: Array<{ id: string; updates: Record<string, any> }> = [];
-      let skippedCount = 0;
 
       for (const emp of validEmployeesData) {
         const existing = existingMap.get(emp.cpf);
         
         if (!existing) {
-          // New employee - insert with default is_manager = false
-          // Also check if there's an inactive employee with this CPF and reactivate them
-          const { data: inactiveEmployee } = await supabase
-            .from('employees')
-            .select('id')
-            .eq('cpf', emp.cpf)
-            .eq('is_active', false)
-            .maybeSingle();
-
-          if (inactiveEmployee) {
+          // Check if there's an inactive employee with this CPF (from our pre-fetched map)
+          const inactiveId = inactiveMap.get(emp.cpf);
+          
+          if (inactiveId) {
             // Reactivate the employee and update their data
             employeesToUpdate.push({ 
-              id: inactiveEmployee.id, 
+              id: inactiveId, 
               updates: {
                 is_active: true,
                 deactivated_at: null,
@@ -811,6 +836,7 @@ const Employees = () => {
               }
             });
           } else {
+            // New employee - insert with default is_manager = false
             newEmployees.push({
               ...emp,
               is_manager: false,
