@@ -942,23 +942,53 @@ const Employees = () => {
         insertedEmployees = inserted || [];
       }
 
-      // Update existing employees (including reactivations)
+      // Update existing employees (including reactivations) in batches with progress
       if (employeesToUpdate.length > 0) {
+        const UPDATE_BATCH_SIZE = 50;
+        const updateBatches = Math.ceil(employeesToUpdate.length / UPDATE_BATCH_SIZE);
+        let updatedCount = 0;
+        
+        for (let batchIndex = 0; batchIndex < updateBatches; batchIndex++) {
+          const batchStart = batchIndex * UPDATE_BATCH_SIZE;
+          const batchEnd = Math.min(batchStart + UPDATE_BATCH_SIZE, employeesToUpdate.length);
+          const batch = employeesToUpdate.slice(batchStart, batchEnd);
+          
+          setImportProgress({
+            step: 'importing',
+            current: updatedCount,
+            total: employeesToUpdate.length,
+            percent: Math.round((updatedCount / employeesToUpdate.length) * 100),
+            message: `Atualizando colaboradores... (${updatedCount}/${employeesToUpdate.length})`
+          });
+          
+          // Process updates in parallel within the batch for speed
+          const updatePromises = batch.map(({ id, updates }) => 
+            supabase.from('employees').update(updates).eq('id', id)
+          );
+          
+          const results = await Promise.all(updatePromises);
+          
+          for (const result of results) {
+            if (result.error) {
+              console.error('Error updating employee:', result.error);
+            }
+          }
+          
+          updatedCount += batch.length;
+          
+          // Yield to UI thread between batches
+          await new Promise(resolve => setTimeout(resolve, 30));
+        }
+        
         setImportProgress(prev => ({
           ...prev,
-          message: `Atualizando ${employeesToUpdate.length} colaborador(es) existente(s)...`
+          current: employeesToUpdate.length,
+          percent: 100,
+          message: `${employeesToUpdate.length} colaborador(es) atualizado(s)!`
         }));
-
-        for (const { id, updates } of employeesToUpdate) {
-          const { error: updateError } = await supabase
-            .from('employees')
-            .update(updates)
-            .eq('id', id);
-
-          if (updateError) {
-            console.error(`Error updating employee ${id}:`, updateError);
-          }
-        }
+        
+        // Small delay to show completion
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
 
