@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Layout } from "@/components/Layout";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "./pages/Dashboard";
@@ -83,35 +83,37 @@ const ProtectedRoute = ({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/verificar-certificado" element={<VerifyCertificate />} />
-          <Route path="/verify-report/:protocol" element={<VerifyReport />} />
-          <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
-          
-          {/* Rotas acessíveis a todos os usuários autenticados */}
-          <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
-          <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
-          <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
-          <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
-          <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
-          <Route path="/missoes-compliance" element={<ProtectedRoute><GamificationModule /></ProtectedRoute>} />
-          
-          {/* Rotas apenas para gestores/admins */}
-          <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />
-          <Route path="/chatbot" element={<ProtectedRoute adminOnly><Layout><Chatbot /></Layout></ProtectedRoute>} />
-          <Route path="/reports" element={<ProtectedRoute adminOnly><Layout><Reports /></Layout></ProtectedRoute>} />
-          <Route path="/contracts" element={<ProtectedRoute adminOnly><Layout><ManagementContracts /></Layout></ProtectedRoute>} />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/verificar-certificado" element={<VerifyCertificate />} />
+            <Route path="/verify-report/:protocol" element={<VerifyReport />} />
+            <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} />
+            
+            {/* Rotas acessíveis a todos os usuários autenticados */}
+            <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Layout><Documents /></Layout></ProtectedRoute>} />
+            <Route path="/trainings" element={<ProtectedRoute><Layout><Trainings /></Layout></ProtectedRoute>} />
+            <Route path="/trainings/:id" element={<ProtectedRoute><Layout><TrainingView /></Layout></ProtectedRoute>} />
+            <Route path="/trainings/:id/edit" element={<ProtectedRoute adminOnly><Layout><TrainingEdit /></Layout></ProtectedRoute>} />
+            <Route path="/missoes-compliance" element={<ProtectedRoute><GamificationModule /></ProtectedRoute>} />
+            
+            {/* Rotas apenas para gestores/admins */}
+            <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />
+            <Route path="/chatbot" element={<ProtectedRoute adminOnly><Layout><Chatbot /></Layout></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute adminOnly><Layout><Reports /></Layout></ProtectedRoute>} />
+            <Route path="/contracts" element={<ProtectedRoute adminOnly><Layout><ManagementContracts /></Layout></ProtectedRoute>} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
