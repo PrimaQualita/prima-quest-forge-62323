@@ -2,6 +2,7 @@ import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DOMPurify from "dompurify";
 import {
   Popover,
   PopoverContent,
@@ -22,24 +23,47 @@ interface RichTextEditorProps {
   className?: string;
 }
 
+// Configure DOMPurify to allow safe formatting tags only
+const ALLOWED_TAGS = ['b', 'i', 'u', 'strong', 'em', 'span', 'div', 'p', 'ul', 'ol', 'li', 'br', 'font'];
+const ALLOWED_ATTR = ['style', 'class', 'face', 'color'];
+
+const sanitizeConfig = {
+  ALLOWED_TAGS,
+  ALLOWED_ATTR,
+  ALLOW_DATA_ATTR: false,
+  FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'img', 'svg', 'a', 'link', 'meta'],
+  FORBID_ATTR: ['onclick', 'onerror', 'onload', 'onmouseover', 'onfocus', 'onblur', 'href', 'src', 'action'],
+};
+
+const sanitizeHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, sanitizeConfig);
+};
+
 export const RichTextEditor = ({ value, onChange, placeholder, className }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
+    if (editorRef.current) {
+      const sanitizedValue = sanitizeHtml(value);
+      if (editorRef.current.innerHTML !== sanitizedValue) {
+        editorRef.current.innerHTML = sanitizedValue;
+      }
     }
   }, [value]);
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      // Sanitize HTML before saving to prevent XSS attacks
+      const sanitizedHtml = sanitizeHtml(editorRef.current.innerHTML);
+      onChange(sanitizedHtml);
     }
   };
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
+    // Trigger input handler to sanitize after command
+    handleInput();
   };
 
   const applyLineHeight = (lineHeight: string) => {
@@ -60,6 +84,7 @@ export const RichTextEditor = ({ value, onChange, placeholder, className }: Rich
       selection.addRange(range);
     }
     editorRef.current?.focus();
+    handleInput();
   };
 
   const fonts = [
