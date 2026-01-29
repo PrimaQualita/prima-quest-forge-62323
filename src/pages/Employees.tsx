@@ -612,13 +612,28 @@ const Employees = () => {
       const employeesData = rows
         .filter(row => row.trim())
         .map(row => {
-          const [name, cpf, birth_date, phone, email, department, job_title, contract_name] = row.split(';').map(s => s?.trim() || '');
+          const [name, cpf, birth_date_raw, phone, email, department, job_title, contract_name] = row.split(';').map(s => s?.trim() || '');
           
           // Clean CPF (remove non-numeric characters)
           const cleanedCpf = cpf.replace(/\D/g, '');
           
           // Validate and normalize email to lowercase
           const cleanedEmail = email && email.includes('@') ? email.toLowerCase().trim() : null;
+          
+          // Convert birth_date from DD/MM/YYYY to YYYY-MM-DD format
+          let birth_date = '2000-01-01'; // Default fallback
+          if (birth_date_raw) {
+            if (birth_date_raw.includes('/')) {
+              // Format: DD/MM/YYYY
+              const [day, month, year] = birth_date_raw.split('/');
+              if (day && month && year && year.length === 4) {
+                birth_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              }
+            } else if (birth_date_raw.includes('-')) {
+              // Already in YYYY-MM-DD format
+              birth_date = birth_date_raw;
+            }
+          }
           
           // Look up contract ID by name, or set to null if not found
           const management_contract_id = contract_name && contractMap.has(contract_name) 
@@ -628,7 +643,7 @@ const Employees = () => {
           return { 
             name: name || 'Nome não informado', 
             cpf: cleanedCpf, 
-            birth_date: birth_date || '2000-01-01', 
+            birth_date,
             phone: phone || null, 
             email: cleanedEmail,
             department: department || null,
