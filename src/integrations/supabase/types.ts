@@ -966,6 +966,18 @@ export type Database = {
           needs_user_creation: boolean
         }[]
       }
+      verify_certificate: {
+        Args: { verification_code_input: string }
+        Returns: {
+          completion_date: string
+          employee_name: string
+          id: string
+          issued_at: string
+          score: number
+          training_title: string
+          verification_code: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "employee"

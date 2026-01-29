@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.generate-generic-questions]
 verify_jwt = false
+
+[functions.reset-user-password-by-email]
+verify_jwt = true

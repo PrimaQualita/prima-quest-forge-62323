@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.78.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,18 +12,57 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication and admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Credenciais do Supabase não configuradas");
     }
 
+    // Verify user authentication
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const userId = user.id;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      return new Response(JSON.stringify({ error: 'Acesso negado. Apenas administradores podem gerar questões.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     console.log('Buscando treinamentos sem questões...');
     
-    // Buscar treinamentos que têm documentos mas não têm questões
     const { data: trainingsWithDocs, error: fetchError } = await supabase
       .from('trainings')
       .select(`
@@ -40,7 +79,6 @@ serve(async (req) => {
     
     for (const training of trainingsWithDocs || []) {
       try {
-        // Verificar se já tem questões
         const { data: existingQuestions } = await supabase
           .from('training_questions')
           .select('id')
@@ -66,6 +104,9 @@ serve(async (req) => {
             trainingId: training.id,
             trainingTitle: training.title,
             trainingCategory: training.category
+          },
+          headers: {
+            Authorization: authHeader
           }
         });
         
@@ -87,7 +128,6 @@ serve(async (req) => {
           });
         }
         
-        // Aguardar 2 segundos entre cada chamada
         await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (err) {

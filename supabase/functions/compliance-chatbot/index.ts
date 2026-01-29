@@ -12,16 +12,46 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado. Faça login para usar o chatbot.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Buscar todos os dados de compliance
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error("Supabase credentials not configured");
+    }
+
+    // Verify JWT claims
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Token inválido. Faça login novamente.' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { messages } = await req.json();
+
+    // Use service role for fetching data (but user is authenticated)
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     
     const [
@@ -36,7 +66,7 @@ serve(async (req) => {
         .order('created_at', { ascending: false }),
       supabase
         .from('due_diligence_questions')
-        .select('question, yes_points, no_points, is_active')
+        .select('question, is_active')  // Removed yes_points and no_points from chatbot context
         .eq('is_active', true)
         .order('created_at', { ascending: false }),
       supabase
@@ -67,16 +97,13 @@ serve(async (req) => {
       });
     }
     
-    // Perguntas de Due Diligence
+    // Perguntas de Due Diligence (without scoring info)
     if (dueDiligenceQuestions && dueDiligenceQuestions.length > 0) {
-      knowledgeBase += "\n\n=== PERGUNTAS E CRITÉRIOS DE DUE DILIGENCE ===\n\n";
+      knowledgeBase += "\n\n=== PERGUNTAS DE DUE DILIGENCE ===\n\n";
       knowledgeBase += "Estas são as perguntas utilizadas no processo de avaliação de fornecedores:\n\n";
       dueDiligenceQuestions.forEach((q, index) => {
-        // Remove HTML tags from question
         const cleanQuestion = q.question.replace(/<[^>]*>/g, '').trim();
-        knowledgeBase += `${index + 1}. ${cleanQuestion}\n`;
-        knowledgeBase += `   - Resposta SIM: ${q.yes_points} pontos\n`;
-        knowledgeBase += `   - Resposta NÃO: ${q.no_points} pontos\n\n`;
+        knowledgeBase += `${index + 1}. ${cleanQuestion}\n\n`;
       });
     }
     

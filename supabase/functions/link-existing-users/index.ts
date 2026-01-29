@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,17 +12,37 @@ serve(async (req) => {
   }
 
   try {
-    const { employees } = await req.json();
-    
-    if (!employees || !Array.isArray(employees) || employees.length === 0) {
-      throw new Error('Lista de funcionários inválida ou vazia');
+    // Verify authentication and admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    console.log(`Iniciando vinculação de ${employees.length} funcionários`);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
 
-    // Create Supabase admin client
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const userId = user.id;
+
+    // Create admin client
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseUrl,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
@@ -31,6 +51,29 @@ serve(async (req) => {
         }
       }
     );
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      return new Response(JSON.stringify({ error: 'Acesso negado. Apenas administradores podem vincular usuários.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { employees } = await req.json();
+    
+    if (!employees || !Array.isArray(employees) || employees.length === 0) {
+      throw new Error('Lista de funcionários inválida ou vazia');
+    }
+
+    console.log(`Iniciando vinculação de ${employees.length} funcionários`);
 
     interface SuccessResult {
       employee_id: string;
@@ -60,7 +103,6 @@ serve(async (req) => {
     console.log('Buscando usuários existentes...');
     const existingUsersMap = new Map<string, string>();
     
-    // Paginate through all users
     let page = 0;
     const perPage = 1000;
     let hasMore = true;
@@ -92,7 +134,6 @@ serve(async (req) => {
     
     console.log(`${existingUsersMap.size} usuários encontrados no auth`);
 
-    // Process employees in parallel batches
     const BATCH_SIZE = 20;
     
     const processEmployee = async (employee: any): Promise<SuccessResult | ErrorResult> => {
@@ -108,22 +149,20 @@ serve(async (req) => {
         const cpf = employee.cpf.replace(/\D/g, '');
         const authEmail = `${cpf}@primaqualita.local`;
         
-        let userId: string;
+        let createdUserId: string;
         let action: 'linked' | 'created' = 'linked';
 
-        // Check if user already exists
         if (existingUsersMap.has(authEmail)) {
-          userId = existingUsersMap.get(authEmail)!;
+          createdUserId = existingUsersMap.get(authEmail)!;
           console.log(`Usuário encontrado: ${employee.name} (${cpf})`);
         } else {
-          // Create new user
           const birthDate = new Date(employee.birth_date);
           const day = String(birthDate.getDate()).padStart(2, '0');
           const month = String(birthDate.getMonth() + 1).padStart(2, '0');
           const year = birthDate.getFullYear();
           const password = `${day}${month}${year}`;
 
-          const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
+          const { data: userData, error: userCreateError } = await supabaseAdmin.auth.admin.createUser({
             email: authEmail,
             password: password,
             email_confirm: true,
@@ -134,33 +173,32 @@ serve(async (req) => {
             }
           });
 
-          if (userError) {
+          if (userCreateError) {
             return {
               employee_id: employee.id,
               employee_name: employee.name,
-              error: userError.message
+              error: userCreateError.message
             };
           }
 
-          userId = userData.user.id;
-          existingUsersMap.set(authEmail, userId);
+          createdUserId = userData.user.id;
+          existingUsersMap.set(authEmail, createdUserId);
           action = 'created';
           console.log(`Usuário criado: ${employee.name} (${cpf})`);
         }
 
-        // Link user to employee and create profile
         const operations = [
           supabaseAdmin
             .from('profiles')
             .upsert({
-              id: userId,
+              id: createdUserId,
               cpf: cpf,
               birth_date: employee.birth_date,
               first_login: true
             }, { onConflict: 'id' }),
           supabaseAdmin
             .from('employees')
-            .update({ user_id: userId })
+            .update({ user_id: createdUserId })
             .eq('id', employee.id)
         ];
 
@@ -168,7 +206,7 @@ serve(async (req) => {
           operations.push(
             supabaseAdmin
               .from('user_roles')
-              .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
+              .upsert({ user_id: createdUserId, role: 'admin' }, { onConflict: 'user_id,role' })
           );
         }
 
@@ -193,7 +231,7 @@ serve(async (req) => {
         return {
           employee_id: employee.id,
           employee_name: employee.name,
-          user_id: userId,
+          user_id: createdUserId,
           cpf: cpf,
           action: action
         };
@@ -207,7 +245,6 @@ serve(async (req) => {
       }
     };
 
-    // Process in parallel batches
     for (let i = 0; i < employees.length; i += BATCH_SIZE) {
       const batch = employees.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(batch.map(processEmployee));
@@ -217,7 +254,6 @@ serve(async (req) => {
           results.success.push(result);
         } else {
           results.errors.push(result);
-          // Log primeiro erro de cada batch para diagnóstico
           if (results.errors.length === 1 || results.errors.length % 100 === 0) {
             console.error(`Erro exemplo #${results.errors.length}:`, result.error);
           }

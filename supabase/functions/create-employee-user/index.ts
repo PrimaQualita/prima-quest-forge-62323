@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,15 +12,37 @@ serve(async (req) => {
   }
 
   try {
-    const { employees } = await req.json();
-    
-    if (!employees || !Array.isArray(employees) || employees.length === 0) {
-      throw new Error('Lista de funcionários inválida ou vazia');
+    // Verify authentication and admin role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Create Supabase admin client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const userId = user.id;
+
+    // Create admin client for role check
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
+      supabaseUrl,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         auth: {
@@ -29,6 +51,27 @@ serve(async (req) => {
         }
       }
     );
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roleData) {
+      return new Response(JSON.stringify({ error: 'Acesso negado. Apenas administradores podem criar usuários.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { employees } = await req.json();
+    
+    if (!employees || !Array.isArray(employees) || employees.length === 0) {
+      throw new Error('Lista de funcionários inválida ou vazia');
+    }
 
     interface SuccessResult {
       employee_id: string;
@@ -60,7 +103,7 @@ serve(async (req) => {
     );
 
     // Process employees in parallel batches
-    const BATCH_SIZE = 20; // Process 20 employees at a time
+    const BATCH_SIZE = 20;
     
     interface ProcessSuccess {
       type: 'success';
@@ -89,26 +132,19 @@ serve(async (req) => {
           };
         }
 
-        // Clean CPF (remove any formatting)
         const cpf = employee.cpf.replace(/\D/g, '');
-        
-        // Format birth date to use as password (only numbers: DDMMYYYY)
         const birthDate = new Date(employee.birth_date);
         const day = String(birthDate.getDate()).padStart(2, '0');
         const month = String(birthDate.getMonth() + 1).padStart(2, '0');
         const year = birthDate.getFullYear();
         const password = `${day}${month}${year}`;
-
-        // Create a unique email using CPF (for auth system requirements)
         const authEmail = `${cpf}@primaqualita.local`;
 
-        let userId: string;
+        let createdUserId: string;
 
-        // Check if user exists in our cached map
         if (existingUsersMap.has(authEmail)) {
-          userId = existingUsersMap.get(authEmail)!;
+          createdUserId = existingUsersMap.get(authEmail)!;
         } else {
-          // Try to create user in auth with CPF-based email
           const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
             email: authEmail,
             password: password,
@@ -120,19 +156,16 @@ serve(async (req) => {
             }
           });
 
-          // If user already exists, get their ID
           if (userError && userError.message.includes('already registered')) {
-            // User exists, fetch from the map we loaded at start
             const existingUser = existingUsersMap.get(authEmail);
             if (existingUser) {
-              userId = existingUser;
+              createdUserId = existingUser;
             } else {
-              // Fallback: fetch user by email
               const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
               const foundUser = users?.find(u => u.email === authEmail);
               if (foundUser) {
-                userId = foundUser.id;
-                existingUsersMap.set(authEmail, userId);
+                createdUserId = foundUser.id;
+                existingUsersMap.set(authEmail, createdUserId);
               } else {
                 return {
                   type: 'error',
@@ -150,24 +183,23 @@ serve(async (req) => {
               error: userError.message
             };
           } else {
-            userId = userData.user.id;
-            existingUsersMap.set(authEmail, userId); // Cache the new user
+            createdUserId = userData.user.id;
+            existingUsersMap.set(authEmail, createdUserId);
           }
         }
 
-        // Create profile, update employee, and add role in parallel
         const operations = [
           supabaseAdmin
             .from('profiles')
             .upsert({
-              id: userId,
+              id: createdUserId,
               cpf: cpf,
               birth_date: employee.birth_date,
               first_login: true
             }, { onConflict: 'id' }),
           supabaseAdmin
             .from('employees')
-            .update({ user_id: userId })
+            .update({ user_id: createdUserId })
             .eq('id', employee.id)
         ];
 
@@ -175,7 +207,7 @@ serve(async (req) => {
           operations.push(
             supabaseAdmin
               .from('user_roles')
-              .upsert({ user_id: userId, role: 'admin' }, { onConflict: 'user_id,role' })
+              .upsert({ user_id: createdUserId, role: 'admin' }, { onConflict: 'user_id,role' })
           );
         }
 
@@ -203,7 +235,7 @@ serve(async (req) => {
           type: 'success',
           employee_id: employee.id,
           employee_name: employee.name,
-          user_id: userId,
+          user_id: createdUserId,
           cpf: cpf
         };
 
@@ -217,7 +249,6 @@ serve(async (req) => {
       }
     };
 
-    // Process in parallel batches
     for (let i = 0; i < employees.length; i += BATCH_SIZE) {
       const batch = employees.slice(i, i + BATCH_SIZE);
       const batchResults = await Promise.all(batch.map(processEmployee));
