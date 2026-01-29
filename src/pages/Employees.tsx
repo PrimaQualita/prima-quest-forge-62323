@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { analyzeCsvDuplicates } from "@/utils/analyzeDuplicates";
+import { fixCsvEncoding } from "@/utils/fixCsvEncoding";
 
 interface ImportProgress {
   step: 'idle' | 'validating' | 'importing' | 'creating-users' | 'done';
@@ -484,7 +485,7 @@ const Employees = () => {
     reader.onload = (event) => {
       console.log('File read complete');
       try {
-        const text = event.target?.result as string;
+        let text = event.target?.result as string;
         
         if (!text || text.trim().length === 0) {
           toast({ 
@@ -495,6 +496,10 @@ const Employees = () => {
           setIsAnalysisDialogOpen(false);
           return;
         }
+        
+        // Fix encoding issues - replace common problematic characters
+        // This handles cases where the file was saved with different encodings
+        text = fixCsvEncoding(text);
         
         console.log('Analyzing CSV, length:', text.length);
         
@@ -523,7 +528,8 @@ const Employees = () => {
         variant: "destructive" 
       });
     };
-    reader.readAsText(file);
+    // Try reading with UTF-8 first (most common modern encoding)
+    reader.readAsText(file, 'UTF-8');
   };
 
   const validateAllExistingEmployees = async () => {
