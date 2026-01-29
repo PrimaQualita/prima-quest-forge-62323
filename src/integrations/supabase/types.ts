@@ -269,6 +269,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "document_acknowledgments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_acknowledgments_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
@@ -315,6 +322,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -946,7 +960,152 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      certificates_public: {
+        Row: {
+          completion_date: string | null
+          employee_name: string | null
+          issued_at: string | null
+          score: number | null
+          training_title: string | null
+          verification_code: string | null
+        }
+        Insert: {
+          completion_date?: string | null
+          employee_name?: string | null
+          issued_at?: string | null
+          score?: number | null
+          training_title?: string | null
+          verification_code?: string | null
+        }
+        Update: {
+          completion_date?: string | null
+          employee_name?: string | null
+          issued_at?: string | null
+          score?: number | null
+          training_title?: string | null
+          verification_code?: string | null
+        }
+        Relationships: []
+      }
+      compliance_documents_safe: {
+        Row: {
+          category: string | null
+          content: string | null
+          correct_answer: string | null
+          created_at: string | null
+          description: string | null
+          file_path: string | null
+          id: string | null
+          quiz_options: Json | null
+          quiz_question: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          correct_answer?: never
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string | null
+          quiz_options?: Json | null
+          quiz_question?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          correct_answer?: never
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string | null
+          quiz_options?: Json | null
+          quiz_question?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      document_questions_safe: {
+        Row: {
+          correct_answer: string | null
+          created_at: string | null
+          document_id: string | null
+          id: string | null
+          options: Json | null
+          question: string | null
+        }
+        Insert: {
+          correct_answer?: never
+          created_at?: string | null
+          document_id?: string | null
+          id?: string | null
+          options?: Json | null
+          question?: string | null
+        }
+        Update: {
+          correct_answer?: never
+          created_at?: string | null
+          document_id?: string | null
+          id?: string | null
+          options?: Json | null
+          question?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_questions_safe: {
+        Row: {
+          correct_answer: string | null
+          created_at: string | null
+          id: string | null
+          options: Json | null
+          question: string | null
+          training_id: string | null
+        }
+        Insert: {
+          correct_answer?: never
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          question?: string | null
+          training_id?: string | null
+        }
+        Update: {
+          correct_answer?: never
+          created_at?: string | null
+          id?: string | null
+          options?: Json | null
+          question?: string | null
+          training_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_questions_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       fix_encoding: { Args: { text_value: string }; Returns: string }
@@ -957,6 +1116,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_view_call: { Args: never; Returns: boolean }
       process_employees_without_users: {
         Args: never
         Returns: {
@@ -965,6 +1125,18 @@ export type Database = {
           employee_name: string
           needs_user_creation: boolean
         }[]
+      }
+      validate_compliance_quiz_answer: {
+        Args: { p_document_id: string; p_user_answer: string }
+        Returns: boolean
+      }
+      validate_document_answer: {
+        Args: { p_question_id: string; p_user_answer: string }
+        Returns: boolean
+      }
+      validate_training_answer: {
+        Args: { p_question_id: string; p_user_answer: string }
+        Returns: boolean
       }
       verify_certificate: {
         Args: { verification_code_input: string }

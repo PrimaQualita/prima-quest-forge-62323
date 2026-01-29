@@ -124,8 +124,9 @@ const TrainingView = () => {
       const questionIds = assessmentData.questions as string[];
       
       if (questionIds && questionIds.length > 0) {
+        // Use secure view that hides correct_answer for non-admins
         const { data: questionsData } = await supabase
-          .from('training_questions')
+          .from('training_questions_safe')
           .select('*')
           .in('id', questionIds);
         
@@ -170,15 +171,20 @@ const TrainingView = () => {
     mutationFn: async () => {
       if (!currentEmployee || !assessment) return;
 
-      // Calculate score
+      // Calculate score using server-side validation
       const totalQuestions = assessment.training_questions?.length || 0;
       let correctAnswers = 0;
       
-      assessment.training_questions?.forEach((q: any) => {
-        if (answers[q.id] === q.correct_answer) {
+      // Validate each answer using the secure RPC function
+      for (const q of assessment.training_questions || []) {
+        const { data: isCorrect } = await supabase.rpc('validate_training_answer', {
+          p_question_id: q.id,
+          p_user_answer: answers[q.id] || ''
+        });
+        if (isCorrect) {
           correctAnswers++;
         }
-      });
+      }
       
       const scorePercentage = (correctAnswers / totalQuestions) * 100;
       const passed = scorePercentage >= 60;
@@ -257,9 +263,9 @@ const TrainingView = () => {
     mutationFn: async () => {
       if (!currentEmployee || !id) return;
       
-      // Fetch available questions for this training
+      // Fetch available questions for this training (use secure view)
       const { data: questionsData } = await supabase
-        .from('training_questions')
+        .from('training_questions_safe')
         .select('id')
         .eq('training_id', id);
       

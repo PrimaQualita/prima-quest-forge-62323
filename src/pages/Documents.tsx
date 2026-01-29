@@ -311,9 +311,9 @@ const Documents = () => {
     mutationFn: async (docId: string) => {
       setIsGeneratingNewQuestion(true);
       try {
-        // Buscar uma pergunta aleatória diferente da atual
+        // Use secure view that hides correct_answer for non-admins
         const { data: questions, error } = await supabase
-          .from('document_questions')
+          .from('document_questions_safe')
           .select('*')
           .eq('document_id', docId);
 
@@ -362,7 +362,24 @@ const Documents = () => {
       }
 
       const quiz = currentQuiz || documents?.find(d => d.id === docId);
-      const isCorrect = answer === quiz?.correct_answer;
+      
+      // Use server-side validation for security
+      let isCorrect = false;
+      if (quiz?.id) {
+        // Validate using secure RPC function for document_questions
+        const { data } = await supabase.rpc('validate_document_answer', {
+          p_question_id: quiz.id,
+          p_user_answer: answer || ''
+        });
+        isCorrect = !!data;
+      } else if (quiz?.correct_answer) {
+        // Fallback for compliance_documents quiz (use RPC)
+        const { data } = await supabase.rpc('validate_compliance_quiz_answer', {
+          p_document_id: docId,
+          p_user_answer: answer || ''
+        });
+        isCorrect = !!data;
+      }
 
       if (isCorrect) {
         const { error } = await supabase
@@ -719,8 +736,9 @@ const Documents = () => {
                           
                           // Buscar uma pergunta aleatória do banco
                           try {
+                            // Use secure view that hides correct_answer for non-admins
                             const { data: questions, error } = await supabase
-                              .from('document_questions')
+                              .from('document_questions_safe')
                               .select('*')
                               .eq('document_id', doc.id);
 
