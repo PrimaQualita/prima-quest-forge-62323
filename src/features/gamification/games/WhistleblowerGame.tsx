@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useGamificationStore } from '../store/useGamificationStore';
-import { whistleblowerCases } from '../data/gameData';
+import { getShuffledWhistleblowerCases } from '../data/whistleblowerExpandedCases';
 import { ArrowLeft } from 'lucide-react';
-import { shuffleArray } from '../data/expandedQuestions';
+import { WhistleblowerCase } from '../types';
+
+type ShuffledCase = WhistleblowerCase & { correctIndex: number };
 
 export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
-  const [shuffledCases, setShuffledCases] = useState<Array<typeof whistleblowerCases[0] & { correctIndex?: number }>>([]);
+  const [shuffledCases, setShuffledCases] = useState<ShuffledCase[]>([]);
   const [caseIndex, setCaseIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -17,29 +19,18 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
   const [gameOver, setGameOver] = useState(false);
   const { updateScore, unlockBadge } = useGamificationStore();
 
-  // Embaralha casos e opções ao iniciar
+  // Carrega casos embaralhados ao iniciar - sempre diferentes a cada sessão
   useEffect(() => {
-    const casesToUse = shuffleArray([...whistleblowerCases]).slice(0, 8);
-    // Embaralha as opções de cada caso
-    const casesWithShuffledOptions = casesToUse.map(caseItem => {
-      const originalCorrectAnswer = caseItem.options[0]; // A primeira opção é sempre a correta
-      const shuffledOptions = shuffleArray([...caseItem.options]);
-      const newCorrectIndex = shuffledOptions.indexOf(originalCorrectAnswer);
-      
-      return {
-        ...caseItem,
-        options: shuffledOptions,
-        correctIndex: newCorrectIndex
-      };
-    });
-    setShuffledCases(casesWithShuffledOptions);
+    // Usa a função que já embaralha casos e opções
+    const cases = getShuffledWhistleblowerCases(10); // 10 casos por sessão
+    setShuffledCases(cases);
   }, []);
 
   // Se ainda não carregou os casos
   if (shuffledCases.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Carregando...</p>
+        <p>Carregando casos...</p>
       </div>
     );
   }
@@ -133,7 +124,7 @@ export const WhistleblowerGame = ({ onExit }: { onExit: () => void }) => {
             {!showFeedback ? (
               <Button onClick={handleConfirm} disabled={selectedOption === null} className="w-full">Confirmar</Button>
             ) : (
-              <Button onClick={handleNext} className="w-full">{caseIndex < whistleblowerCases.length - 1 ? 'Próximo Caso' : 'Finalizar'}</Button>
+              <Button onClick={handleNext} className="w-full">{caseIndex < shuffledCases.length - 1 ? 'Próximo Caso' : 'Finalizar'}</Button>
             )}
           </CardContent>
         </Card>
