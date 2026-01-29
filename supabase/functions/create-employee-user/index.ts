@@ -195,6 +195,7 @@ serve(async (req) => {
               id: createdUserId,
               cpf: cpf,
               birth_date: employee.birth_date,
+              full_name: employee.name,
               first_login: true
             }, { onConflict: 'id' }),
           supabaseAdmin
