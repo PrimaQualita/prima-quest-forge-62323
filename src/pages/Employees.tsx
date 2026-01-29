@@ -38,7 +38,7 @@ const Employees = () => {
   const [csvAnalysis, setCsvAnalysis] = useState<any>(null);
   const [pendingCsvText, setPendingCsvText] = useState<string>("");
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(50);
   const [isProcessingUsers, setIsProcessingUsers] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
   const [isValidatingCPFs, setIsValidatingCPFs] = useState(false);
@@ -1889,10 +1889,27 @@ const Employees = () => {
               </Table>
               
               {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalEmployees)} de {totalEmployees.toLocaleString()}
-                </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4">
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalEmployees)} de {totalEmployees.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Por página:</span>
+                    <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

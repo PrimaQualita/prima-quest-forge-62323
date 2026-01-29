@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -19,7 +20,7 @@ const InactiveEmployees = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(50);
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [isReactivateDialogOpen, setIsReactivateDialogOpen] = useState(false);
   const [employeeToReactivate, setEmployeeToReactivate] = useState<{ id: string; name: string } | null>(null);
@@ -488,10 +489,27 @@ const InactiveEmployees = () => {
               </Table>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalInactive)} de {totalInactive.toLocaleString()}
-                </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-4">
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-muted-foreground">
+                    Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalInactive)} de {totalInactive.toLocaleString()}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Por página:</span>
+                    <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
+                      <SelectTrigger className="w-20 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                        <SelectItem value="500">500</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 {totalPages > 1 && (
                   <div className="flex gap-2">
                     <Button
