@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, UserCheck, Eye, FileText, GraduationCap, Calendar, UserX } from "lucide-react";
+import { Search, UserCheck, Eye, FileText, GraduationCap, Calendar, UserX, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -25,6 +25,10 @@ const InactiveEmployees = () => {
   const [employeeToReactivate, setEmployeeToReactivate] = useState<{ id: string; name: string } | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Query for inactive employees
   const { data: inactiveEmployees, isLoading } = useQuery({
@@ -175,6 +179,148 @@ const InactiveEmployees = () => {
     }
   });
 
+  // Delete employee completely (cascade delete all related data)
+  const deleteEmployeeCompletely = async (employeeId: string, employeeName: string) => {
+    console.log(`Starting complete deletion for employee: ${employeeName} (${employeeId})`);
+    
+    // 1. Delete video_progress
+    const { error: videoError } = await supabase
+      .from('video_progress')
+      .delete()
+      .eq('employee_id', employeeId);
+    if (videoError) console.error('Error deleting video_progress:', videoError);
+
+    // 2. Delete training_assessments
+    const { error: assessmentError } = await supabase
+      .from('training_assessments')
+      .delete()
+      .eq('employee_id', employeeId);
+    if (assessmentError) console.error('Error deleting training_assessments:', assessmentError);
+
+    // 3. Delete training_participations
+    const { error: participationError } = await supabase
+      .from('training_participations')
+      .delete()
+      .eq('employee_id', employeeId);
+    if (participationError) console.error('Error deleting training_participations:', participationError);
+
+    // 4. Delete document_acknowledgments
+    const { error: ackError } = await supabase
+      .from('document_acknowledgments')
+      .delete()
+      .eq('employee_id', employeeId);
+    if (ackError) console.error('Error deleting document_acknowledgments:', ackError);
+
+    // 5. Delete chat_messages (via conversations)
+    const { data: conversations } = await supabase
+      .from('chat_conversations')
+      .select('id')
+      .eq('employee_id', employeeId);
+    
+    if (conversations && conversations.length > 0) {
+      const conversationIds = conversations.map(c => c.id);
+      const { error: msgError } = await supabase
+        .from('chat_messages')
+        .delete()
+        .in('conversation_id', conversationIds);
+      if (msgError) console.error('Error deleting chat_messages:', msgError);
+      
+      // 6. Delete chat_conversations
+      const { error: convError } = await supabase
+        .from('chat_conversations')
+        .delete()
+        .eq('employee_id', employeeId);
+      if (convError) console.error('Error deleting chat_conversations:', convError);
+    }
+
+    // 7. Delete certificates by employee name
+    const { error: certError } = await supabase
+      .from('certificates')
+      .delete()
+      .eq('employee_name', employeeName);
+    if (certError) console.error('Error deleting certificates:', certError);
+
+    // 8. Delete gamification_progress (if user_id exists)
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('user_id')
+      .eq('id', employeeId)
+      .single();
+    
+    if (employee?.user_id) {
+      const { error: gameError } = await supabase
+        .from('gamification_progress')
+        .delete()
+        .eq('user_id', employee.user_id);
+      if (gameError) console.error('Error deleting gamification_progress:', gameError);
+    }
+
+    // 9. Finally, delete the employee record
+    const { error: empError } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', employeeId);
+    
+    if (empError) throw empError;
+    
+    console.log(`Successfully deleted employee: ${employeeName}`);
+  };
+
+  // Single delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      await deleteEmployeeCompletely(id, name);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inactive-employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({
+        title: "Colaborador excluído!",
+        description: "O colaborador e todos os seus dados foram removidos permanentemente."
+      });
+      setIsDeleteDialogOpen(false);
+      setEmployeeToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (employees: Array<{ id: string; name: string }>) => {
+      setDeleteProgress({ current: 0, total: employees.length });
+      
+      for (let i = 0; i < employees.length; i++) {
+        await deleteEmployeeCompletely(employees[i].id, employees[i].name);
+        setDeleteProgress({ current: i + 1, total: employees.length });
+      }
+    },
+    onSuccess: (_, employees) => {
+      queryClient.invalidateQueries({ queryKey: ['inactive-employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      toast({
+        title: "Colaboradores excluídos!",
+        description: `${employees.length} colaborador(es) e todos os seus dados foram removidos permanentemente.`
+      });
+      setSelectedEmployees([]);
+      setIsBulkDeleteDialogOpen(false);
+      setDeleteProgress(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive"
+      });
+      setDeleteProgress(null);
+    }
+  });
+
   const toggleSelectAll = () => {
     if (selectedEmployees.length === (inactiveEmployees?.data?.length || 0)) {
       setSelectedEmployees([]);
@@ -198,6 +344,12 @@ const InactiveEmployees = () => {
 
   const filteredEmployees = inactiveEmployees?.data || [];
 
+  const getSelectedEmployeesData = () => {
+    return filteredEmployees
+      .filter(e => selectedEmployees.includes(e.id))
+      .map(e => ({ id: e.id, name: e.name }));
+  };
+
   return (
     <div className="space-y-6 pt-6">
       <div className="space-y-4">
@@ -213,13 +365,23 @@ const InactiveEmployees = () => {
 
         <div className="flex flex-wrap gap-2">
           {selectedEmployees.length > 0 && (
-            <Button 
-              onClick={() => bulkReactivateMutation.mutate(selectedEmployees)}
-              disabled={bulkReactivateMutation.isPending}
-            >
-              <UserCheck className="w-4 h-4 mr-2" />
-              Reativar {selectedEmployees.length} Selecionado(s)
-            </Button>
+            <>
+              <Button 
+                onClick={() => bulkReactivateMutation.mutate(selectedEmployees)}
+                disabled={bulkReactivateMutation.isPending || bulkDeleteMutation.isPending}
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Reativar {selectedEmployees.length} Selecionado(s)
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+                disabled={bulkReactivateMutation.isPending || bulkDeleteMutation.isPending}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir {selectedEmployees.length} Selecionado(s)
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -288,11 +450,12 @@ const InactiveEmployees = () => {
                           {formatDate(employee.deactivated_at)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
+                      <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetails(employee)}
+                          title="Ver detalhes"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -303,9 +466,20 @@ const InactiveEmployees = () => {
                             setEmployeeToReactivate({ id: employee.id, name: employee.name });
                             setIsReactivateDialogOpen(true);
                           }}
+                          title="Reativar colaborador"
                         >
-                          <UserCheck className="w-4 h-4 mr-1" />
-                          Reativar
+                          <UserCheck className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setEmployeeToDelete({ id: employee.id, name: employee.name });
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          title="Excluir permanentemente"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -362,6 +536,114 @@ const InactiveEmployees = () => {
               disabled={reactivateMutation.isPending}
             >
               {reactivateMutation.isPending ? "Reativando..." : "Reativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Excluir Colaborador Permanentemente
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Você está prestes a excluir permanentemente o colaborador:
+                </p>
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="font-semibold text-foreground">{employeeToDelete?.name}</p>
+                </div>
+                <div className="text-sm space-y-2">
+                  <p className="font-medium text-foreground">Esta ação irá remover:</p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>Todos os treinamentos e avaliações</li>
+                    <li>Todos os documentos aceitos</li>
+                    <li>Todo o progresso de vídeos</li>
+                    <li>Todas as conversas do chatbot</li>
+                    <li>Todos os certificados emitidos</li>
+                    <li>Todo o progresso de gamificação</li>
+                  </ul>
+                </div>
+                <p className="text-destructive font-medium">
+                  ⚠️ Esta ação é IRREVERSÍVEL e não pode ser desfeita!
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => employeeToDelete && deleteMutation.mutate(employeeToDelete)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir Permanentemente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={(open) => {
+        if (!bulkDeleteMutation.isPending) setIsBulkDeleteDialogOpen(open);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Excluir {selectedEmployees.length} Colaborador(es) Permanentemente
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                {deleteProgress ? (
+                  <div className="space-y-3">
+                    <p>Excluindo colaboradores...</p>
+                    <div className="w-full bg-muted rounded-full h-3">
+                      <div 
+                        className="bg-destructive h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${(deleteProgress.current / deleteProgress.total) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      {deleteProgress.current} de {deleteProgress.total} excluídos
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p>
+                      Você está prestes a excluir permanentemente <strong>{selectedEmployees.length}</strong> colaborador(es).
+                    </p>
+                    <div className="text-sm space-y-2">
+                      <p className="font-medium text-foreground">Para cada colaborador, será removido:</p>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                        <li>Todos os treinamentos e avaliações</li>
+                        <li>Todos os documentos aceitos</li>
+                        <li>Todo o progresso de vídeos</li>
+                        <li>Todas as conversas do chatbot</li>
+                        <li>Todos os certificados emitidos</li>
+                        <li>Todo o progresso de gamificação</li>
+                      </ul>
+                    </div>
+                    <p className="text-destructive font-medium">
+                      ⚠️ Esta ação é IRREVERSÍVEL e não pode ser desfeita!
+                    </p>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => bulkDeleteMutation.mutate(getSelectedEmployeesData())}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? "Excluindo..." : `Excluir ${selectedEmployees.length} Colaborador(es)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
