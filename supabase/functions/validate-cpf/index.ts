@@ -11,6 +11,11 @@ interface ValidationRequest {
   name?: string;
 }
 
+interface RequestBody {
+  cpfs: ValidationRequest[];
+  skipExternalValidation?: boolean; // Para importação em massa, pular APIs externas
+}
+
 interface ValidationResult {
   cpf: string;
   isValid: boolean;
@@ -155,7 +160,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { cpfs } = await req.json() as { cpfs: ValidationRequest[] };
+    const { cpfs, skipExternalValidation = false } = await req.json() as RequestBody;
 
     if (!cpfs || !Array.isArray(cpfs)) {
       return new Response(
@@ -164,13 +169,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Validando ${cpfs.length} CPF(s)...`);
+    console.log(`Validando ${cpfs.length} CPF(s)... skipExternalValidation: ${skipExternalValidation}`);
 
     const results: ValidationResult[] = [];
 
     for (const { cpf, birthDate, name } of cpfs) {
       const cleanCPF = cpf.replace(/\D/g, '');
-      console.log(`\nValidando CPF: ${cleanCPF}`);
 
       const result: ValidationResult = {
         cpf: cleanCPF,
@@ -183,7 +187,6 @@ Deno.serve(async (req) => {
 
       // 1. Validar formato do CPF
       result.cpfFormatValid = validateCPFFormat(cleanCPF);
-      console.log(`Formato válido: ${result.cpfFormatValid}`);
 
       if (!result.cpfFormatValid) {
         result.error = 'CPF com formato inválido ou dígitos verificadores incorretos';
@@ -191,29 +194,31 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // 2. Consultar CPF na Receita Federal
+      // 2. Se skipExternalValidation, apenas validar formato
+      if (skipExternalValidation) {
+        result.isValid = true;
+        result.error = 'Validação apenas de formato (importação em massa)';
+        results.push(result);
+        continue;
+      }
+
+      // 3. Consultar CPF na Receita Federal (apenas se não for bulk import)
       const apiResult = await consultCPF(cleanCPF);
       
       if (apiResult.success) {
         result.cpfExists = true;
         result.details = apiResult.data;
 
-        // 3. Verificar data de nascimento
         const apiBirthDate = apiResult.data.data_nascimento || apiResult.data.nascimento;
         if (apiBirthDate) {
           result.birthDateMatches = compareBirthDate(apiBirthDate, birthDate);
-          console.log(`Data de nascimento confere: ${result.birthDateMatches}`);
         }
 
-        // 4. Verificar nome (se disponível)
         const apiName = apiResult.data.nome || apiResult.data.name;
         if (apiName && name) {
           result.nameMatches = compareName(apiName, name);
-          console.log(`Nome confere: ${result.nameMatches}`);
         }
 
-        // CPF é válido se existe E a data de nascimento confere
-        // Se a API retornou data mas não confere, bloquear
         if (result.birthDateMatches === false) {
           result.isValid = false;
           result.error = 'Data de nascimento não confere com o CPF na Receita Federal';
@@ -221,23 +226,21 @@ Deno.serve(async (req) => {
           result.isValid = result.cpfExists && result.birthDateMatches === true;
           if (result.birthDateMatches === null) {
             result.error = 'CPF encontrado mas data de nascimento não disponível na API';
-            result.isValid = false; // Bloquear se não conseguiu verificar a data
+            result.isValid = false;
           }
         }
       } else {
-        // APIs públicas não têm 100% dos CPFs - permitir cadastro com formato válido
-        // mas avisar que não foi possível validar a data de nascimento
-        console.log(`CPF ${cleanCPF} não encontrado nas APIs públicas - permitindo por formato válido`);
         result.error = 'Atenção: CPF não encontrado nas bases públicas. Validação apenas de formato.';
         result.isValid = result.cpfFormatValid;
         result.cpfExists = false;
       }
 
-      console.log(`Resultado final - CPF ${cleanCPF} válido: ${result.isValid}`);
       results.push(result);
 
-      // Rate limiting: esperar um pouco entre requisições
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Rate limiting apenas para validação externa
+      if (!skipExternalValidation) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
 
     const validCount = results.filter(r => r.isValid).length;

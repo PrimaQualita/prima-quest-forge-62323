@@ -545,7 +545,8 @@ const Employees = () => {
               cpf: emp.cpf,
               birthDate: emp.birth_date,
               name: emp.name
-            }))
+            })),
+            skipExternalValidation: true // Importação em massa - apenas validar formato
           }
         });
 
@@ -678,7 +679,7 @@ const Employees = () => {
           current: processedCount,
           total: employeesData.length,
           percent: Math.round((processedCount / employeesData.length) * 100),
-          message: `Verificando CPFs na Receita Federal... (lote ${batchNumber}/${totalBatches})`
+          message: `Validando formato dos CPFs... (lote ${batchNumber}/${totalBatches})`
         });
 
         const { data: validationData, error: validationError } = await supabase.functions.invoke('validate-cpf', {
@@ -687,7 +688,8 @@ const Employees = () => {
               cpf: emp.cpf,
               birthDate: emp.birth_date,
               name: emp.name
-            }))
+            })),
+            skipExternalValidation: true // Importação em massa - apenas validar formato
           }
         });
 
