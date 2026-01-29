@@ -628,7 +628,15 @@ const Employees = () => {
     
     try {
       const text = pendingCsvText;
-      const rows = text.split('\n').slice(1); // Skip header
+      const allRows = text.split('\n');
+      const rows = allRows.slice(1); // Skip header
+      
+      console.log(`CSV carregado: ${allRows.length} linhas totais, ${rows.length} linhas de dados (sem header)`);
+      console.log('Primeiras 3 linhas:', rows.slice(0, 3));
+      
+      // Count non-empty rows
+      const nonEmptyRows = rows.filter(row => row.trim());
+      console.log(`Linhas não vazias: ${nonEmptyRows.length}`);
       
       // Fetch all contracts to map names to IDs
       const { data: contracts } = await supabase
@@ -639,14 +647,17 @@ const Employees = () => {
       
       // Track CPFs we've seen to skip duplicates within file
       const seenCpfs = new Set<string>();
+      let skippedEmpty = 0;
+      let skippedInvalidCpf = 0;
+      let skippedDuplicate = 0;
       
-      const employeesData = rows
-        .filter(row => row.trim())
-        .map(row => {
-          const [name, cpf, birth_date_raw, phone, email, department, job_title, contract_name] = row.split(';').map(s => s?.trim() || '');
+      const employeesData = nonEmptyRows
+        .map((row, idx) => {
+          const columns = row.split(';').map(s => s?.trim() || '');
+          const [name, cpf, birth_date_raw, phone, email, department, job_title, contract_name] = columns;
           
           // Clean CPF (remove non-numeric characters)
-          const cleanedCpf = cpf.replace(/\D/g, '');
+          let cleanedCpf = (cpf || '').replace(/\D/g, '');
           
           // Validate and normalize email to lowercase
           const cleanedEmail = email && email.includes('@') ? email.toLowerCase().trim() : null;
@@ -683,18 +694,39 @@ const Employees = () => {
           };
         })
         .filter(emp => {
-          // Skip if CPF is invalid or empty
-          if (!emp.cpf || emp.cpf.length !== 11) {
+          // Skip if CPF is empty
+          if (!emp.cpf) {
+            skippedEmpty++;
+            return false;
+          }
+          
+          // Pad CPF with leading zeros if less than 11 digits
+          if (emp.cpf.length < 11) {
+            emp.cpf = emp.cpf.padStart(11, '0');
+          }
+          
+          // Skip if CPF still invalid after padding
+          if (emp.cpf.length !== 11) {
+            skippedInvalidCpf++;
             return false;
           }
           
           // Skip duplicates within the file (keep only first occurrence)
           if (seenCpfs.has(emp.cpf)) {
+            skippedDuplicate++;
             return false;
           }
           seenCpfs.add(emp.cpf);
           return true;
         });
+
+      console.log(`=== RESUMO DO PARSING ===`);
+      console.log(`Total de linhas não vazias: ${nonEmptyRows.length}`);
+      console.log(`Registros válidos para importar: ${employeesData.length}`);
+      console.log(`CPFs vazios ignorados: ${skippedEmpty}`);
+      console.log(`CPFs inválidos ignorados: ${skippedInvalidCpf}`);
+      console.log(`CPFs duplicados ignorados: ${skippedDuplicate}`);
+      console.log(`Total ignorados: ${skippedEmpty + skippedInvalidCpf + skippedDuplicate}`);
 
       if (employeesData.length === 0) {
         throw new Error('Nenhum registro válido encontrado na planilha');
