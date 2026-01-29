@@ -23,6 +23,7 @@ import ProfilePage from "./pages/ProfilePage";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import VerifyReport from "./pages/VerifyReport";
 import GamificationModule from "./pages/GamificationModule";
+import InactiveEmployees from "./pages/InactiveEmployees";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,7 @@ const App = () => (
             
             {/* Rotas apenas para gestores/admins */}
             <Route path="/employees" element={<ProtectedRoute adminOnly><Layout><Employees /></Layout></ProtectedRoute>} />
+            <Route path="/inactive-employees" element={<ProtectedRoute adminOnly><Layout><InactiveEmployees /></Layout></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute adminOnly><Layout><Chatbot /></Layout></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute adminOnly><Layout><Reports /></Layout></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute adminOnly><Layout><ManagementContracts /></Layout></ProtectedRoute>} />

@@ -371,9 +371,11 @@ export type Database = {
           birth_date: string
           cpf: string
           created_at: string | null
+          deactivated_at: string | null
           department: string | null
           email: string | null
           id: string
+          is_active: boolean
           is_manager: boolean | null
           job_title: string | null
           management_contract_id: string | null
@@ -386,9 +388,11 @@ export type Database = {
           birth_date: string
           cpf: string
           created_at?: string | null
+          deactivated_at?: string | null
           department?: string | null
           email?: string | null
           id?: string
+          is_active?: boolean
           is_manager?: boolean | null
           job_title?: string | null
           management_contract_id?: string | null
@@ -401,9 +405,11 @@ export type Database = {
           birth_date?: string
           cpf?: string
           created_at?: string | null
+          deactivated_at?: string | null
           department?: string | null
           email?: string | null
           id?: string
+          is_active?: boolean
           is_manager?: boolean | null
           job_title?: string | null
           management_contract_id?: string | null
@@ -1116,6 +1122,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_employee_active: { Args: { employee_id: string }; Returns: boolean }
       is_view_call: { Args: never; Returns: boolean }
       process_employees_without_users: {
         Args: never

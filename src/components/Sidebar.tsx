@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
   Users, 
+  UserX,
   FileText, 
   GraduationCap, 
   BarChart3,
@@ -61,6 +62,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps) => {
     { icon: Briefcase, label: "Contratos de Gestão", path: "/contracts", adminOnly: true },
     { icon: BarChart3, label: "Relatórios", path: "/reports", adminOnly: true },
     { icon: Users, label: "Colaboradores", path: "/employees", adminOnly: true },
+    { icon: UserX, label: "Inativos", path: "/inactive-employees", adminOnly: true },
   ];
 
   const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
