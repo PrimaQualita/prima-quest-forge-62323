@@ -1,8 +1,8 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.78.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 Deno.serve(async (req) => {
@@ -24,20 +24,23 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    // Verify user authentication
+    // Verify user authentication using getClaims
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
     
-    if (userError || !user) {
-      console.error('Authentication failed:', userError);
+    if (claimsError || !claimsData?.claims) {
+      console.error('Authentication failed:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized - Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const userId = claimsData.claims.sub as string;
 
     // Initialize admin client for role check and password reset
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
     const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('role', 'admin')
       .maybeSingle();
 
@@ -75,7 +78,7 @@ Deno.serve(async (req) => {
     // Clean CPF (remove dots and dashes)
     const cleanedCpf = cpf.replace(/\D/g, '')
 
-    console.log('Admin', user.id, 'resetting password for employee with CPF:', cleanedCpf)
+    console.log('Admin', userId, 'resetting password for employee with CPF:', cleanedCpf)
 
     // Find employee by CPF
     const { data: employee, error: employeeError } = await supabaseAdmin
