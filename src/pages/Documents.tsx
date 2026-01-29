@@ -757,7 +757,7 @@ const Documents = () => {
                   <div className="space-y-6 py-4">
                     <div 
                       className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: doc.content || "Conteúdo do documento..." }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.content || "Conteúdo do documento...") }}
                     />
                     
                     <div className="border-t pt-6 space-y-4">
