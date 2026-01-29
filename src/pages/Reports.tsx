@@ -187,9 +187,9 @@ const Reports = () => {
   const overallCompliance = ((parseFloat(String(documentComplianceRate).replace(',', '.')) + parseFloat(String(trainingComplianceRate).replace(',', '.'))) / 2).toFixed(2);
 
   const { data: employeesCompliance } = useQuery({
-    queryKey: ['employees-compliance'],
+    queryKey: ['employees-compliance-active'],
     queryFn: async () => {
-      // Buscar todos os colaboradores com paginação
+      // Buscar todos os colaboradores ATIVOS com paginação
       let allEmployees: any[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -198,6 +198,7 @@ const Reports = () => {
         const { data: batch } = await supabase
           .from('employees')
           .select('id, name')
+          .eq('is_active', true)
           .order('name')
           .range(from, from + pageSize - 1);
         
