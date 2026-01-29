@@ -314,11 +314,11 @@ const InactiveEmployees = () => {
               </Table>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Página {page + 1} de {totalPages}
-                  </p>
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Mostrando {page * pageSize + 1} - {Math.min((page + 1) * pageSize, totalInactive)} de {totalInactive.toLocaleString()}
+                </p>
+                {totalPages > 1 && (
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -337,8 +337,8 @@ const InactiveEmployees = () => {
                       Próxima
                     </Button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </>
           )}
         </CardContent>
