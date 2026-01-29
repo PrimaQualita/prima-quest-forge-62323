@@ -74,7 +74,8 @@ const Employees = () => {
     queryFn: async () => {
       let query = supabase
         .from('employees')
-        .select('id, name, cpf, email, is_manager', { count: 'exact' });
+        .select('id, name, cpf, email, is_manager', { count: 'exact' })
+        .eq('is_active', true); // Only show active employees
       
       // Apply search filter
       if (searchTerm) {
@@ -109,7 +110,7 @@ const Employees = () => {
     },
   });
 
-  // Query para buscar colaboradores sem user_id (buscar TODOS sem limite)
+  // Query para buscar colaboradores sem user_id (buscar TODOS ativos sem limite)
   const { data: employeesWithoutUsers } = useQuery({
     queryKey: ['employees-without-users'],
     queryFn: async () => {
@@ -122,6 +123,7 @@ const Employees = () => {
         const { data, error } = await supabase
           .from('employees')
           .select('id, name, cpf, birth_date, is_manager, email')
+          .eq('is_active', true) // Only active employees
           .is('user_id', null)
           .not('cpf', 'is', null)
           .not('birth_date', 'is', null)
@@ -757,13 +759,24 @@ const Employees = () => {
       // Get existing employees with ALL their data to preserve everything
       const { data: existingEmployees } = await supabase
         .from('employees')
-        .select('id, cpf, name, birth_date, phone, email, department, job_title, management_contract_id, is_manager, user_id')
-        .in('cpf', validEmployeesData.map(e => e.cpf));
+        .select('id, cpf, name, birth_date, phone, email, department, job_title, management_contract_id, is_manager, user_id, is_active')
+        .eq('is_active', true); // Only get currently active employees
 
       // Create a map of existing employees with all their data
       const existingMap = new Map(
         existingEmployees?.map(emp => [emp.cpf, emp]) || []
       );
+
+      // Create a set of CPFs in the new import
+      const importCpfSet = new Set(validEmployeesData.map(e => e.cpf));
+
+      // Identify employees to deactivate (exist in DB but NOT in new import)
+      const employeesToDeactivate: Array<{ id: string; name: string; cpf: string }> = [];
+      for (const [cpf, emp] of existingMap) {
+        if (!importCpfSet.has(cpf)) {
+          employeesToDeactivate.push({ id: emp.id, name: emp.name, cpf: emp.cpf });
+        }
+      }
 
       // Separate new employees from existing ones
       const newEmployees: typeof validEmployeesData = [];
@@ -775,13 +788,42 @@ const Employees = () => {
         
         if (!existing) {
           // New employee - insert with default is_manager = false
-          newEmployees.push({
-            ...emp,
-            is_manager: false
-          } as any);
+          // Also check if there's an inactive employee with this CPF and reactivate them
+          const { data: inactiveEmployee } = await supabase
+            .from('employees')
+            .select('id')
+            .eq('cpf', emp.cpf)
+            .eq('is_active', false)
+            .maybeSingle();
+
+          if (inactiveEmployee) {
+            // Reactivate the employee and update their data
+            employeesToUpdate.push({ 
+              id: inactiveEmployee.id, 
+              updates: {
+                is_active: true,
+                deactivated_at: null,
+                phone: emp.phone || null,
+                email: emp.email || null,
+                department: emp.department || null,
+                job_title: emp.job_title || null,
+                management_contract_id: emp.management_contract_id || null
+              }
+            });
+          } else {
+            newEmployees.push({
+              ...emp,
+              is_manager: false,
+              is_active: true
+            } as any);
+          }
         } else {
           // Existing employee - always update these fields from CSV (if CSV has values)
-          const updates: Record<string, any> = {};
+          // Also ensure they're marked as active
+          const updates: Record<string, any> = {
+            is_active: true,
+            deactivated_at: null
+          };
           
           if (emp.phone) updates.phone = emp.phone;
           if (emp.email) updates.email = emp.email;
@@ -789,11 +831,32 @@ const Employees = () => {
           if (emp.job_title) updates.job_title = emp.job_title;
           if (emp.management_contract_id) updates.management_contract_id = emp.management_contract_id;
           
-          if (Object.keys(updates).length > 0) {
-            employeesToUpdate.push({ id: existing.id, updates });
-          } else {
-            skippedCount++;
-          }
+          employeesToUpdate.push({ id: existing.id, updates });
+        }
+      }
+
+      // ========== STEP 2.1: Deactivate employees not in import ==========
+      let deactivatedCount = 0;
+      if (employeesToDeactivate.length > 0) {
+        setImportProgress(prev => ({
+          ...prev,
+          message: `Inativando ${employeesToDeactivate.length} colaborador(es) que não estão na nova carga...`
+        }));
+
+        const deactivateIds = employeesToDeactivate.map(e => e.id);
+        const { error: deactivateError } = await supabase
+          .from('employees')
+          .update({ 
+            is_active: false, 
+            deactivated_at: new Date().toISOString() 
+          })
+          .in('id', deactivateIds);
+
+        if (deactivateError) {
+          console.error('Error deactivating employees:', deactivateError);
+        } else {
+          deactivatedCount = employeesToDeactivate.length;
+          console.log(`Deactivated ${deactivatedCount} employees:`, employeesToDeactivate.map(e => e.name));
         }
       }
 
@@ -817,7 +880,7 @@ const Employees = () => {
         insertedEmployees = inserted || [];
       }
 
-      // Update existing employees
+      // Update existing employees (including reactivations)
       if (employeesToUpdate.length > 0) {
         setImportProgress(prev => ({
           ...prev,
@@ -835,6 +898,7 @@ const Employees = () => {
           }
         }
       }
+
 
       // ========== STEP 3: Create user accounts for new employees ==========
       let userCreationErrors = 0;
@@ -891,6 +955,7 @@ const Employees = () => {
       });
 
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['inactive-employees'] });
       
       // Build descriptive message
       const messages = [];
@@ -900,8 +965,8 @@ const Employees = () => {
       if (employeesToUpdate.length > 0) {
         messages.push(`${employeesToUpdate.length} colaborador(es) atualizado(s)`);
       }
-      if (skippedCount > 0) {
-        messages.push(`${skippedCount} já existente(s) sem alterações`);
+      if (deactivatedCount > 0) {
+        messages.push(`${deactivatedCount} inativado(s)`);
       }
       if (usersCreated > 0) {
         messages.push(`${usersCreated} usuário(s) criado(s)`);
@@ -910,7 +975,7 @@ const Employees = () => {
       toast({ 
         title: "Importação concluída!", 
         description: messages.join('. ') + '. Login: CPF | Senha: DDMMAAAA',
-        variant: userCreationErrors > 0 ? "destructive" : "default"
+        variant: deactivatedCount > 0 ? "default" : (userCreationErrors > 0 ? "destructive" : "default")
       });
       
       // Wait a bit before closing dialog so user sees success
