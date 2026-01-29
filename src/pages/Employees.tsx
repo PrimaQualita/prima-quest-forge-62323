@@ -807,7 +807,10 @@ const Employees = () => {
 
         const { data: inserted, error: insertError } = await supabase
           .from('employees')
-          .insert(newEmployees)
+          .upsert(newEmployees, { 
+            onConflict: 'cpf',
+            ignoreDuplicates: true 
+          })
           .select();
 
         if (insertError) throw insertError;
