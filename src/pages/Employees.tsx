@@ -71,7 +71,7 @@ const Employees = () => {
   });
 
   const { data: employees, isLoading } = useQuery({
-    queryKey: ['employees', searchTerm, page],
+    queryKey: ['employees', searchTerm, page, pageSize],
     queryFn: async () => {
       let query = supabase
         .from('employees')
