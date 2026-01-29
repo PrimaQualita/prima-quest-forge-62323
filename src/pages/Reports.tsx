@@ -14,6 +14,9 @@ import { generateReportPDF } from "@/utils/generateReportPDF";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,6 +24,8 @@ const Reports = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [inactiveItemsPerPage, setInactiveItemsPerPage] = useState(10);
   const [employeeTab, setEmployeeTab] = useState("active");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportFilter, setExportFilter] = useState<"all" | "active" | "inactive">("all");
   const { user } = useAuth();
   const [userName, setUserName] = useState("Usuário");
 
@@ -441,14 +446,48 @@ const Reports = () => {
   };
 
   const handleExportPDF = async () => {
-    if (!employeesCompliance || !stats) {
+    let dataToExport: typeof employeesCompliance = [];
+    let statsToExport = stats;
+    
+    if (exportFilter === "all") {
+      // Combinar ativos e inativos
+      dataToExport = [...(employeesCompliance || []), ...(inactiveEmployeesCompliance || [])];
+      // Recalcular stats para todos
+      if (stats && inactiveEmployeesCompliance) {
+        const inactiveStats = {
+          totalEmployees: (stats.totalEmployees || 0) + (inactiveEmployeesCompliance.length || 0),
+          totalDocuments: stats.totalDocuments,
+          totalTrainings: stats.totalTrainings,
+          acknowledgedDocs: (stats.acknowledgedDocs || 0) + inactiveEmployeesCompliance.reduce((sum, e) => sum + e.docsAccepted, 0),
+          completedTrainings: (stats.completedTrainings || 0) + inactiveEmployeesCompliance.reduce((sum, e) => sum + e.trainingsCompleted, 0),
+        };
+        statsToExport = inactiveStats;
+      }
+    } else if (exportFilter === "active") {
+      dataToExport = employeesCompliance || [];
+      statsToExport = stats;
+    } else if (exportFilter === "inactive") {
+      dataToExport = inactiveEmployeesCompliance || [];
+      if (inactiveEmployeesCompliance && stats) {
+        statsToExport = {
+          totalEmployees: inactiveEmployeesCompliance.length,
+          totalDocuments: stats.totalDocuments,
+          totalTrainings: stats.totalTrainings,
+          acknowledgedDocs: inactiveEmployeesCompliance.reduce((sum, e) => sum + e.docsAccepted, 0),
+          completedTrainings: inactiveEmployeesCompliance.reduce((sum, e) => sum + e.trainingsCompleted, 0),
+        };
+      }
+    }
+    
+    if (!dataToExport || dataToExport.length === 0 || !statsToExport) {
       toast.error("Aguarde o carregamento dos dados");
       return;
     }
     
+    setExportDialogOpen(false);
     toast.loading("Gerando PDF...", { id: "pdf-loading" });
     try {
-      const protocol = await generateReportPDF(employeesCompliance, stats, {
+      const protocol = await generateReportPDF(dataToExport, statsToExport, {
         userName,
         baseUrl: window.location.origin
       });
@@ -479,10 +518,51 @@ const Reports = () => {
           <h1 className="text-4xl font-bold text-foreground uppercase">RELATÓRIOS DE COMPLIANCE</h1>
           <p className="text-muted-foreground mt-1">Análise detalhada de indicadores de conformidade</p>
         </div>
-        <Button onClick={handleExportPDF} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exportar PDF
-        </Button>
+        <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar PDF
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Exportar Relatório PDF</DialogTitle>
+              <DialogDescription>
+                Selecione quais colaboradores deseja incluir no relatório
+              </DialogDescription>
+            </DialogHeader>
+            <RadioGroup value={exportFilter} onValueChange={(v) => setExportFilter(v as "all" | "active" | "inactive")} className="space-y-3 py-4">
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="all" id="all" />
+                <Label htmlFor="all" className="cursor-pointer">
+                  Todos os colaboradores ({totalEmployees + totalInactiveEmployees})
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="active" id="active" />
+                <Label htmlFor="active" className="cursor-pointer">
+                  Apenas colaboradores ativos ({totalEmployees})
+                </Label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="inactive" id="inactive" />
+                <Label htmlFor="inactive" className="cursor-pointer">
+                  Apenas colaboradores inativos ({totalInactiveEmployees})
+                </Label>
+              </div>
+            </RadioGroup>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleExportPDF} className="gap-2">
+                <Download className="h-4 w-4" />
+                Gerar PDF
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <ComplianceCharts 
