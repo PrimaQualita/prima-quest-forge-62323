@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, PieChart, TrendingUp, Users, Download, FileText, GraduationCap } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, Users, Download, FileText, GraduationCap, UserX } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ComplianceCharts } from "@/components/dashboard/ComplianceCharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,10 +13,14 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-r
 import { generateReportPDF } from "@/utils/generateReportPDF";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [inactiveCurrentPage, setInactiveCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [inactiveItemsPerPage, setInactiveItemsPerPage] = useState(10);
+  const [employeeTab, setEmployeeTab] = useState("active");
   const { user } = useAuth();
   const [userName, setUserName] = useState("Usuário");
 
@@ -263,17 +267,112 @@ const Reports = () => {
     },
   });
 
-  // Calcular paginação
+  // Query para colaboradores INATIVOS
+  const { data: inactiveEmployeesCompliance } = useQuery({
+    queryKey: ['inactive-employees-compliance'],
+    queryFn: async () => {
+      // Buscar todos os colaboradores inativos com paginação
+      let allEmployees: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id, name')
+          .eq('is_active', false)
+          .order('name')
+          .range(from, from + pageSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        allEmployees = [...allEmployees, ...batch];
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      // Buscar todos os outros dados de uma vez
+      const [
+        { data: documents },
+        { data: trainings },
+        { data: allAcknowledgments },
+        { data: allParticipations },
+        { data: allAssessments }
+      ] = await Promise.all([
+        supabase.from('compliance_documents').select('id'),
+        supabase.from('trainings').select('id'),
+        supabase.from('document_acknowledgments').select('employee_id, document_id').eq('quiz_correct', true).not('employee_id', 'is', null),
+        supabase.from('training_participations').select('employee_id, training_id').eq('completed', true).not('employee_id', 'is', null),
+        supabase.from('training_assessments').select('employee_id, training_id').eq('passed', true).not('employee_id', 'is', null)
+      ]);
+
+      if (!allEmployees || allEmployees.length === 0) return [];
+
+      const totalDocuments = documents?.length || 0;
+      const totalTrainings = trainings?.length || 0;
+
+      // Processar dados em memória para cada employee
+      const employeesWithCompliance = allEmployees.map((employee) => {
+        // Contar documentos aceitos por este employee
+        const docsAccepted = allAcknowledgments?.filter(
+          ack => ack.employee_id === employee.id
+        ).length || 0;
+        
+        const docsPending = totalDocuments - docsAccepted;
+
+        // Combinar e deduplificar trainings completados por este employee
+        const completedTrainingsSet = new Set<string>();
+        
+        allParticipations?.forEach(p => {
+          if (p.employee_id === employee.id) {
+            completedTrainingsSet.add(p.training_id);
+          }
+        });
+        
+        allAssessments?.forEach(a => {
+          if (a.employee_id === employee.id) {
+            completedTrainingsSet.add(a.training_id);
+          }
+        });
+
+        const trainingsCompleted = completedTrainingsSet.size;
+        const trainingsPending = totalTrainings - trainingsCompleted;
+
+        return {
+          ...employee,
+          docsAccepted,
+          docsPending,
+          trainingsCompleted,
+          trainingsPending,
+        };
+      });
+
+      return employeesWithCompliance;
+    },
+  });
+
+  // Calcular paginação ATIVOS
   const totalEmployees = employeesCompliance?.length || 0;
   const totalPages = Math.ceil(totalEmployees / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedEmployees = employeesCompliance?.slice(startIndex, endIndex) || [];
 
+  // Calcular paginação INATIVOS
+  const totalInactiveEmployees = inactiveEmployeesCompliance?.length || 0;
+  const totalInactivePages = Math.ceil(totalInactiveEmployees / inactiveItemsPerPage);
+  const inactiveStartIndex = (inactiveCurrentPage - 1) * inactiveItemsPerPage;
+  const inactiveEndIndex = inactiveStartIndex + inactiveItemsPerPage;
+  const paginatedInactiveEmployees = inactiveEmployeesCompliance?.slice(inactiveStartIndex, inactiveEndIndex) || [];
+
   // Reset para página 1 quando mudar items per page
   const handleItemsPerPageChange = (value: string) => {
     setItemsPerPage(Number(value));
     setCurrentPage(1);
+  };
+
+  const handleInactiveItemsPerPageChange = (value: string) => {
+    setInactiveItemsPerPage(Number(value));
+    setInactiveCurrentPage(1);
   };
 
   const handleExportPDF = async () => {
@@ -467,113 +566,248 @@ const Reports = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Mostrar</span>
-              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                  <SelectItem value="500">500</SelectItem>
-                </SelectContent>
-              </Select>
-              <span className="text-sm text-muted-foreground">por página</span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Mostrando {startIndex + 1} a {Math.min(endIndex, totalEmployees)} de {totalEmployees} colaboradores
-            </div>
-          </div>
+          <Tabs value={employeeTab} onValueChange={setEmployeeTab}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="active" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Ativos ({totalEmployees})
+              </TabsTrigger>
+              <TabsTrigger value="inactive" className="flex items-center gap-2">
+                <UserX className="w-4 h-4" />
+                Inativos ({totalInactiveEmployees})
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Colaborador</TableHead>
-                  <TableHead className="text-center">Regulamentos Aceitos</TableHead>
-                  <TableHead className="text-center">Regulamentos Pendentes</TableHead>
-                  <TableHead className="text-center">Treinamentos Concluídos</TableHead>
-                  <TableHead className="text-center">Treinamentos Pendentes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedEmployees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">{employee.name}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {employee.docsAccepted}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                        {employee.docsPending}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        {employee.trainingsCompleted}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                        {employee.trainingsPending}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+            <TabsContent value="active" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Mostrar</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">por página</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {startIndex + 1} a {Math.min(endIndex, totalEmployees)} de {totalEmployees} colaboradores
+                </div>
+              </div>
 
-          <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead className="text-center">Regulamentos Aceitos</TableHead>
+                      <TableHead className="text-center">Regulamentos Pendentes</TableHead>
+                      <TableHead className="text-center">Treinamentos Concluídos</TableHead>
+                      <TableHead className="text-center">Treinamentos Pendentes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedEmployees.map((employee) => (
+                      <TableRow key={employee.id}>
+                        <TableCell className="font-medium">{employee.name}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {employee.docsAccepted}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                            {employee.docsPending}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            {employee.trainingsCompleted}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                            {employee.trainingsPending}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
-              </span>
-            </div>
+              <div className="flex items-center justify-between pt-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="inactive" className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Mostrar</span>
+                  <Select value={inactiveItemsPerPage.toString()} onValueChange={handleInactiveItemsPerPageChange}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">por página</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {inactiveStartIndex + 1} a {Math.min(inactiveEndIndex, totalInactiveEmployees)} de {totalInactiveEmployees} colaboradores
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead className="text-center">Regulamentos Aceitos</TableHead>
+                      <TableHead className="text-center">Regulamentos Pendentes</TableHead>
+                      <TableHead className="text-center">Treinamentos Concluídos</TableHead>
+                      <TableHead className="text-center">Treinamentos Pendentes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedInactiveEmployees.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          Nenhum colaborador inativo encontrado
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      paginatedInactiveEmployees.map((employee) => (
+                        <TableRow key={employee.id}>
+                          <TableCell className="font-medium">{employee.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              {employee.docsAccepted}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                              {employee.docsPending}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              {employee.trainingsCompleted}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                              {employee.trainingsPending}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalInactiveEmployees > 0 && (
+                <div className="flex items-center justify-between pt-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInactiveCurrentPage(1)}
+                      disabled={inactiveCurrentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInactiveCurrentPage(inactiveCurrentPage - 1)}
+                      disabled={inactiveCurrentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Página {inactiveCurrentPage} de {totalInactivePages}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInactiveCurrentPage(inactiveCurrentPage + 1)}
+                      disabled={inactiveCurrentPage === totalInactivePages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInactiveCurrentPage(totalInactivePages)}
+                      disabled={inactiveCurrentPage === totalInactivePages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
