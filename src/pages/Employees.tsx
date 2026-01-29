@@ -680,48 +680,95 @@ const Employees = () => {
         throw new Error('Nenhum colaborador com CPF válido para importar');
       }
 
-      // Get existing employees to preserve their is_manager status
+      // Get existing employees with ALL their data to preserve everything
       const { data: existingEmployees } = await supabase
         .from('employees')
-        .select('cpf, is_manager, user_id')
+        .select('id, cpf, name, birth_date, phone, email, department, job_title, management_contract_id, is_manager, user_id')
         .in('cpf', validEmployeesData.map(e => e.cpf));
 
-      // Create a map of existing employees to preserve is_manager
+      // Create a map of existing employees with all their data
       const existingMap = new Map(
-        existingEmployees?.map(emp => [emp.cpf, { is_manager: emp.is_manager, user_id: emp.user_id }]) || []
+        existingEmployees?.map(emp => [emp.cpf, emp]) || []
       );
 
-      // Add is_manager and user_id to data, preserving existing values
-      const employeesWithPermissions = validEmployeesData.map(emp => ({
-        ...emp,
-        is_manager: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.is_manager : false,
-        user_id: existingMap.has(emp.cpf) ? existingMap.get(emp.cpf)!.user_id : null
-      }));
+      // Separate new employees from existing ones
+      const newEmployees: typeof validEmployeesData = [];
+      const employeesToUpdate: Array<{ id: string; updates: Record<string, any> }> = [];
+      let skippedCount = 0;
+      let updatedFieldsCount = 0;
 
-      // Use upsert to insert or update based on CPF
-      const { data: upsertedEmployees, error } = await supabase
-        .from('employees')
-        .upsert(employeesWithPermissions, { 
-          onConflict: 'cpf',
-          ignoreDuplicates: false
-        })
-        .select();
+      for (const emp of validEmployeesData) {
+        const existing = existingMap.get(emp.cpf);
+        
+        if (!existing) {
+          // New employee - insert with default is_manager = false
+          newEmployees.push({
+            ...emp,
+            is_manager: false
+          } as any);
+        } else {
+          // Existing employee - only fill in missing/empty fields
+          const updates: Record<string, any> = {};
+          
+          // Only update fields that are currently empty/null in the database
+          // and have values in the CSV
+          if (!existing.phone && emp.phone) {
+            updates.phone = emp.phone;
+          }
+          if (!existing.email && emp.email) {
+            updates.email = emp.email;
+          }
+          if (!existing.department && emp.department) {
+            updates.department = emp.department;
+          }
+          if (!existing.job_title && emp.job_title) {
+            updates.job_title = emp.job_title;
+          }
+          if (!existing.management_contract_id && emp.management_contract_id) {
+            updates.management_contract_id = emp.management_contract_id;
+          }
+          
+          // Only add to update list if there are fields to update
+          if (Object.keys(updates).length > 0) {
+            employeesToUpdate.push({ id: existing.id, updates });
+            updatedFieldsCount += Object.keys(updates).length;
+          } else {
+            skippedCount++;
+          }
+        }
+      }
 
-      if (error) throw error;
+      // Insert new employees
+      let insertedEmployees: any[] = [];
+      if (newEmployees.length > 0) {
+        const { data: inserted, error: insertError } = await supabase
+          .from('employees')
+          .insert(newEmployees)
+          .select();
 
-      // Create user accounts only for employees without user_id
+        if (insertError) throw insertError;
+        insertedEmployees = inserted || [];
+      }
+
+      // Update existing employees with missing fields only
+      for (const { id, updates } of employeesToUpdate) {
+        const { error: updateError } = await supabase
+          .from('employees')
+          .update(updates)
+          .eq('id', id);
+
+        if (updateError) {
+          console.error(`Error updating employee ${id}:`, updateError);
+        }
+      }
+
+      // Create user accounts only for NEW employees
       let userCreationErrors = 0;
       let usersCreated = 0;
-      for (const employee of upsertedEmployees || []) {
-        // Skip if employee already has a user_id
-        if (employee.user_id) {
-          console.log(`Skipping user creation for ${employee.name} - already has user`);
-          continue;
-        }
-
+      for (const employee of insertedEmployees) {
         try {
           const { error: userError } = await supabase.functions.invoke('create-employee-user', {
-            body: { employee }
+            body: { employees: [employee] }
           });
           
           if (userError) {
@@ -738,18 +785,26 @@ const Employees = () => {
 
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       
-      if (userCreationErrors === 0) {
-        toast({ 
-          title: "Importação concluída com sucesso!", 
-          description: `${validEmployeesData.length} colaborador(es) importado(s) com CPF válido. ${usersCreated} novos usuários criados. Login: CPF | Senha: DDMMAAAA`
-        });
-      } else {
-        toast({ 
-          title: "Importação parcialmente concluída", 
-          description: `${validEmployeesData.length} colaborador(es) importado(s). ${usersCreated} usuários criados, ${userCreationErrors} erro(s).`,
-          variant: "destructive"
-        });
+      // Build descriptive message
+      const messages = [];
+      if (newEmployees.length > 0) {
+        messages.push(`${newEmployees.length} novo(s) colaborador(es) criado(s)`);
       }
+      if (employeesToUpdate.length > 0) {
+        messages.push(`${employeesToUpdate.length} colaborador(es) atualizado(s) com dados faltantes`);
+      }
+      if (skippedCount > 0) {
+        messages.push(`${skippedCount} colaborador(es) já existentes sem alterações`);
+      }
+      if (usersCreated > 0) {
+        messages.push(`${usersCreated} usuário(s) criado(s)`);
+      }
+
+      toast({ 
+        title: "Importação concluída!", 
+        description: messages.join('. ') + '. Login: CPF | Senha: DDMMAAAA',
+        variant: userCreationErrors > 0 ? "destructive" : "default"
+      });
       
       setIsAnalysisDialogOpen(false);
       setCsvAnalysis(null);
