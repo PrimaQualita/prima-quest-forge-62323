@@ -707,24 +707,26 @@ const Employees = () => {
             is_manager: false
           } as any);
         } else {
-          // Existing employee - only fill in missing/empty fields
+          // Existing employee - always update these fields from CSV (if CSV has values)
+          // This preserves the employee record and all their activity history
+          // (document acknowledgments, training progress, etc. are linked by employee ID)
           const updates: Record<string, any> = {};
           
-          // Only update fields that are currently empty/null in the database
-          // and have values in the CSV
-          if (!existing.phone && emp.phone) {
+          // Always update these fields if the CSV has values
+          // (overwrite existing data to keep it synced with the source spreadsheet)
+          if (emp.phone) {
             updates.phone = emp.phone;
           }
-          if (!existing.email && emp.email) {
+          if (emp.email) {
             updates.email = emp.email;
           }
-          if (!existing.department && emp.department) {
+          if (emp.department) {
             updates.department = emp.department;
           }
-          if (!existing.job_title && emp.job_title) {
+          if (emp.job_title) {
             updates.job_title = emp.job_title;
           }
-          if (!existing.management_contract_id && emp.management_contract_id) {
+          if (emp.management_contract_id) {
             updates.management_contract_id = emp.management_contract_id;
           }
           
