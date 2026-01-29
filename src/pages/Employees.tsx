@@ -463,35 +463,60 @@ const Employees = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
 
+    console.log('File selected:', file.name);
+    
     // Reset the input so the same file can be selected again
     e.target.value = '';
 
+    // First, open the dialog with a loading state
+    setCsvAnalysis(null);
+    setPendingCsvText('');
+    setIsAnalysisDialogOpen(true);
+
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
+      console.log('File read complete');
       try {
         const text = event.target?.result as string;
         
+        if (!text || text.trim().length === 0) {
+          toast({ 
+            title: "Arquivo vazio", 
+            description: "O arquivo CSV selecionado está vazio.",
+            variant: "destructive" 
+          });
+          setIsAnalysisDialogOpen(false);
+          return;
+        }
+        
+        console.log('Analyzing CSV, length:', text.length);
+        
         // Analyze the CSV for duplicates
         const analysis = analyzeCsvDuplicates(text);
+        console.log('Analysis result:', analysis);
+        
         setCsvAnalysis(analysis);
         setPendingCsvText(text);
-        
-        // Show analysis dialog
-        setIsAnalysisDialogOpen(true);
       } catch (error: any) {
         console.error('Error analyzing CSV:', error);
+        setIsAnalysisDialogOpen(false);
         toast({ 
           title: "Erro ao analisar planilha", 
-          description: error.message,
+          description: error.message || "Erro desconhecido ao processar a planilha",
           variant: "destructive" 
         });
       }
     };
-    reader.onerror = () => {
+    reader.onerror = (error) => {
+      console.error('File read error:', error);
+      setIsAnalysisDialogOpen(false);
       toast({ 
         title: "Erro ao ler arquivo", 
         description: "Não foi possível ler o arquivo CSV.",
@@ -1219,14 +1244,33 @@ const Employees = () => {
       </div>
       
       {/* CSV Analysis Dialog */}
-      <Dialog open={isAnalysisDialogOpen} onOpenChange={setIsAnalysisDialogOpen}>
+      <Dialog open={isAnalysisDialogOpen} onOpenChange={(open) => {
+        if (!open && importProgress.step !== 'idle' && importProgress.step !== 'done') {
+          return; // Prevent closing while importing
+        }
+        setIsAnalysisDialogOpen(open);
+        if (!open) {
+          setCsvAnalysis(null);
+          setPendingCsvText("");
+          setImportProgress({ step: 'idle', current: 0, total: 0, percent: 0, message: '' });
+        }
+      }}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Análise da Planilha</DialogTitle>
             <DialogDescription>
-              Verifique as informações antes de importar
+              {csvAnalysis ? 'Verifique as informações antes de importar' : 'Processando arquivo...'}
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Loading state while analyzing */}
+          {!csvAnalysis && (
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">Analisando planilha...</p>
+            </div>
+          )}
+          
           {csvAnalysis && (
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-3 gap-4">
