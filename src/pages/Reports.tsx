@@ -57,56 +57,102 @@ const Reports = () => {
   }, [user?.id]);
 
   const { data: stats } = useQuery({
-    queryKey: ['compliance-stats'],
+    queryKey: ['compliance-stats-active'],
     queryFn: async () => {
-      const [employees, documents, trainings, acknowledgments, participations, assessments] = await Promise.all([
-        supabase.from('employees').select('*', { count: 'exact' }),
+      // Buscar IDs de colaboradores ativos
+      let activeEmployeeIds: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('is_active', true)
+          .range(from, from + pageSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        activeEmployeeIds = [...activeEmployeeIds, ...batch.map(e => e.id)];
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const activeEmployeeIdsSet = new Set(activeEmployeeIds);
+
+      const [documents, trainings, acknowledgments, participations, assessments] = await Promise.all([
         supabase.from('compliance_documents').select('*', { count: 'exact' }),
         supabase.from('trainings').select('*', { count: 'exact' }),
-        supabase.from('document_acknowledgments').select('*').eq('quiz_correct', true).not('employee_id', 'is', null),
+        supabase.from('document_acknowledgments').select('employee_id').eq('quiz_correct', true).not('employee_id', 'is', null),
         supabase.from('training_participations').select('employee_id, training_id').eq('completed', true).not('employee_id', 'is', null),
         supabase.from('training_assessments').select('employee_id, training_id').eq('passed', true).not('employee_id', 'is', null),
       ]);
 
-      // Combinar e deduplificar completions de treinamento
+      // Filtrar apenas aceites de colaboradores ativos
+      const activeAcknowledgments = acknowledgments.data?.filter(a => activeEmployeeIdsSet.has(a.employee_id)) || [];
+
+      // Combinar e deduplificar completions de treinamento APENAS de ativos
       const completedTrainingsSet = new Set<string>();
       participations.data?.forEach(p => {
-        completedTrainingsSet.add(`${p.employee_id}-${p.training_id}`);
+        if (activeEmployeeIdsSet.has(p.employee_id)) {
+          completedTrainingsSet.add(`${p.employee_id}-${p.training_id}`);
+        }
       });
       assessments.data?.forEach(a => {
-        completedTrainingsSet.add(`${a.employee_id}-${a.training_id}`);
+        if (activeEmployeeIdsSet.has(a.employee_id)) {
+          completedTrainingsSet.add(`${a.employee_id}-${a.training_id}`);
+        }
       });
 
       return {
-        totalEmployees: employees.count || 0,
+        totalEmployees: activeEmployeeIds.length,
         totalDocuments: documents.count || 0,
         totalTrainings: trainings.count || 0,
-        acknowledgedDocs: acknowledgments.data?.length || 0,
+        acknowledgedDocs: activeAcknowledgments.length,
         completedTrainings: completedTrainingsSet.size,
       };
     },
   });
 
   const { data: documentAcceptance } = useQuery({
-    queryKey: ['document-acceptance'],
+    queryKey: ['document-acceptance-active'],
     queryFn: async () => {
-      const [{ data: documents }, { count: totalEmployees }] = await Promise.all([
-        supabase.from('compliance_documents').select('id, title, category'),
-        supabase.from('employees').select('*', { count: 'exact', head: true })
-      ]);
+      // Buscar IDs de colaboradores ativos
+      let activeEmployeeIds: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
       
-      if (!documents || !totalEmployees) return [];
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('is_active', true)
+          .range(from, from + pageSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        activeEmployeeIds = [...activeEmployeeIds, ...batch.map(e => e.id)];
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const totalEmployees = activeEmployeeIds.length;
+      const activeEmployeeIdsSet = new Set(activeEmployeeIds);
+
+      const { data: documents } = await supabase.from('compliance_documents').select('id, title, category');
+      
+      if (!documents || totalEmployees === 0) return [];
       
       const docsWithAcceptance = await Promise.all(
         documents.map(async (doc) => {
-          const { count } = await supabase
+          const { data: acks } = await supabase
             .from('document_acknowledgments')
-            .select('*', { count: 'exact', head: true })
+            .select('employee_id')
             .eq('document_id', doc.id)
             .eq('quiz_correct', true)
             .not('employee_id', 'is', null);
           
-          const accepted = count || 0;
+          // Contar apenas aceites de colaboradores ativos
+          const activeAcks = acks?.filter(a => activeEmployeeIdsSet.has(a.employee_id)) || [];
+          const accepted = activeAcks.length;
           const pending = totalEmployees - accepted;
           const percentage = totalEmployees > 0 
             ? Math.round((accepted / totalEmployees) * 10000) / 100
@@ -121,14 +167,32 @@ const Reports = () => {
   });
 
   const { data: trainingCompletion } = useQuery({
-    queryKey: ['training-completion'],
+    queryKey: ['training-completion-active'],
     queryFn: async () => {
-      const [{ data: trainings }, { count: totalEmployees }] = await Promise.all([
-        supabase.from('trainings').select('id, title, category'),
-        supabase.from('employees').select('*', { count: 'exact', head: true })
-      ]);
+      // Buscar IDs de colaboradores ativos
+      let activeEmployeeIds: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
       
-      if (!trainings || !totalEmployees) return [];
+      while (true) {
+        const { data: batch } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('is_active', true)
+          .range(from, from + pageSize - 1);
+        
+        if (!batch || batch.length === 0) break;
+        activeEmployeeIds = [...activeEmployeeIds, ...batch.map(e => e.id)];
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const totalEmployees = activeEmployeeIds.length;
+      const activeEmployeeIdsSet = new Set(activeEmployeeIds);
+
+      const { data: trainings } = await supabase.from('trainings').select('id, title, category');
+      
+      if (!trainings || totalEmployees === 0) return [];
       
       const trainingsWithCompletion = await Promise.all(
         trainings.map(async (training) => {
@@ -148,10 +212,10 @@ const Reports = () => {
               .not('employee_id', 'is', null)
           ]);
           
-          // Combine and deduplicate employee IDs
+          // Combine and deduplicate employee IDs - APENAS ATIVOS
           const completedEmployees = new Set([
-            ...(participations?.map(p => p.employee_id) || []),
-            ...(assessments?.map(a => a.employee_id) || [])
+            ...(participations?.filter(p => activeEmployeeIdsSet.has(p.employee_id)).map(p => p.employee_id) || []),
+            ...(assessments?.filter(a => activeEmployeeIdsSet.has(a.employee_id)).map(a => a.employee_id) || [])
           ]);
           
           const completed = completedEmployees.size;
