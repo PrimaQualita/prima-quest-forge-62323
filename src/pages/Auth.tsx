@@ -119,7 +119,7 @@ const Auth = () => {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Primeiro acesso: use sua data de nascimento (Ex: 07011990)
+                Primeiro acesso? Contate o departamento de Compliance para sua senha inicial.
               </p>
             </div>
             
