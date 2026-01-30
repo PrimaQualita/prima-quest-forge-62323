@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ const Auth = () => {
   const [showForgotPasswordAlert, setShowForgotPasswordAlert] = useState(false);
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,6 +60,14 @@ const Auth = () => {
         });
         setLoading(false);
         return;
+      }
+
+      // Store session persistence preference
+      if (rememberMe) {
+        localStorage.setItem('rememberSession', 'true');
+      } else {
+        sessionStorage.setItem('sessionActive', 'true');
+        localStorage.removeItem('rememberSession');
       }
 
       const { data: profile } = await supabase
@@ -121,6 +131,20 @@ const Auth = () => {
               <p className="text-xs text-muted-foreground">
                 Primeiro acesso? Contate o departamento de Compliance para sua senha inicial.
               </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="rememberMe" 
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <Label 
+                htmlFor="rememberMe" 
+                className="text-sm font-normal cursor-pointer"
+              >
+                Permanecer conectado
+              </Label>
             </div>
             
             <Button type="submit" className="w-full" disabled={loading}>

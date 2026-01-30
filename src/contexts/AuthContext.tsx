@@ -95,8 +95,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
       if (!mountedRef.current) return;
+
+      // Check if session should persist (remember me was checked or session is still active)
+      const rememberSession = localStorage.getItem('rememberSession') === 'true';
+      const sessionActive = sessionStorage.getItem('sessionActive') === 'true';
+
+      if (initialSession && !rememberSession && !sessionActive) {
+        // User didn't check "remember me" and browser was closed (sessionStorage cleared)
+        console.log('[Auth] Session expired (browser was closed without remember me)');
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
       previousUserIdRef.current = initialSession?.user?.id ?? null;
       setSession(initialSession);
@@ -116,6 +130,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     clearUserCache(queryClient);
+    localStorage.removeItem('rememberSession');
+    sessionStorage.removeItem('sessionActive');
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
