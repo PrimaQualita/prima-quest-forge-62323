@@ -58,17 +58,25 @@ export const fixCorruptedCharacters = (text: string): string => {
   result = result.replace(/SA[\uFFFD\x00\x80-\x9F]DE/gi, 'SAUDE');
   result = result.replace(/PRIMA QUALITA SA.DE/gi, 'PRIMA QUALITA SAUDE');
   
-  // Step 2: Fix Roman numerals where lowercase 'l' is used instead of 'I'
-  // These patterns appear at the end of job titles
+  // Step 2: Fix Roman numerals where 'l' (lowercase L) or 'L' (uppercase L) is used instead of 'I'
+  // These patterns appear at the end of job titles - using case-insensitive matching
   const romanNumeralPatterns: Array<{ pattern: RegExp; replacement: string }> = [
-    { pattern: /\sVlll(?=\s*[-;]|\s*$)/g, replacement: ' VIII' },
-    { pattern: /\sVll(?=\s*[-;]|\s*$)/g, replacement: ' VII' },
-    { pattern: /\sVl(?=\s*[-;]|\s*$)/g, replacement: ' VI' },
-    { pattern: /\slll(?=\s*[-;]|\s*$)/g, replacement: ' III' },
-    { pattern: /\sll(?=\s*[-;]|\s*$)/g, replacement: ' II' },
-    { pattern: /\slV(?=\s*[-;]|\s*$)/g, replacement: ' IV' },
-    { pattern: /\slX(?=\s*[-;]|\s*$)/g, replacement: ' IX' },
-    { pattern: /\sl(?=\s*[-;]|\s*$)/g, replacement: ' I' },
+    // Match V + lll/LLL (VIII)
+    { pattern: /\sV[lL][lL][lL](?=\s*[-;,]|\s*$)/gi, replacement: ' VIII' },
+    // Match V + ll/LL (VII)
+    { pattern: /\sV[lL][lL](?=\s*[-;,]|\s*$)/gi, replacement: ' VII' },
+    // Match V + l/L (VI)
+    { pattern: /\sV[lL](?=\s*[-;,]|\s*$)/gi, replacement: ' VI' },
+    // Match lll/LLL (III)
+    { pattern: /\s[lL][lL][lL](?=\s*[-;,]|\s*$)/g, replacement: ' III' },
+    // Match ll/LL (II)
+    { pattern: /\s[lL][lL](?=\s*[-;,]|\s*$)/g, replacement: ' II' },
+    // Match l/L + V (IV)
+    { pattern: /\s[lL]V(?=\s*[-;,]|\s*$)/g, replacement: ' IV' },
+    // Match l/L + X (IX)
+    { pattern: /\s[lL]X(?=\s*[-;,]|\s*$)/g, replacement: ' IX' },
+    // Match single l/L at end (I) - must be last to not interfere with others
+    { pattern: /\s[lL](?=\s*[-;,]|\s*$)/g, replacement: ' I' },
   ];
   
   for (const item of romanNumeralPatterns) {
@@ -76,14 +84,14 @@ export const fixCorruptedCharacters = (text: string): string => {
   }
   
   // Step 3: Also fix Roman numerals followed by hyphen (like "I-RT")
-  result = result.replace(/\sVlll-/g, ' VIII-');
-  result = result.replace(/\sVll-/g, ' VII-');
-  result = result.replace(/\sVl-/g, ' VI-');
-  result = result.replace(/\slll-/g, ' III-');
-  result = result.replace(/\sll-/g, ' II-');
-  result = result.replace(/\slV-/g, ' IV-');
-  result = result.replace(/\slX-/g, ' IX-');
-  result = result.replace(/\sl-/g, ' I-');
+  result = result.replace(/\sV[lL][lL][lL]-/gi, ' VIII-');
+  result = result.replace(/\sV[lL][lL]-/gi, ' VII-');
+  result = result.replace(/\sV[lL]-/gi, ' VI-');
+  result = result.replace(/\s[lL][lL][lL]-/g, ' III-');
+  result = result.replace(/\s[lL][lL]-/g, ' II-');
+  result = result.replace(/\s[lL]V-/g, ' IV-');
+  result = result.replace(/\s[lL]X-/g, ' IX-');
+  result = result.replace(/\s[lL]-/g, ' I-');
   
   // Step 4: Fix UTF-8 mojibake patterns (UTF-8 bytes read as Latin-1)
   // Using character codes to avoid encoding issues in the source file
