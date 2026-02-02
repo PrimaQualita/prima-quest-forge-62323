@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, UserCheck, Eye, FileText, GraduationCap, Calendar, UserX, Trash2, AlertTriangle } from "lucide-react";
+import { Search, UserCheck, Eye, FileText, GraduationCap, Calendar, UserX, Trash2, AlertTriangle, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -451,37 +452,41 @@ const InactiveEmployees = () => {
                           {formatDate(employee.deactivated_at)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(employee)}
-                          title="Ver detalhes"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setEmployeeToReactivate({ id: employee.id, name: employee.name });
-                            setIsReactivateDialogOpen(true);
-                          }}
-                          title="Reativar colaborador"
-                        >
-                          <UserCheck className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setEmployeeToDelete({ id: employee.id, name: employee.name });
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          title="Excluir permanentemente"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Abrir menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDetails(employee)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Ver histórico
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setEmployeeToReactivate({ id: employee.id, name: employee.name });
+                                setIsReactivateDialogOpen(true);
+                              }}
+                            >
+                              <UserCheck className="mr-2 h-4 w-4 text-secondary" />
+                              Reativar colaborador
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setEmployeeToDelete({ id: employee.id, name: employee.name });
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir permanentemente
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
