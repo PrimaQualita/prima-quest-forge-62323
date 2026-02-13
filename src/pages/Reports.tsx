@@ -6,7 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { ComplianceCharts } from "@/components/dashboard/ComplianceCharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
@@ -26,6 +28,8 @@ const Reports = () => {
   const [employeeTab, setEmployeeTab] = useState("active");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFilter, setExportFilter] = useState<"all" | "active" | "inactive">("all");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [inactiveSearch, setInactiveSearch] = useState("");
   const { user } = useAuth();
   const [userName, setUserName] = useState("Usuário");
 
@@ -420,21 +424,41 @@ const Reports = () => {
     },
   });
 
+  // Totais sem filtro (para tabs e export)
+  const totalActiveCount = employeesCompliance?.length || 0;
+  const totalInactiveCount = inactiveEmployeesCompliance?.length || 0;
+
+  // Filtrar por pesquisa ATIVOS
+  const filteredActiveEmployees = useMemo(() => {
+    if (!employeesCompliance) return [];
+    if (!activeSearch.trim()) return employeesCompliance;
+    const search = activeSearch.toLowerCase().trim();
+    return employeesCompliance.filter(e => e.name.toLowerCase().includes(search));
+  }, [employeesCompliance, activeSearch]);
+
+  // Filtrar por pesquisa INATIVOS
+  const filteredInactiveEmployees = useMemo(() => {
+    if (!inactiveEmployeesCompliance) return [];
+    if (!inactiveSearch.trim()) return inactiveEmployeesCompliance;
+    const search = inactiveSearch.toLowerCase().trim();
+    return inactiveEmployeesCompliance.filter(e => e.name.toLowerCase().includes(search));
+  }, [inactiveEmployeesCompliance, inactiveSearch]);
+
   // Calcular paginação ATIVOS
-  const totalEmployees = employeesCompliance?.length || 0;
+  const totalEmployees = filteredActiveEmployees.length;
   const totalPages = Math.ceil(totalEmployees / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedEmployees = employeesCompliance?.slice(startIndex, endIndex) || [];
+  const paginatedEmployees = filteredActiveEmployees.slice(startIndex, endIndex);
 
   // Calcular paginação INATIVOS
-  const totalInactiveEmployees = inactiveEmployeesCompliance?.length || 0;
+  const totalInactiveEmployees = filteredInactiveEmployees.length;
   const totalInactivePages = Math.ceil(totalInactiveEmployees / inactiveItemsPerPage);
   const inactiveStartIndex = (inactiveCurrentPage - 1) * inactiveItemsPerPage;
   const inactiveEndIndex = inactiveStartIndex + inactiveItemsPerPage;
-  const paginatedInactiveEmployees = inactiveEmployeesCompliance?.slice(inactiveStartIndex, inactiveEndIndex) || [];
+  const paginatedInactiveEmployees = filteredInactiveEmployees.slice(inactiveStartIndex, inactiveEndIndex);
 
-  // Reset para página 1 quando mudar items per page
+  // Reset para página 1 quando mudar items per page ou pesquisa
   const handleItemsPerPageChange = (value: string) => {
     setItemsPerPage(Number(value));
     setCurrentPage(1);
@@ -444,6 +468,10 @@ const Reports = () => {
     setInactiveItemsPerPage(Number(value));
     setInactiveCurrentPage(1);
   };
+
+  // Reset page on search change
+  useEffect(() => { setCurrentPage(1); }, [activeSearch]);
+  useEffect(() => { setInactiveCurrentPage(1); }, [inactiveSearch]);
 
   const handleExportPDF = async () => {
     let dataToExport: typeof employeesCompliance = [];
@@ -536,19 +564,19 @@ const Reports = () => {
               <div className="flex items-center space-x-3">
                 <RadioGroupItem value="all" id="all" />
                 <Label htmlFor="all" className="cursor-pointer">
-                  Todos os colaboradores ({totalEmployees + totalInactiveEmployees})
+                  Todos os colaboradores ({totalActiveCount + totalInactiveCount})
                 </Label>
               </div>
               <div className="flex items-center space-x-3">
                 <RadioGroupItem value="active" id="active" />
                 <Label htmlFor="active" className="cursor-pointer">
-                  Apenas colaboradores ativos ({totalEmployees})
+                  Apenas colaboradores ativos ({totalActiveCount})
                 </Label>
               </div>
               <div className="flex items-center space-x-3">
                 <RadioGroupItem value="inactive" id="inactive" />
                 <Label htmlFor="inactive" className="cursor-pointer">
-                  Apenas colaboradores inativos ({totalInactiveEmployees})
+                  Apenas colaboradores inativos ({totalInactiveCount})
                 </Label>
               </div>
             </RadioGroup>
@@ -715,15 +743,24 @@ const Reports = () => {
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="active" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Ativos ({totalEmployees})
+                Ativos ({totalActiveCount})
               </TabsTrigger>
               <TabsTrigger value="inactive" className="flex items-center gap-2">
                 <UserX className="w-4 h-4" />
-                Inativos ({totalInactiveEmployees})
+                Inativos ({totalInactiveCount})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="active" className="space-y-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar colaborador..."
+                  value={activeSearch}
+                  onChange={(e) => setActiveSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Mostrar</span>
@@ -834,6 +871,15 @@ const Reports = () => {
             </TabsContent>
 
             <TabsContent value="inactive" className="space-y-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar colaborador..."
+                  value={inactiveSearch}
+                  onChange={(e) => setInactiveSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Mostrar</span>
