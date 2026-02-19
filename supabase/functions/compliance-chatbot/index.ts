@@ -34,15 +34,16 @@ serve(async (req) => {
       throw new Error("Supabase credentials not configured");
     }
 
-    // Verify JWT claims
+    // Verify user authentication
+    const token = authHeader.replace('Bearer ', '');
     const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser(token);
     
-    if (claimsError || !claimsData?.claims) {
+    if (userError || !user) {
+      console.error('Auth error:', userError);
       return new Response(JSON.stringify({ error: 'Token inválido. Faça login novamente.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
