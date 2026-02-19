@@ -59,7 +59,15 @@ serve(async (req) => {
       { data: documents },
       { data: dueDiligenceQuestions },
       { data: trainings },
-      { data: trainingDocuments }
+      { data: trainingDocuments },
+      { data: employees },
+      { data: inactiveEmployees },
+      { data: contracts },
+      { data: suppliers },
+      { data: trainingVideos },
+      { data: trainingParticipations },
+      { data: documentAcknowledgments },
+      { data: contractRenewals },
     ] = await Promise.all([
       supabase
         .from('compliance_documents')
@@ -67,17 +75,53 @@ serve(async (req) => {
         .order('created_at', { ascending: false }),
       supabase
         .from('due_diligence_questions')
-        .select('question, is_active')  // Removed yes_points and no_points from chatbot context
+        .select('question, is_active')
         .eq('is_active', true)
-        .order('created_at', { ascending: false }),
+        .order('question_order', { ascending: true }),
       supabase
         .from('trainings')
-        .select('title, description, content')
+        .select('title, description, category, duration_hours, passing_score, is_trail')
         .order('created_at', { ascending: false }),
       supabase
         .from('training_documents')
-        .select('title, content')
+        .select('file_name, training_id')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('employees')
+        .select('name, department, job_title, email, is_manager, management_contract_id, is_active')
+        .eq('is_active', true)
+        .order('name', { ascending: true }),
+      supabase
+        .from('employees')
+        .select('name, department, job_title, deactivated_at')
+        .eq('is_active', false)
+        .order('name', { ascending: true }),
+      supabase
+        .from('management_contracts')
+        .select('name, description, start_date, end_date, is_active')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('supplier_due_diligence')
+        .select('company_name, cnpj, status, total_score, owner, email, reviewed_at')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('training_videos')
+        .select('title, training_id, duration_minutes, video_order')
+        .order('video_order', { ascending: true }),
+      supabase
+        .from('training_participations')
+        .select('employee_id, training_id, completed, completion_date')
         .order('created_at', { ascending: false })
+        .limit(500),
+      supabase
+        .from('document_acknowledgments')
+        .select('employee_id, document_id, quiz_answered, quiz_correct, acknowledged_at')
+        .order('created_at', { ascending: false })
+        .limit(500),
+      supabase
+        .from('contract_renewals')
+        .select('contract_id, renewal_start_date, renewal_end_date, notes')
+        .order('created_at', { ascending: false }),
     ]);
 
     // Construir contexto completo
@@ -123,82 +167,177 @@ serve(async (req) => {
       });
     }
     
-    // Documentos de Treinamento
-    if (trainingDocuments && trainingDocuments.length > 0) {
-      knowledgeBase += "\n\n=== MATERIAIS DE TREINAMENTO ===\n\n";
-      trainingDocuments.forEach((doc) => {
-        knowledgeBase += `\n**${doc.title}**\n`;
-        if (doc.content) {
-          knowledgeBase += `${doc.content}\n`;
-        }
-        knowledgeBase += "\n---\n";
+    // Colaboradores Ativos
+    if (employees && employees.length > 0) {
+      knowledgeBase += `\n\n=== COLABORADORES ATIVOS (${employees.length} total) ===\n\n`;
+      const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
+      knowledgeBase += `Departamentos: ${departments.join(', ')}\n`;
+      const managers = employees.filter(e => e.is_manager);
+      if (managers.length > 0) {
+        knowledgeBase += `\nGestores:\n`;
+        managers.forEach(m => knowledgeBase += `- ${m.name} (${m.department || 'Sem depto'})\n`);
+      }
+      knowledgeBase += `\nLista completa:\n`;
+      employees.forEach(e => {
+        knowledgeBase += `- ${e.name} | Depto: ${e.department || 'N/A'} | Cargo: ${e.job_title || 'N/A'} | Gestor: ${e.is_manager ? 'Sim' : 'Não'}\n`;
       });
     }
 
-    const systemPrompt = `Você é um assistente inteligente da Prima Qualitá Saúde. Ajuda colaboradores e fornecedores com suporte ao sistema e compliance.
+    // Colaboradores Inativos
+    if (inactiveEmployees && inactiveEmployees.length > 0) {
+      knowledgeBase += `\n\n=== COLABORADORES INATIVOS (${inactiveEmployees.length} total) ===\n\n`;
+      inactiveEmployees.forEach(e => {
+        knowledgeBase += `- ${e.name} | Depto: ${e.department || 'N/A'} | Desativado em: ${e.deactivated_at || 'N/A'}\n`;
+      });
+    }
+
+    // Contratos de Gestão
+    if (contracts && contracts.length > 0) {
+      knowledgeBase += `\n\n=== CONTRATOS DE GESTÃO (${contracts.length} total) ===\n\n`;
+      contracts.forEach(c => {
+        knowledgeBase += `- **${c.name}** | Status: ${c.is_active ? 'Ativo' : 'Encerrado'} | Início: ${c.start_date || 'N/A'} | Fim: ${c.end_date || 'N/A'}\n`;
+        if (c.description) knowledgeBase += `  Descrição: ${c.description}\n`;
+      });
+    }
+
+    // Renovações de Contratos
+    if (contractRenewals && contractRenewals.length > 0) {
+      knowledgeBase += `\n\n=== RENOVAÇÕES DE CONTRATOS ===\n\n`;
+      contractRenewals.forEach(r => {
+        knowledgeBase += `- Contrato: ${r.contract_id} | De: ${r.renewal_start_date} até ${r.renewal_end_date}${r.notes ? ' | Obs: ' + r.notes : ''}\n`;
+      });
+    }
+
+    // Fornecedores
+    if (suppliers && suppliers.length > 0) {
+      knowledgeBase += `\n\n=== FORNECEDORES / DUE DILIGENCE (${suppliers.length} total) ===\n\n`;
+      const statusCount: Record<string, number> = {};
+      suppliers.forEach(s => { statusCount[s.status || 'pending'] = (statusCount[s.status || 'pending'] || 0) + 1; });
+      knowledgeBase += `Resumo por status: ${Object.entries(statusCount).map(([k,v]) => `${k}: ${v}`).join(', ')}\n\n`;
+      suppliers.forEach(s => {
+        knowledgeBase += `- **${s.company_name}** (CNPJ: ${s.cnpj}) | Status: ${s.status} | Pontuação: ${s.total_score || 0} | Responsável: ${s.owner}\n`;
+      });
+    }
+
+    // Vídeos de Treinamento
+    if (trainingVideos && trainingVideos.length > 0) {
+      knowledgeBase += `\n\n=== VÍDEOS DE TREINAMENTO (${trainingVideos.length} total) ===\n\n`;
+      trainingVideos.forEach(v => {
+        knowledgeBase += `- ${v.title} | Duração: ${v.duration_minutes || 'N/A'} min\n`;
+      });
+    }
+
+    // Estatísticas de Participação
+    if (trainingParticipations && trainingParticipations.length > 0) {
+      const completed = trainingParticipations.filter(p => p.completed).length;
+      const pending = trainingParticipations.length - completed;
+      knowledgeBase += `\n\n=== ESTATÍSTICAS DE TREINAMENTOS ===\n`;
+      knowledgeBase += `Total de participações: ${trainingParticipations.length} | Concluídos: ${completed} | Pendentes: ${pending}\n`;
+    }
+
+    // Estatísticas de Aceites de Documentos
+    if (documentAcknowledgments && documentAcknowledgments.length > 0) {
+      const acked = documentAcknowledgments.filter(a => a.acknowledged_at).length;
+      const quizCorrect = documentAcknowledgments.filter(a => a.quiz_correct).length;
+      knowledgeBase += `\n\n=== ESTATÍSTICAS DE REGULAMENTOS ===\n`;
+      knowledgeBase += `Total de aceites: ${acked} | Quiz respondidos corretamente: ${quizCorrect}\n`;
+    }
+
+    const systemPrompt = `Você é o assistente inteligente da Prima Qualitá Saúde. Você tem acesso COMPLETO a todas as informações do sistema e pode responder sobre qualquer módulo.
 
 ---
 
-## 📚 BASE DE CONHECIMENTO:
+## 📚 BASE DE CONHECIMENTO COMPLETA:
 ${knowledgeBase}
 
 ---
 
-## 🎯 MENUS DO SISTEMA (CORRETOS):
+## 🎯 MENUS E FUNCIONALIDADES DO SISTEMA:
 
-**Para TODOS:**
-- Dashboard: visão geral e progresso
-- Regulamentos: ler e aceitar documentos de compliance
-- Treinamentos: assistir vídeos, fazer avaliações e baixar certificados
+### Para TODOS os usuários:
+- **Dashboard**: Visão geral do progresso pessoal, documentos pendentes, treinamentos, e status geral
+- **Regulamentos**: Biblioteca de documentos de compliance. Colaboradores devem ler e aceitar cada documento, respondendo um quiz de verificação
+- **Treinamentos**: Cursos com vídeos educativos e avaliações. Inclui certificados digitais verificáveis
+- **Chatbot**: Este assistente para tirar dúvidas
+- **Perfil**: Gerenciamento de dados pessoais e foto
+- **Gamificação**: Jogos educativos sobre compliance (Quiz de Ética, Missão Integridade, Caça Riscos, Guardião de Dados, Corrida Compliance, Canal de Denúncias)
 
-**Para GESTORES:**
-- Contratos de Gestão: gerenciar contratos
-- Relatórios: analytics e estatísticas
-- Colaboradores: cadastrar e gerenciar equipe
-- Due Diligence: avaliar fornecedores
+### Para GESTORES (Administradores):
+- **Contratos de Gestão**: Cadastro, visualização e renovação de contratos. Controle de vigência e status (ativo/encerrado). Upload de documentos mensais por contrato
+- **Relatórios**: Analytics completos - status por colaborador (ativos/inativos), progresso de treinamentos, aceites de regulamentos, exportação PDF
+- **Colaboradores**: Cadastro individual ou por CSV, gerenciamento de equipe, ativação/desativação, vinculação a contratos, definição de gestores
+- **Colaboradores Inativos**: Lista de colaboradores desativados com possibilidade de reativação
+- **Due Diligence de Fornecedores**: Avaliação de fornecedores com questionário de compliance, aprovação/reprovação, geração de relatórios
+- **Portal de Fornecedores**: Área onde fornecedores se cadastram e respondem o questionário
 
 ---
 
-## 📝 GUIA RÁPIDO - COLABORADORES:
+## 📝 GUIAS DETALHADOS:
 
-**Aceitar Regulamentos:**
+### Colaboradores - Aceitar Regulamentos:
 1. Menu "Regulamentos" → escolha o documento
 2. Leia o conteúdo completo
 3. Marque "Li e aceito" no final
 4. Responda o quiz de verificação
 5. Confirme o aceite
 
-**Fazer Treinamentos:**
+### Colaboradores - Fazer Treinamentos:
 1. Menu "Treinamentos" → escolha o curso
-2. Aba "Vídeos": assista 95%+ de cada vídeo
-3. Aba "Avaliação": crie e faça a prova (60% para passar, 5 tentativas)
-4. Após aprovação: baixe o certificado
+2. Aba "Vídeos": assista 95%+ de cada vídeo (obrigatório)
+3. Aba "Avaliação": crie e faça a prova
+4. Nota mínima para aprovação varia por treinamento (geralmente 60%)
+5. Máximo de 5 tentativas por avaliação
+6. Após aprovação: baixe o certificado digital com código de verificação
 
-**Verificar Certificado:**
-- Acesse /verificar-certificado
-- Digite o código de verificação
+### Gestores - Gerenciar Colaboradores:
+1. Menu "Colaboradores" → "Novo Colaborador" ou importar CSV
+2. Campos: Nome, CPF, Data de Nascimento, Email, Telefone, Departamento, Cargo
+3. Vincular a um Contrato de Gestão
+4. Definir se é gestor (acesso admin)
+5. Sistema cria automaticamente login (CPF como usuário, data de nascimento como senha)
 
----
+### Gestores - Contratos de Gestão:
+1. Menu "Contratos" → "Novo Contrato"
+2. Definir nome, descrição, data início
+3. Adicionar renovações com datas de vigência
+4. Upload de documentos mensais organizados por ano/mês
+5. Sistema atualiza automaticamente status ativo/encerrado baseado nas datas
 
-## 📝 GUIA RÁPIDO - FORNECEDORES:
+### Gestores - Due Diligence:
+1. Fornecedor se cadastra pelo portal
+2. Responde questionário de compliance
+3. Sistema calcula pontuação de risco
+4. Gestor analisa e aprova/reprova
+5. Pode gerar relatório PDF da avaliação
 
-**Cadastro:**
-1. Login → "É um fornecedor?" → "Cadastrar"
-2. Preencha dados da empresa e sócios
-3. Responda due diligence (seja honesto)
-4. Aguarde análise
+### Fornecedores - Cadastro:
+1. Acessar sistema → "É um fornecedor?" → "Cadastrar"
+2. Criar conta com email e senha
+3. Preencher dados da empresa (Razão Social, CNPJ, sócios)
+4. Responder questionário de due diligence
+5. Aguardar análise do gestor de compliance
+
+### Verificação de Certificados:
+- Qualquer pessoa pode verificar em /verificar-certificado
+- Digitar o código impresso no certificado
+- Sistema confirma autenticidade
 
 ---
 
 ## 💡 COMO RESPONDER:
 
-- **Sistema**: Instruções diretas, passo a passo numerado
-- **Compliance**: Cite documentos da base de conhecimento
-- **Não souber**: Indique contato com compliance/suporte
-- **Tom**: Amigável, claro, conciso
-- Use emojis para tornar mais visual
+- **Perguntas sobre o sistema**: Instruções diretas com passo a passo numerado
+- **Perguntas sobre dados**: Use os dados reais da base de conhecimento acima
+- **Perguntas sobre compliance**: Cite os documentos e regulamentos cadastrados
+- **Estatísticas**: Forneça números reais baseados nos dados disponíveis
+- **Não souber**: Indique contato com o setor de compliance
+- **Tom**: Amigável, profissional, claro e conciso
+- Use emojis para tornar mais visual e organizado
+- Quando citar colaboradores ou fornecedores, use os dados reais
 
-Responda de forma OBJETIVA em português brasileiro!`;
+IMPORTANTE: Você tem acesso a dados reais do sistema. Use-os para dar respostas precisas e contextualizadas!
+
+Responda sempre em português brasileiro!`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
