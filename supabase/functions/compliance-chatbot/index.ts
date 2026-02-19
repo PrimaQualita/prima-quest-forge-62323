@@ -55,19 +55,18 @@ serve(async (req) => {
     // Use service role for fetching data (but user is authenticated)
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     
+    // Fetch exact stats via DB function (avoids 1000 row limit)
+    const { data: systemStats } = await supabase.rpc('get_system_stats');
+
     const [
       { data: documents },
       { data: dueDiligenceQuestions },
       { data: trainings },
-      { data: trainingDocuments },
-      { data: employees },
-      { data: inactiveEmployees },
       { data: contracts },
       { data: suppliers },
       { data: trainingVideos },
-      { data: trainingParticipations },
-      { data: documentAcknowledgments },
       { data: contractRenewals },
+      { data: managers },
     ] = await Promise.all([
       supabase
         .from('compliance_documents')
@@ -83,20 +82,6 @@ serve(async (req) => {
         .select('title, description, category, duration_hours, passing_score, is_trail')
         .order('created_at', { ascending: false }),
       supabase
-        .from('training_documents')
-        .select('file_name, training_id')
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('employees')
-        .select('name, department, job_title, email, is_manager, management_contract_id, is_active')
-        .eq('is_active', true)
-        .order('name', { ascending: true }),
-      supabase
-        .from('employees')
-        .select('name, department, job_title, deactivated_at')
-        .eq('is_active', false)
-        .order('name', { ascending: true }),
-      supabase
         .from('management_contracts')
         .select('name, description, start_date, end_date, is_active')
         .order('created_at', { ascending: false }),
@@ -109,19 +94,15 @@ serve(async (req) => {
         .select('title, training_id, duration_minutes, video_order')
         .order('video_order', { ascending: true }),
       supabase
-        .from('training_participations')
-        .select('employee_id, training_id, completed, completion_date')
-        .order('created_at', { ascending: false })
-        .limit(500),
-      supabase
-        .from('document_acknowledgments')
-        .select('employee_id, document_id, quiz_answered, quiz_correct, acknowledged_at')
-        .order('created_at', { ascending: false })
-        .limit(500),
-      supabase
         .from('contract_renewals')
         .select('contract_id, renewal_start_date, renewal_end_date, notes')
         .order('created_at', { ascending: false }),
+      supabase
+        .from('employees')
+        .select('name, department, job_title, is_manager')
+        .eq('is_active', true)
+        .eq('is_manager', true)
+        .order('name', { ascending: true }),
     ]);
 
     // Construir contexto completo
@@ -156,44 +137,73 @@ serve(async (req) => {
     if (trainings && trainings.length > 0) {
       knowledgeBase += "\n\n=== TREINAMENTOS DE COMPLIANCE ===\n\n";
       trainings.forEach((training) => {
-        knowledgeBase += `\n**${training.title}**\n`;
+        knowledgeBase += `\n**${training.title}** (Categoria: ${training.category})`;
+        if (training.duration_hours) knowledgeBase += ` | ${training.duration_hours}h`;
+        knowledgeBase += ` | Nota mínima: ${training.passing_score}`;
+        if (training.is_trail) knowledgeBase += ` | Trilha`;
+        knowledgeBase += `\n`;
         if (training.description) {
           knowledgeBase += `Descrição: ${training.description}\n`;
         }
-        if (training.content) {
-          knowledgeBase += `Conteúdo: ${training.content}\n`;
-        }
-        knowledgeBase += "\n---\n";
+        knowledgeBase += "---\n";
       });
     }
-    
-    // Colaboradores Ativos
-    if (employees && employees.length > 0) {
-      knowledgeBase += `\n\n=== COLABORADORES ATIVOS (${employees.length} total) ===\n\n`;
-      const departments = [...new Set(employees.map(e => e.department).filter(Boolean))];
-      knowledgeBase += `Departamentos: ${departments.join(', ')}\n`;
-      const managers = employees.filter(e => e.is_manager);
-      if (managers.length > 0) {
-        knowledgeBase += `\nGestores:\n`;
-        managers.forEach(m => knowledgeBase += `- ${m.name} (${m.department || 'Sem depto'})\n`);
+
+    // Estatísticas gerais do sistema (dados EXATOS do banco)
+    if (systemStats) {
+      const stats = systemStats;
+      knowledgeBase += `\n\n=== 📊 ESTATÍSTICAS GERAIS DO SISTEMA (DADOS EXATOS) ===\n\n`;
+      knowledgeBase += `**Colaboradores:**\n`;
+      knowledgeBase += `- Total: ${stats.total_employees}\n`;
+      knowledgeBase += `- Ativos: ${stats.active_employees}\n`;
+      knowledgeBase += `- Inativos: ${stats.inactive_employees}\n`;
+      knowledgeBase += `- Gestores ativos: ${stats.managers_count}\n`;
+      
+      if (stats.departments) {
+        knowledgeBase += `- Departamentos: ${stats.departments.filter(Boolean).join(', ')}\n`;
       }
-      knowledgeBase += `\nLista completa:\n`;
-      employees.forEach(e => {
-        knowledgeBase += `- ${e.name} | Depto: ${e.department || 'N/A'} | Cargo: ${e.job_title || 'N/A'} | Gestor: ${e.is_manager ? 'Sim' : 'Não'}\n`;
-      });
+      
+      if (stats.employees_by_department) {
+        knowledgeBase += `\n**Colaboradores por departamento:**\n`;
+        stats.employees_by_department.forEach((d: any) => {
+          knowledgeBase += `- ${d.department}: ${d.count}\n`;
+        });
+      }
+
+      if (stats.employees_by_contract) {
+        knowledgeBase += `\n**Colaboradores por contrato:**\n`;
+        stats.employees_by_contract.forEach((c: any) => {
+          knowledgeBase += `- ${c.contract_name}: ${c.count}\n`;
+        });
+      }
+
+      knowledgeBase += `\n**Contratos de Gestão:**\n`;
+      knowledgeBase += `- Total: ${stats.total_contracts} | Ativos: ${stats.active_contracts} | Encerrados: ${stats.inactive_contracts}\n`;
+
+      knowledgeBase += `\n**Fornecedores (Due Diligence):**\n`;
+      knowledgeBase += `- Total: ${stats.total_suppliers} | Aprovados: ${stats.suppliers_approved} | Pendentes: ${stats.suppliers_pending} | Reprovados: ${stats.suppliers_rejected}\n`;
+
+      knowledgeBase += `\n**Treinamentos:**\n`;
+      knowledgeBase += `- Cursos cadastrados: ${stats.total_trainings}\n`;
+      knowledgeBase += `- Vídeos: ${stats.total_training_videos}\n`;
+      knowledgeBase += `- Participações: ${stats.total_participations} | Concluídas: ${stats.completed_participations}\n`;
+      knowledgeBase += `- Certificados emitidos: ${stats.total_certificates}\n`;
+
+      knowledgeBase += `\n**Regulamentos:**\n`;
+      knowledgeBase += `- Documentos cadastrados: ${stats.total_documents}\n`;
+      knowledgeBase += `- Aceites registrados: ${stats.total_acknowledgments}\n`;
+      knowledgeBase += `- Quiz respondidos corretamente: ${stats.total_quiz_correct}\n`;
     }
 
-    // Colaboradores Inativos
-    if (inactiveEmployees && inactiveEmployees.length > 0) {
-      knowledgeBase += `\n\n=== COLABORADORES INATIVOS (${inactiveEmployees.length} total) ===\n\n`;
-      inactiveEmployees.forEach(e => {
-        knowledgeBase += `- ${e.name} | Depto: ${e.department || 'N/A'} | Desativado em: ${e.deactivated_at || 'N/A'}\n`;
-      });
+    // Gestores
+    if (managers && managers.length > 0) {
+      knowledgeBase += `\n\n=== GESTORES ===\n\n`;
+      managers.forEach(m => knowledgeBase += `- ${m.name} | Depto: ${m.department || 'N/A'} | Cargo: ${m.job_title || 'N/A'}\n`);
     }
 
-    // Contratos de Gestão
+    // Contratos de Gestão (detalhes)
     if (contracts && contracts.length > 0) {
-      knowledgeBase += `\n\n=== CONTRATOS DE GESTÃO (${contracts.length} total) ===\n\n`;
+      knowledgeBase += `\n\n=== CONTRATOS DE GESTÃO (detalhes) ===\n\n`;
       contracts.forEach(c => {
         knowledgeBase += `- **${c.name}** | Status: ${c.is_active ? 'Ativo' : 'Encerrado'} | Início: ${c.start_date || 'N/A'} | Fim: ${c.end_date || 'N/A'}\n`;
         if (c.description) knowledgeBase += `  Descrição: ${c.description}\n`;
@@ -208,12 +218,9 @@ serve(async (req) => {
       });
     }
 
-    // Fornecedores
+    // Fornecedores (detalhes)
     if (suppliers && suppliers.length > 0) {
-      knowledgeBase += `\n\n=== FORNECEDORES / DUE DILIGENCE (${suppliers.length} total) ===\n\n`;
-      const statusCount: Record<string, number> = {};
-      suppliers.forEach(s => { statusCount[s.status || 'pending'] = (statusCount[s.status || 'pending'] || 0) + 1; });
-      knowledgeBase += `Resumo por status: ${Object.entries(statusCount).map(([k,v]) => `${k}: ${v}`).join(', ')}\n\n`;
+      knowledgeBase += `\n\n=== FORNECEDORES (detalhes) ===\n\n`;
       suppliers.forEach(s => {
         knowledgeBase += `- **${s.company_name}** (CNPJ: ${s.cnpj}) | Status: ${s.status} | Pontuação: ${s.total_score || 0} | Responsável: ${s.owner}\n`;
       });
@@ -221,26 +228,10 @@ serve(async (req) => {
 
     // Vídeos de Treinamento
     if (trainingVideos && trainingVideos.length > 0) {
-      knowledgeBase += `\n\n=== VÍDEOS DE TREINAMENTO (${trainingVideos.length} total) ===\n\n`;
+      knowledgeBase += `\n\n=== VÍDEOS DE TREINAMENTO ===\n\n`;
       trainingVideos.forEach(v => {
         knowledgeBase += `- ${v.title} | Duração: ${v.duration_minutes || 'N/A'} min\n`;
       });
-    }
-
-    // Estatísticas de Participação
-    if (trainingParticipations && trainingParticipations.length > 0) {
-      const completed = trainingParticipations.filter(p => p.completed).length;
-      const pending = trainingParticipations.length - completed;
-      knowledgeBase += `\n\n=== ESTATÍSTICAS DE TREINAMENTOS ===\n`;
-      knowledgeBase += `Total de participações: ${trainingParticipations.length} | Concluídos: ${completed} | Pendentes: ${pending}\n`;
-    }
-
-    // Estatísticas de Aceites de Documentos
-    if (documentAcknowledgments && documentAcknowledgments.length > 0) {
-      const acked = documentAcknowledgments.filter(a => a.acknowledged_at).length;
-      const quizCorrect = documentAcknowledgments.filter(a => a.quiz_correct).length;
-      knowledgeBase += `\n\n=== ESTATÍSTICAS DE REGULAMENTOS ===\n`;
-      knowledgeBase += `Total de aceites: ${acked} | Quiz respondidos corretamente: ${quizCorrect}\n`;
     }
 
     const systemPrompt = `Você é o assistente inteligente da Prima Qualitá Saúde. Você tem acesso COMPLETO a todas as informações do sistema e pode responder sobre qualquer módulo.

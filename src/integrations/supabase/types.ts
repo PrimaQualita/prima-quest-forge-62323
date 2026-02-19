@@ -1115,6 +1115,7 @@ export type Database = {
     }
     Functions: {
       fix_encoding: { Args: { text_value: string }; Returns: string }
+      get_system_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
