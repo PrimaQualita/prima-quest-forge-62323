@@ -6,7 +6,7 @@ import { AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveC
 import { motion } from "framer-motion";
 import { Calendar, BarChart3, PieChart as PieIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
 
 interface ContractCandlestickChartProps {
   contractId: string;
@@ -61,12 +61,10 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
         .from('contract_documents')
         .select('year')
         .eq('contract_id', contractId);
-      if (!data) return [initialYear];
-      const years = [...new Set(data.map(d => d.year))].sort((a, b) => b - a);
-      // Always include the initial year
-      if (!years.includes(initialYear)) years.push(initialYear);
-      years.sort((a, b) => b - a);
-      return years.length > 0 ? years : [initialYear];
+      const currentYear = new Date().getFullYear();
+      const yearsSet = new Set<number>([currentYear, initialYear]);
+      if (data) data.forEach(d => yearsSet.add(d.year));
+      return [...yearsSet].sort((a, b) => b - a);
     },
   });
 
@@ -214,48 +212,45 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
               </div>
             </div>
             {/* Year & month tabs */}
-            <ScrollArea className="w-full">
-              <div className="flex items-center gap-1">
-                {yearsToShow.map(y => (
-                  <button
-                    key={y}
-                    onClick={() => setSelectedYear(y)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
-                      selectedYear === y
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {y}
-                  </button>
-                ))}
-                <div className="w-px h-4 bg-border mx-0.5" />
+            <div className="flex flex-wrap items-center gap-1">
+              {yearsToShow.map(y => (
                 <button
-                  onClick={() => setSelectedMonth("anual")}
-                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
-                    selectedMonth === "anual"
+                  key={y}
+                  onClick={() => setSelectedYear(y)}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                    selectedYear === y
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+              <div className="w-px h-4 bg-border mx-0.5" />
+              <button
+                onClick={() => setSelectedMonth("anual")}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                  selectedMonth === "anual"
+                    ? "bg-secondary text-secondary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Anual
+              </button>
+              {MONTHS.map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedMonth(i + 1)}
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
+                    selectedMonth === i + 1
                       ? "bg-secondary text-secondary-foreground shadow-sm"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  Anual
+                  {label}
                 </button>
-                {MONTHS.map((label, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedMonth(i + 1)}
-                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
-                      selectedMonth === i + 1
-                        ? "bg-secondary text-secondary-foreground shadow-sm"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+              ))}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
