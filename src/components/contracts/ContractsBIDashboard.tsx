@@ -486,58 +486,6 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
           </Card>
         </motion.div>
       )}
-
-      {/* Row 7: Pareto - Top contracts contributing to 80% of analyses */}
-      {docsPerContract && totalDocs > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}>
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Activity className="w-4 h-4 text-muted-foreground" />
-                Concentração de Análises (Pareto)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const sorted = [...docsPerContract].filter(d => d.count > 0).sort((a, b) => b.count - a.count);
-                let cumPct = 0;
-                const paretoData = sorted.map(item => {
-                  cumPct += (item.count / totalDocs) * 100;
-                  return {
-                    name: item.name.length > 18 ? item.name.substring(0, 16) + '…' : item.name,
-                    fullName: item.name,
-                    analises: item.count,
-                    percentual_acumulado: Math.round(cumPct),
-                  };
-                });
-                return (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={paretoData} margin={{ top: 10, right: 40, left: 0, bottom: 40 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} angle={-30} textAnchor="end" />
-                      <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${v}%`} />
-                      <Tooltip content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0]?.payload;
-                        return (
-                          <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-                            <p className="font-medium mb-1">{d?.fullName}</p>
-                            <p style={{ color: 'hsl(var(--primary))' }}>Análises: {d?.analises}</p>
-                            <p style={{ color: 'hsl(var(--destructive))' }}>Acumulado: {d?.percentual_acumulado}%</p>
-                          </div>
-                        );
-                      }} />
-                      <Bar yAxisId="left" dataKey="analises" name="Análises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={28} />
-                      <Line yAxisId="right" type="monotone" dataKey="percentual_acumulado" name="% Acumulado" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3, fill: 'hsl(var(--destructive))' }} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
     </div>
   );
 };
