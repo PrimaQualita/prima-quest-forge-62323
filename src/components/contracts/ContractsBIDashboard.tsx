@@ -11,6 +11,7 @@ import { ContractEmployeesChart } from "./ContractEmployeesChart";
 interface ContractsBIDashboardProps {
   contracts: any[] | undefined;
   year: number;
+  month: number; // 0 = anual, 1-12 = specific month
 }
 
 const COLORS = [
@@ -24,7 +25,7 @@ const COLORS = [
   'hsl(340, 82%, 52%)',
 ];
 
-export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardProps) => {
+export const ContractsBIDashboard = ({ contracts, year, month }: ContractsBIDashboardProps) => {
   const activeContracts = contracts?.filter(c => c.is_active) || [];
   const inactiveContracts = contracts?.filter(c => !c.is_active) || [];
   const totalContracts = contracts?.length || 0;
@@ -314,7 +315,7 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
       </motion.div>
 
       {/* Row 4: Employees per Contract (separate chart) */}
-      <ContractEmployeesChart contracts={contracts || []} />
+      <ContractEmployeesChart contracts={contracts || []} year={year} month={month} />
 
       {/* Row 5: Coverage Gauge + Analysis Ranking + Fill Rate */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -31,7 +31,7 @@ const ManagementContracts = () => {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [mainTab, setMainTab] = useState("bi");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(0); // 0 = anual
   const [newContract, setNewContract] = useState({ name: "", description: "", start_date: "", end_date: "" });
   const [editContract, setEditContract] = useState<any>(null);
   const [renewalData, setRenewalData] = useState({ 
@@ -372,7 +372,7 @@ const ManagementContracts = () => {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-4xl font-bold text-foreground uppercase">Contratos de Gestão</h1>
         <div className="flex items-center gap-3">
-          {mainTab === "bi" && (
+        {mainTab === "bi" && (
             <Tabs value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
               <TabsList>
                 {years.map((year) => (
@@ -380,6 +380,33 @@ const ManagementContracts = () => {
                 ))}
               </TabsList>
             </Tabs>
+          )}
+          {mainTab === "bi" && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <button
+                onClick={() => setSelectedMonth(0)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                  selectedMonth === 0
+                    ? "bg-secondary text-secondary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Anual
+              </button>
+              {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedMonth(i + 1)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    selectedMonth === i + 1
+                      ? "bg-secondary text-secondary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
           <Tabs value={mainTab} onValueChange={setMainTab}>
             <TabsList>
@@ -595,7 +622,7 @@ const ManagementContracts = () => {
       {/* BI Dashboard Tab */}
       {mainTab === "bi" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-          <ContractsBIDashboard contracts={contracts} year={selectedYear} />
+          <ContractsBIDashboard contracts={contracts} year={selectedYear} month={selectedMonth} />
           
           <div className="space-y-6 mt-6">
             <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
