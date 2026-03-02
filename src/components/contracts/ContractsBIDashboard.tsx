@@ -5,7 +5,7 @@ import { BIGaugeChart } from "@/components/reports/BIGaugeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, FolderOpen, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Calendar, Activity } from "lucide-react";
 import { motion } from "framer-motion";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line, AreaChart, Area } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Line, AreaChart, Area, ComposedChart } from "recharts";
 
 interface ContractsBIDashboardProps {
   contracts: any[] | undefined;
@@ -319,6 +319,191 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
                   <Bar dataKey="analises" name="Análises" fill="hsl(var(--secondary))" radius={[0, 4, 4, 0]} barSize={14} />
                 </BarChart>
               </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Row 5: Coverage Gauge + Analysis Ranking + Fill Rate */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Coverage - contracts with at least 1 analysis */}
+        {(() => {
+          const contractsWithDocs = docsPerContract?.filter(d => d.count > 0).length || 0;
+          const coveragePct = totalContracts > 0 ? (contractsWithDocs / totalContracts) * 100 : 0;
+          return (
+            <BIGaugeChart
+              title="Cobertura de Análises"
+              value={coveragePct}
+              total={`${contractsWithDocs} de ${totalContracts} contratos analisados`}
+              color="hsl(var(--primary))"
+              icon={<FileText className="w-4 h-4" />}
+            />
+          );
+        })()}
+
+        {/* Average analyses per active contract */}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.5 }}>
+          <Card className="border-border/50 h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" />
+                Média por Contrato Vigente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col justify-center h-[calc(100%-60px)]">
+              {(() => {
+                const activeDocsCount = docsPerContract?.filter(d => d.is_active).reduce((s, d) => s + d.count, 0) || 0;
+                const activeCount = activeContracts.length || 1;
+                const avg = (activeDocsCount / activeCount).toFixed(1);
+                const maxDoc = docsPerContract?.filter(d => d.is_active).reduce((m, d) => d.count > (m?.count || 0) ? d : m, docsPerContract[0]);
+                const minDoc = docsPerContract?.filter(d => d.is_active && d.count >= 0).reduce((m, d) => d.count < (m?.count ?? Infinity) ? d : m, docsPerContract[0]);
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold text-primary">{avg}</span>
+                      <span className="text-sm text-muted-foreground">análises/contrato</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <p>📈 Máximo: <span className="font-medium text-foreground">{maxDoc?.count || 0}</span> ({maxDoc?.name ? (maxDoc.name.length > 25 ? maxDoc.name.substring(0, 23) + '…' : maxDoc.name) : '-'})</p>
+                      <p>📉 Mínimo: <span className="font-medium text-foreground">{minDoc?.count ?? 0}</span> ({minDoc?.name ? (minDoc.name.length > 25 ? minDoc.name.substring(0, 23) + '…' : minDoc.name) : '-'})</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Monthly average */}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.6 }}>
+          <Card className="border-border/50 h-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Ritmo de Análises
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col justify-center h-[calc(100%-60px)]">
+              {(() => {
+                const currentMonth = new Date().getMonth(); // 0-indexed
+                const monthsElapsed = year === new Date().getFullYear() ? Math.max(currentMonth, 1) : 12;
+                const monthlyAvg = (totalDocs / monthsElapsed).toFixed(1);
+                const projected = Math.round(Number(monthlyAvg) * 12);
+                const bestMonth = monthlyTrend?.reduce((m, d) => d.total > (m?.total || 0) ? d : m, monthlyTrend[0]);
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-bold text-secondary">{monthlyAvg}</span>
+                      <span className="text-sm text-muted-foreground">análises/mês</span>
+                    </div>
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <p>🎯 Projeção anual: <span className="font-medium text-foreground">{projected} análises</span></p>
+                      {bestMonth && bestMonth.total > 0 && (
+                        <p>🏆 Melhor mês: <span className="font-medium text-foreground">{bestMonth.month}</span> ({bestMonth.total} análises)</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      {/* Row 6: Stacked Monthly Distribution by Contract */}
+      {docsPerContract && docsPerContract.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}>
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                Ranking de Análises por Contrato — {year}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const sorted = [...(docsPerContract || [])].sort((a, b) => b.count - a.count).slice(0, 10);
+                const maxCount = Math.max(...sorted.map(d => d.count), 1);
+                return (
+                  <div className="space-y-3">
+                    {sorted.map((item, i) => (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-muted-foreground w-6 text-right">{i + 1}º</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-foreground truncate max-w-[250px]">{item.name}</span>
+                            <span className="text-xs font-bold text-primary ml-2">{item.count}</span>
+                          </div>
+                          <div className="h-3 bg-muted/50 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(item.count / maxCount) * 100}%` }}
+                              transition={{ duration: 0.8, delay: i * 0.05 }}
+                            />
+                          </div>
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${item.is_active ? 'bg-secondary/15 text-secondary' : 'bg-destructive/15 text-destructive'}`}>
+                          {item.is_active ? 'Vigente' : 'Encerrado'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Row 7: Pareto - Top contracts contributing to 80% of analyses */}
+      {docsPerContract && totalDocs > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}>
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4 text-muted-foreground" />
+                Concentração de Análises (Pareto)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const sorted = [...docsPerContract].filter(d => d.count > 0).sort((a, b) => b.count - a.count);
+                let cumPct = 0;
+                const paretoData = sorted.map(item => {
+                  cumPct += (item.count / totalDocs) * 100;
+                  return {
+                    name: item.name.length > 18 ? item.name.substring(0, 16) + '…' : item.name,
+                    fullName: item.name,
+                    analises: item.count,
+                    percentual_acumulado: Math.round(cumPct),
+                  };
+                });
+                return (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={paretoData} margin={{ top: 10, right: 40, left: 0, bottom: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} angle={-30} textAnchor="end" />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0]?.payload;
+                        return (
+                          <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+                            <p className="font-medium mb-1">{d?.fullName}</p>
+                            <p style={{ color: 'hsl(var(--primary))' }}>Análises: {d?.analises}</p>
+                            <p style={{ color: 'hsl(var(--destructive))' }}>Acumulado: {d?.percentual_acumulado}%</p>
+                          </div>
+                        );
+                      }} />
+                      <Bar yAxisId="left" dataKey="analises" name="Análises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={28} />
+                      <Line yAxisId="right" type="monotone" dataKey="percentual_acumulado" name="% Acumulado" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 3, fill: 'hsl(var(--destructive))' }} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>
