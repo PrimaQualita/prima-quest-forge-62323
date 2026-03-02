@@ -44,7 +44,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
-  const [activeView, setActiveView] = useState<ViewType>("vela");
+  const [activeView, setActiveView] = useState<ViewType>("ranking");
 
   const { data: availableYears } = useQuery({
     queryKey: ['contract-docs-available-years'],
@@ -133,8 +133,8 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
   const yearsToShow = availableYears || [currentYear];
 
   const views: { key: ViewType; label: string; icon: React.ReactNode }[] = [
-    { key: "vela", label: "Vela", icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { key: "ranking", label: "Ranking", icon: <Trophy className="w-3.5 h-3.5" /> },
+    { key: "vela", label: "Vela", icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { key: "horizontal", label: "Barras", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
     { key: "pareto", label: "Pareto", icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { key: "pizza", label: "Pizza", icon: <PieIcon className="w-3.5 h-3.5" /> },
@@ -289,7 +289,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
 
               {/* RANKING VIEW - Visual ranking with medals and progress bars */}
               {activeView === "ranking" && (
-                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                <div className="space-y-2 pr-2">
                   {rankedData.map((item, i) => {
                     const maxCount = rankedData[0]?.count || 1;
                     const pct = totalDocuments > 0 ? ((item.count / totalDocuments) * 100).toFixed(1) : '0';
