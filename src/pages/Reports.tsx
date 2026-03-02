@@ -32,6 +32,8 @@ const Reports = () => {
   const [employeeTab, setEmployeeTab] = useState("active");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFilter, setExportFilter] = useState<"all" | "active" | "inactive">("all");
+  const [exportContract, setExportContract] = useState<string>("all");
+  const [exportDepartment, setExportDepartment] = useState<string>("all");
   const [activeSearch, setActiveSearch] = useState("");
   const [inactiveSearch, setInactiveSearch] = useState("");
   const { user } = useAuth();
@@ -170,6 +172,15 @@ const Reports = () => {
 
   const overallCompliance = (documentComplianceRate + trainingComplianceRate) / 2;
 
+  // Fetch management contracts for filter
+  const { data: managementContracts } = useQuery({
+    queryKey: ['management-contracts-list'],
+    queryFn: async () => {
+      const { data } = await supabase.from('management_contracts').select('id, name').order('name');
+      return data || [];
+    },
+  });
+
   const { data: employeesCompliance } = useQuery({
     queryKey: ['employees-compliance-active'],
     queryFn: async () => {
@@ -177,7 +188,7 @@ const Reports = () => {
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const { data: batch } = await supabase.from('employees').select('id, name, department').eq('is_active', true).order('name').range(from, from + pageSize - 1);
+        const { data: batch } = await supabase.from('employees').select('id, name, department, management_contract_id').eq('is_active', true).order('name').range(from, from + pageSize - 1);
         if (!batch || batch.length === 0) break;
         allEmployees = [...allEmployees, ...batch];
         if (batch.length < pageSize) break;
@@ -213,7 +224,7 @@ const Reports = () => {
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const { data: batch } = await supabase.from('employees').select('id, name').eq('is_active', false).order('name').range(from, from + pageSize - 1);
+        const { data: batch } = await supabase.from('employees').select('id, name, department, management_contract_id').eq('is_active', false).order('name').range(from, from + pageSize - 1);
         if (!batch || batch.length === 0) break;
         allEmployees = [...allEmployees, ...batch];
         if (batch.length < pageSize) break;
@@ -276,6 +287,14 @@ const Reports = () => {
   useEffect(() => { setCurrentPage(1); }, [activeSearch]);
   useEffect(() => { setInactiveCurrentPage(1); }, [inactiveSearch]);
 
+  // Get unique departments from both active and inactive
+  const availableDepartments = useMemo(() => {
+    const depts = new Set<string>();
+    employeesCompliance?.forEach(e => { if (e.department) depts.add(e.department); });
+    inactiveEmployeesCompliance?.forEach(e => { if (e.department) depts.add(e.department); });
+    return Array.from(depts).sort();
+  }, [employeesCompliance, inactiveEmployeesCompliance]);
+
   const handleExportPDF = async () => {
     let dataToExport: typeof employeesCompliance = [];
     let statsToExport = stats;
@@ -301,11 +320,46 @@ const Reports = () => {
         };
       }
     }
-    if (!dataToExport || dataToExport.length === 0 || !statsToExport) { toast.error("Aguarde o carregamento dos dados"); return; }
+
+    // Filter by contract
+    const selectedContractName = exportContract !== "all" 
+      ? managementContracts?.find(c => c.id === exportContract)?.name || null 
+      : null;
+    if (exportContract !== "all") {
+      dataToExport = (dataToExport || []).filter(e => e.management_contract_id === exportContract);
+    }
+
+    // Filter by department
+    if (exportDepartment !== "all") {
+      dataToExport = (dataToExport || []).filter(e => e.department === exportDepartment);
+    }
+
+    // Recalculate stats after filtering
+    if (exportContract !== "all" || exportDepartment !== "all") {
+      const filteredCount = dataToExport?.length || 0;
+      const filteredDocsAccepted = dataToExport?.reduce((sum, e) => sum + e.docsAccepted, 0) || 0;
+      const filteredTrainingsCompleted = dataToExport?.reduce((sum, e) => sum + e.trainingsCompleted, 0) || 0;
+      statsToExport = {
+        totalEmployees: filteredCount,
+        totalDocuments: stats?.totalDocuments || 0,
+        totalTrainings: stats?.totalTrainings || 0,
+        acknowledgedDocs: filteredDocsAccepted,
+        completedTrainings: filteredTrainingsCompleted,
+      };
+    }
+
+    if (!dataToExport || dataToExport.length === 0 || !statsToExport) { toast.error("Nenhum colaborador encontrado com os filtros selecionados"); return; }
     setExportDialogOpen(false);
     toast.loading("Gerando PDF...", { id: "pdf-loading" });
     try {
-      const protocol = await generateReportPDF(dataToExport, statsToExport, { userName, baseUrl: window.location.origin });
+      const filterLabel = exportFilter === "all" ? "Todos" : exportFilter === "active" ? "Ativos" : "Inativos";
+      const protocol = await generateReportPDF(dataToExport, statsToExport, { 
+        userName, 
+        baseUrl: window.location.origin,
+        contractName: selectedContractName || undefined,
+        departmentName: exportDepartment !== "all" ? exportDepartment : undefined,
+        filterLabel,
+      });
       toast.success(`PDF gerado! Protocolo: ${protocol}`, { id: "pdf-loading" });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -481,16 +535,47 @@ const Reports = () => {
               Exportar PDF
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Exportar Relatório PDF</DialogTitle>
-              <DialogDescription>Selecione quais colaboradores deseja incluir no relatório</DialogDescription>
+              <DialogDescription>Configure os filtros do relatório</DialogDescription>
             </DialogHeader>
-            <RadioGroup value={exportFilter} onValueChange={(v) => setExportFilter(v as any)} className="space-y-3 py-4">
-              <div className="flex items-center space-x-3"><RadioGroupItem value="all" id="all" /><Label htmlFor="all" className="cursor-pointer">Todos ({totalActiveCount + totalInactiveCount})</Label></div>
-              <div className="flex items-center space-x-3"><RadioGroupItem value="active" id="active" /><Label htmlFor="active" className="cursor-pointer">Ativos ({totalActiveCount})</Label></div>
-              <div className="flex items-center space-x-3"><RadioGroupItem value="inactive" id="inactive" /><Label htmlFor="inactive" className="cursor-pointer">Inativos ({totalInactiveCount})</Label></div>
-            </RadioGroup>
+            <div className="space-y-5 py-2">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Escopo dos Colaboradores</Label>
+                <RadioGroup value={exportFilter} onValueChange={(v) => setExportFilter(v as any)} className="space-y-2">
+                  <div className="flex items-center space-x-3"><RadioGroupItem value="all" id="all" /><Label htmlFor="all" className="cursor-pointer">Todos ({totalActiveCount + totalInactiveCount})</Label></div>
+                  <div className="flex items-center space-x-3"><RadioGroupItem value="active" id="active" /><Label htmlFor="active" className="cursor-pointer">Ativos ({totalActiveCount})</Label></div>
+                  <div className="flex items-center space-x-3"><RadioGroupItem value="inactive" id="inactive" /><Label htmlFor="inactive" className="cursor-pointer">Inativos ({totalInactiveCount})</Label></div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Contrato de Gestão</Label>
+                <Select value={exportContract} onValueChange={setExportContract}>
+                  <SelectTrigger><SelectValue placeholder="Todos os contratos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os contratos</SelectItem>
+                    {managementContracts?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Departamento</Label>
+                <Select value={exportDepartment} onValueChange={setExportDepartment}>
+                  <SelectTrigger><SelectValue placeholder="Todos os departamentos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os departamentos</SelectItem>
+                    {availableDepartments.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Cancelar</Button>
               <Button onClick={handleExportPDF} className="gap-2"><Download className="h-4 w-4" />Gerar PDF</Button>
