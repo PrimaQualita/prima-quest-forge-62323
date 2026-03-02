@@ -326,15 +326,24 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
 
       {/* Row 5: Coverage Gauge + Analysis Ranking + Fill Rate */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Coverage - contracts with at least 1 analysis */}
+        {/* Coverage - only contracts active during the selected year */}
         {(() => {
-          const contractsWithDocs = docsPerContract?.filter(d => d.count > 0).length || 0;
-          const coveragePct = totalContracts > 0 ? (contractsWithDocs / totalContracts) * 100 : 0;
+          const yearStart = `${year}-01-01`;
+          const yearEnd = `${year}-12-31`;
+          const contractsActiveInYear = contracts?.filter(c => {
+            const start = c.start_date || '1900-01-01';
+            const end = c.end_date || '2999-12-31';
+            return start <= yearEnd && end >= yearStart;
+          }) || [];
+          const activeInYearIds = new Set(contractsActiveInYear.map(c => c.id));
+          const contractsWithDocs = docsPerContract?.filter(d => activeInYearIds.has(d.id) && d.count > 0).length || 0;
+          const totalActiveInYear = contractsActiveInYear.length;
+          const coveragePct = totalActiveInYear > 0 ? (contractsWithDocs / totalActiveInYear) * 100 : 0;
           return (
             <BIGaugeChart
               title="Cobertura de Análises"
               value={coveragePct}
-              total={`${contractsWithDocs} de ${totalContracts} contratos analisados`}
+              total={`${contractsWithDocs} de ${totalActiveInYear} contratos analisados`}
               color="hsl(var(--primary))"
               icon={<FileText className="w-4 h-4" />}
             />
