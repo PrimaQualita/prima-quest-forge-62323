@@ -707,7 +707,13 @@ const Reports = () => {
 
       {/* Department Compliance Chart */}
       {departmentData.length > 0 && (
-        <BIDepartmentChart data={departmentData} />
+        <BIDepartmentChart 
+          data={departmentData} 
+          employees={employeesCompliance}
+          contracts={managementContracts}
+          totalDocs={stats?.totalDocuments || 0}
+          totalTrainings={stats?.totalTrainings || 0}
+        />
       )}
 
       {/* Bar Charts */}
