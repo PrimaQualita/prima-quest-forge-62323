@@ -20,6 +20,9 @@ interface ReportStats {
 interface ReportOptions {
   userName: string;
   baseUrl: string;
+  contractName?: string;
+  departmentName?: string;
+  filterLabel?: string;
 }
 
 // Generate protocol in format XXXX-XXXX-XXXX-XXXX
@@ -136,6 +139,24 @@ export const generateReportPDF = async (
   doc.setTextColor(0, 0, 0);
   yPosition += 12;
 
+  // Filter info (contract, department, scope)
+  if (options.filterLabel || options.contractName || options.departmentName) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
+    
+    const filterParts: string[] = [];
+    if (options.filterLabel) filterParts.push(`Escopo: ${options.filterLabel}`);
+    if (options.contractName) filterParts.push(`Contrato de Gestão: ${options.contractName}`);
+    if (options.departmentName) filterParts.push(`Departamento: ${options.departmentName}`);
+    
+    filterParts.forEach(part => {
+      doc.text(part, pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 5;
+    });
+    yPosition += 5;
+  }
+
   // Summary section
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
@@ -149,6 +170,8 @@ export const generateReportPDF = async (
 
   const summaryData = [
     `Total de Colaboradores: ${stats.totalEmployees}`,
+    ...(options.contractName ? [`Contrato de Gestão: ${options.contractName}`] : []),
+    ...(options.departmentName ? [`Departamento: ${options.departmentName}`] : []),
     `Regulamentos Disponíveis: ${stats.totalDocuments}`,
     `Treinamentos Disponíveis: ${stats.totalTrainings}`,
     `Total de Aceites de Regulamentos: ${stats.acknowledgedDocs}`,
