@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion } from "framer-motion";
 import { BarChart3 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Contract {
   id: string;
@@ -15,42 +17,59 @@ interface AnnualContractComparisonChartProps {
   year: number;
 }
 
+const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 export const AnnualContractComparisonChart = ({ contracts, year }: AnnualContractComparisonChartProps) => {
-  const { data: annualData } = useQuery({
-    queryKey: ['contract-annual-comparison', contracts?.map(c => c.id), year],
+  const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
+
+  // Fetch all docs for the year with month info
+  const { data: allDocs } = useQuery({
+    queryKey: ['contract-annual-comparison-monthly', contracts?.map(c => c.id), year],
     queryFn: async () => {
       if (!contracts || contracts.length === 0) return [];
-      
-      const contractStats = await Promise.all(
-        contracts.map(async (contract) => {
-          const { count } = await supabase
-            .from('contract_documents')
-            .select('*', { count: 'exact', head: true })
-            .eq('contract_id', contract.id)
-            .eq('year', year);
-          
-          return {
-            name: contract.name.length > 22 ? contract.name.substring(0, 20) + '…' : contract.name,
-            fullName: contract.name,
-            count: count || 0,
-            average: 0
-          };
-        })
-      );
-      
-      const totalDocs = contractStats.reduce((sum, stat) => sum + stat.count, 0);
-      const average = contractStats.length > 0 ? Math.round(totalDocs / contractStats.length) : 0;
-      contractStats.forEach(stat => stat.average = average);
-      
-      return contractStats;
+      const ids = contracts.map(c => c.id);
+      const { data } = await supabase
+        .from('contract_documents')
+        .select('contract_id, month')
+        .in('contract_id', ids)
+        .eq('year', year);
+      return data || [];
     },
     enabled: contracts && contracts.length > 0,
   });
 
-  const totalDocuments = annualData?.reduce((sum, stat) => sum + stat.count, 0) || 0;
-  const averagePerContract = annualData && annualData.length > 0 
-    ? Math.round(totalDocuments / annualData.length) 
-    : 0;
+  const chartData = useMemo(() => {
+    if (!contracts || !allDocs) return [];
+
+    const filtered = selectedPeriod === "anual"
+      ? allDocs
+      : allDocs.filter(d => d.month === selectedPeriod);
+
+    const countMap = new Map<string, number>();
+    filtered.forEach(d => {
+      countMap.set(d.contract_id, (countMap.get(d.contract_id) || 0) + 1);
+    });
+
+    const stats = contracts.map(contract => ({
+      name: contract.name.length > 22 ? contract.name.substring(0, 20) + '…' : contract.name,
+      fullName: contract.name,
+      count: countMap.get(contract.id) || 0,
+      average: 0,
+    }));
+
+    const total = stats.reduce((s, st) => s + st.count, 0);
+    const avg = stats.length > 0 ? Math.round(total / stats.length) : 0;
+    stats.forEach(st => (st.average = avg));
+
+    return stats;
+  }, [contracts, allDocs, selectedPeriod]);
+
+  const totalDocuments = chartData.reduce((sum, s) => sum + s.count, 0);
+  const averagePerContract = chartData.length > 0 ? Math.round(totalDocuments / chartData.length) : 0;
+
+  const periodLabel = selectedPeriod === "anual"
+    ? `${year}`
+    : `${MONTH_LABELS[(selectedPeriod as number) - 1]}/${year}`;
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -60,7 +79,7 @@ export const AnnualContractComparisonChart = ({ contracts, year }: AnnualContrac
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
         <p className="font-medium text-foreground mb-1">{data.fullName}</p>
         <p style={{ color: isAbove ? 'hsl(142, 76%, 36%)' : 'hsl(var(--destructive))' }}>
-          {data.count} análise(s) em {year}
+          {data.count} análise(s) em {periodLabel}
         </p>
         <p className="text-muted-foreground mt-1">
           Média geral: {data.average} análises
@@ -82,28 +101,58 @@ export const AnnualContractComparisonChart = ({ contracts, year }: AnnualContrac
     >
       <Card className="col-span-full border-border/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-muted-foreground" />
-              <span>Comparativo Anual de Análises por Contrato</span>
+          <CardTitle className="text-base font-semibold flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                <span>Comparativo Anual de Análises por Contrato</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-normal text-muted-foreground">
+                  Total: {totalDocuments} análises · Média: {averagePerContract}/contrato
+                </span>
+                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded">{periodLabel}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-normal text-muted-foreground">
-                Total: {totalDocuments} análises · Média: {averagePerContract}/contrato
-              </span>
-              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded">{year}</span>
-            </div>
+            <ScrollArea className="w-full">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setSelectedPeriod("anual")}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    selectedPeriod === "anual"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  Anual
+                </button>
+                {MONTH_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedPeriod(i + 1)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                      selectedPeriod === i + 1
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {(!annualData || annualData.length === 0) ? (
+          {(!chartData || chartData.length === 0) ? (
             <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
               Nenhum contrato cadastrado
             </div>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={320}>
-                <ComposedChart data={annualData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
+                <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                   <defs>
                     <linearGradient id="barAbove" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.9} />
@@ -163,7 +212,7 @@ export const AnnualContractComparisonChart = ({ contracts, year }: AnnualContrac
                       );
                     }}
                   >
-                    {annualData?.map((entry, index) => (
+                    {chartData?.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.count === 0 ? 'hsl(var(--muted))' : entry.count >= entry.average ? 'url(#barAbove)' : 'url(#barBelow)'}
