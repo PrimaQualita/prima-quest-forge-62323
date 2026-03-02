@@ -44,7 +44,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
-  const [activeView, setActiveView] = useState<ViewType>("ranking");
+  const [activeView, setActiveView] = useState<ViewType>("vela");
 
   const { data: availableYears } = useQuery({
     queryKey: ['contract-docs-available-years'],
@@ -133,11 +133,11 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
   const yearsToShow = availableYears || [currentYear];
 
   const views: { key: ViewType; label: string; icon: React.ReactNode }[] = [
-    { key: "ranking", label: "Ranking", icon: <Trophy className="w-3.5 h-3.5" /> },
     { key: "vela", label: "Vela", icon: <BarChart3 className="w-3.5 h-3.5" /> },
     { key: "horizontal", label: "Barras", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
     { key: "pareto", label: "Pareto", icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { key: "pizza", label: "Pizza", icon: <PieIcon className="w-3.5 h-3.5" /> },
+    { key: "ranking", label: "Ranking", icon: <Trophy className="w-3.5 h-3.5" /> },
   ];
 
   const ChartTooltip = ({ active, payload }: any) => {
