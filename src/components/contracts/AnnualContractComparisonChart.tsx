@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, BarChart } from 'recharts';
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, PieChart as PieIcon } from "lucide-react";
+import { BarChart3, TrendingUp, PieChart as PieIcon, Trophy, ArrowRightLeft } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ interface AnnualContractComparisonChartProps {
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-// Dynamic color based on rank: green (highest) → blue → yellow → red (lowest)
 const VALUE_GRADIENT = [
   "#16a34a", "#22c55e", "#4ade80", "#86efac",
   "#3b82f6", "#60a5fa", "#93c5fd",
@@ -39,13 +38,13 @@ function getColorsByRank(data: { count: number }[]) {
   return data.map(d => valueToColor.get(d.count) || "#94a3b8");
 }
 
-type ViewType = "mensal" | "pareto" | "pizza";
+type ViewType = "vela" | "ranking" | "horizontal" | "pareto" | "pizza";
 
 export const AnnualContractComparisonChart = ({ contracts }: AnnualContractComparisonChartProps) => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
-  const [activeView, setActiveView] = useState<ViewType>("mensal");
+  const [activeView, setActiveView] = useState<ViewType>("vela");
 
   const { data: availableYears } = useQuery({
     queryKey: ['contract-docs-available-years'],
@@ -109,15 +108,19 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
   const totalDocuments = chartData.reduce((sum, s) => sum + s.count, 0);
   const averagePerContract = chartData.length > 0 ? Math.round(totalDocuments / chartData.length) : 0;
 
+  // Sorted for ranking views
+  const rankedData = useMemo(() => {
+    return [...coloredData].sort((a, b) => b.count - a.count);
+  }, [coloredData]);
+
   const paretoData = useMemo(() => {
-    if (!coloredData.length) return [];
-    const sorted = [...coloredData].sort((a, b) => b.count - a.count);
+    if (!rankedData.length) return [];
     let cumulative = 0;
-    return sorted.map(d => {
+    return rankedData.map(d => {
       cumulative += d.count;
       return { ...d, cumPercent: totalDocuments > 0 ? Math.round((cumulative / totalDocuments) * 1000) / 10 : 0 };
     });
-  }, [coloredData, totalDocuments]);
+  }, [rankedData, totalDocuments]);
 
   const pieData = useMemo(() => {
     return coloredData.filter(d => d.count > 0);
@@ -125,12 +128,14 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
 
   const periodLabel = selectedPeriod === "anual"
     ? `${selectedYear}`
-    : `${MONTH_LABELS[(selectedPeriod as number) - 1]}/${selectedYear}`;
+    : `${MONTH_LABELS[(selectedPeriod as number) - 1] || ''}/${selectedYear}`;
 
   const yearsToShow = availableYears || [currentYear];
 
   const views: { key: ViewType; label: string; icon: React.ReactNode }[] = [
-    { key: "mensal", label: "Mensal", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { key: "vela", label: "Vela", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { key: "ranking", label: "Ranking", icon: <Trophy className="w-3.5 h-3.5" /> },
+    { key: "horizontal", label: "Barras", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
     { key: "pareto", label: "Pareto", icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { key: "pizza", label: "Pizza", icon: <PieIcon className="w-3.5 h-3.5" /> },
   ];
@@ -169,6 +174,8 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
     );
   };
 
+  const medals = ['🥇', '🥈', '🥉'];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -181,7 +188,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                <span>Comparativo Anual de Análises por Contrato</span>
+                <span>Ranking de Análises por Contrato</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-normal text-muted-foreground">
@@ -257,37 +264,19 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
             </div>
           ) : (
             <>
-              {/* MENSAL VIEW */}
-              {activeView === "mensal" && (
+              {/* VELA VIEW - Vertical bars */}
+              {activeView === "vela" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={coloredData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      interval={0}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                      label={{ value: 'Análises', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }}
-                    />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} angle={-45} textAnchor="end" height={80} interval={0} />
+                    <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} label={{ value: 'Análises', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } }} />
                     <Tooltip content={<ChartTooltip />} />
                     <Line type="monotone" dataKey="average" stroke="hsl(var(--muted-foreground))" strokeWidth={2} strokeDasharray="6 4" dot={false} name="Média" />
-                    <Bar
-                      dataKey="count"
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={60}
-                      name="Análises"
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={60} name="Análises"
                       label={({ x, y, width, value }: any) => {
                         const percentage = totalDocuments > 0 ? ((value / totalDocuments) * 100).toFixed(1) : '0';
-                        return (
-                          <text x={x + width / 2} y={y - 6} fill="hsl(var(--muted-foreground))" textAnchor="middle" fontSize={10} fontWeight={500}>
-                            {percentage}%
-                          </text>
-                        );
+                        return <text x={x + width / 2} y={y - 6} fill="hsl(var(--muted-foreground))" textAnchor="middle" fontSize={10} fontWeight={500}>{percentage}%</text>;
                       }}
                     >
                       {coloredData.map((entry, index) => (
@@ -298,19 +287,80 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
                 </ResponsiveContainer>
               )}
 
+              {/* RANKING VIEW - Visual ranking with medals and progress bars */}
+              {activeView === "ranking" && (
+                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                  {rankedData.map((item, i) => {
+                    const maxCount = rankedData[0]?.count || 1;
+                    const pct = totalDocuments > 0 ? ((item.count / totalDocuments) * 100).toFixed(1) : '0';
+                    return (
+                      <motion.div
+                        key={item.fullName}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: i * 0.03 }}
+                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                          i < 3 ? 'border-border bg-muted/30' : 'border-transparent hover:bg-muted/20'
+                        }`}
+                      >
+                        <span className="text-lg w-8 text-center font-bold shrink-0">
+                          {i < 3 ? medals[i] : <span className="text-xs text-muted-foreground">{i + 1}º</span>}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className={`text-sm truncate max-w-[60%] ${i === 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                              {item.fullName}
+                            </span>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-xs text-muted-foreground">{pct}%</span>
+                              <span className={`text-sm font-bold ${i === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                {item.count} {item.count === 1 ? 'análise' : 'análises'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <motion.div
+                              className="h-2 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${maxCount > 0 ? (item.count / maxCount) * 100 : 0}%` }}
+                              transition={{ duration: 0.8, delay: 0.2 + i * 0.03 }}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* HORIZONTAL - Horizontal bars */}
+              {activeView === "horizontal" && (
+                <ResponsiveContainer width="100%" height={Math.max(450, rankedData.length * 35)}>
+                  <BarChart data={rankedData} layout="vertical" margin={{ top: 10, right: 60, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} interval={0} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={24} name="Análises"
+                      label={({ x, y, width, height, value }: any) => (
+                        <text x={x + width + 4} y={y + height / 2 + 4} fill="hsl(var(--muted-foreground))" fontSize={10} fontWeight={500}>{value}</text>
+                      )}
+                    >
+                      {rankedData.map((entry, index) => (
+                        <Cell key={`cell-h-${index}`} fill={entry.count === 0 ? 'hsl(var(--muted))' : entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+
               {/* PARETO VIEW */}
               {activeView === "pareto" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={paretoData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                      interval={0}
-                    />
+                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} angle={-45} textAnchor="end" height={80} interval={0} />
                     <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
                     <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => `${v}%`} />
                     <Tooltip content={<ChartTooltip />} />
@@ -328,18 +378,8 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
               {activeView === "pizza" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="count"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
-                      paddingAngle={2}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                      fontSize={10}
+                    <Pie data={pieData} dataKey="count" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={120} paddingAngle={2}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} fontSize={10}
                     >
                       {pieData.map((entry, index) => (
                         <Cell key={index} fill={entry.color} />
@@ -351,7 +391,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
               )}
 
               {/* Legend */}
-              {activeView === "mensal" && (
+              {(activeView === "vela" || activeView === "horizontal") && (
                 <div className="flex items-center justify-center gap-6 mt-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: '#16a34a' }} />
@@ -364,18 +404,6 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
                   <div className="flex items-center gap-1.5">
                     <div className="w-6 border-t-2 border-dashed border-muted-foreground" />
                     <span className="text-muted-foreground">Média geral</span>
-                  </div>
-                </div>
-              )}
-              {activeView === "pareto" && (
-                <div className="flex items-center justify-center gap-6 mt-2 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: '#16a34a' }} />
-                    <span className="text-muted-foreground">Maior volume</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: '#ef4444' }} />
-                    <span className="text-muted-foreground">% Acumulado</span>
                   </div>
                 </div>
               )}

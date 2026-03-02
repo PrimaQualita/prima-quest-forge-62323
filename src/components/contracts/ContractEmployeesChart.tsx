@@ -42,20 +42,38 @@ type ViewType = "vela" | "horizontal" | "pareto" | "pizza";
 
 export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProps) => {
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
   const [activeView, setActiveView] = useState<ViewType>("vela");
 
+  // Fetch available years efficiently using distinct extraction
   const { data: availableYears } = useQuery({
-    queryKey: ['employees-available-years'],
+    queryKey: ['employees-available-years-efficient'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('employees')
-        .select('created_at')
-        .eq('is_active', true);
-      if (!data) return [currentYear];
-      const years = [...new Set(data.map(d => new Date(d.created_at!).getFullYear()))].sort((a, b) => b - a);
-      return years.length > 0 ? years : [currentYear];
+      // Fetch in batches to avoid 1000-row limit
+      const years = new Set<number>();
+      let from = 0;
+      const batchSize = 1000;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await supabase
+          .from('employees')
+          .select('created_at')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .range(from, from + batchSize - 1);
+        if (!data || data.length === 0) {
+          hasMore = false;
+        } else {
+          data.forEach(d => {
+            if (d.created_at) years.add(new Date(d.created_at).getFullYear());
+          });
+          if (data.length < batchSize) hasMore = false;
+          from += batchSize;
+        }
+      }
+      const sorted = [...years].sort((a, b) => b - a);
+      return sorted.length > 0 ? sorted : [currentYear];
     },
   });
 
@@ -125,7 +143,7 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
 
   const periodLabel = selectedPeriod === "anual"
     ? `${selectedYear}`
-    : `${MONTH_LABELS[(selectedPeriod as number) - 1]}/${selectedYear}`;
+    : `${MONTH_LABELS[(selectedPeriod as number) - 1] || ''}/${selectedYear}`;
 
   const yearsToShow = availableYears || [currentYear];
 
@@ -249,7 +267,7 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
         <CardContent>
           {(!coloredData || coloredData.length === 0) ? (
             <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
-              Nenhum dado disponível
+              {contracts.length === 0 ? "Nenhum contrato cadastrado" : "Carregando dados..."}
             </div>
           ) : (
             <>
