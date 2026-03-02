@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, FolderOpen, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Calendar, Activity, Trophy, Medal } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Line, AreaChart, Area, ComposedChart } from "recharts";
+import { ContractEmployeesChart } from "./ContractEmployeesChart";
 
 interface ContractsBIDashboardProps {
   contracts: any[] | undefined;
@@ -106,13 +107,7 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
     { name: 'Encerrados', value: inactiveContracts.length },
   ];
 
-  // Employees distribution per contract for horizontal bar
-  const employeeBarData = contracts?.map(c => ({
-    name: c.name.length > 20 ? c.name.substring(0, 18) + '…' : c.name,
-    fullName: c.name,
-    colaboradores: employeesPerContract?.get(c.id) || 0,
-    analises: docsPerContract?.find(d => d.id === c.id)?.count || 0,
-  })).sort((a, b) => b.colaboradores - a.colaboradores) || [];
+  // Employees distribution - now handled by ContractEmployeesChart
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -318,34 +313,8 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
         </Card>
       </motion.div>
 
-      {/* Row 4: Employees & Docs per Contract */}
-      {employeeBarData.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold">Colaboradores e Análises por Contrato</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={Math.max(250, employeeBarData.length * 50)}>
-                <BarChart data={employeeBarData} layout="vertical" margin={{ left: 20, right: 30, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={160}
-                    tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Bar dataKey="colaboradores" name="Colaboradores" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={14} />
-                  <Bar dataKey="analises" name="Análises" fill="hsl(var(--secondary))" radius={[0, 4, 4, 0]} barSize={14} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+      {/* Row 4: Employees per Contract (separate chart) */}
+      <ContractEmployeesChart contracts={contracts || []} />
 
       {/* Row 5: Coverage Gauge + Analysis Ranking + Fill Rate */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
