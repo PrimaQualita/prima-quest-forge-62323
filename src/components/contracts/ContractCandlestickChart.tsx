@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line } from 'recharts';
+import { motion } from "framer-motion";
+import { Calendar } from "lucide-react";
 
 interface ContractCandlestickChartProps {
   contractId: string;
@@ -32,142 +34,97 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
             month: MONTHS[index],
             monthNumber: month,
             count: count || 0,
-            // Adicionar linha de tendência
             average: 0
           };
         })
       );
       
-      // Calcular média móvel simples para linha de tendência
       const totalDocs = monthlyStats.reduce((sum, stat) => sum + stat.count, 0);
-      const average = Math.round(totalDocs / 12);
-      monthlyStats.forEach(stat => stat.average = average);
+      const average = totalDocs / 12;
+      monthlyStats.forEach(stat => stat.average = Math.round(average * 10) / 10);
       
       return monthlyStats;
     },
     enabled: !!contractId,
   });
 
-  const getCandleColor = (count: number, average: number) => {
-    if (count === 0) return {
-      fill: '#e5e7eb',
-      stroke: '#9ca3af'
-    };
-    
-    // Verde se acima da média, vermelho se abaixo
-    if (count >= average) {
-      const intensity = Math.min(count / (average * 2), 1);
-      return {
-        fill: `rgba(34, 197, 94, ${0.4 + intensity * 0.6})`, // green-500
-        stroke: '#16a34a' // green-600
-      };
-    } else {
-      const intensity = Math.min(count / average, 1);
-      return {
-        fill: `rgba(239, 68, 68, ${0.4 + intensity * 0.6})`, // red-500
-        stroke: '#dc2626' // red-600
-      };
-    }
+  const totalDocs = monthlyData?.reduce((s, d) => s + d.count, 0) || 0;
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0].payload;
+    return (
+      <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+        <p className="font-medium text-foreground mb-1">{data.month}/{year}</p>
+        <p className="text-primary font-semibold">{data.count} análise(s)</p>
+        <p className="text-muted-foreground mt-0.5">Média mensal: {data.average}</p>
+      </div>
+    );
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center justify-between">
-          <span>{contractName}</span>
-          <span className="text-sm font-normal text-muted-foreground">{year}</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={monthlyData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <defs>
-              <filter id="shadow" height="200%">
-                <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3"/>
-              </filter>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-            <XAxis 
-              dataKey="month" 
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-              axisLine={{ stroke: '#d1d5db' }}
-            />
-            <YAxis 
-              tick={{ fontSize: 12 }}
-              stroke="#6b7280"
-              axisLine={{ stroke: '#d1d5db' }}
-              label={{ 
-                value: 'Documentos', 
-                angle: -90, 
-                position: 'insideLeft', 
-                style: { fontSize: 12, fill: '#6b7280' } 
-              }}
-            />
-            <Tooltip 
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const data = payload[0].payload;
-                  const colors = getCandleColor(data.count, data.average);
-                  return (
-                    <div className="bg-white p-3 border rounded-lg shadow-lg">
-                      <p className="font-medium">{data.month}/{year}</p>
-                      <p className="text-sm" style={{ color: colors.stroke }}>
-                        {data.count} documento(s)
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Média: {data.average} docs
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-            {/* Linha de tendência/média */}
-            <Line 
-              type="monotone" 
-              dataKey="average" 
-              stroke="#94a3b8" 
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-            {/* Barras tipo vela */}
-            <Bar 
-              dataKey="count" 
-              radius={[6, 6, 6, 6]}
-              filter="url(#shadow)"
-            >
-              {monthlyData?.map((entry, index) => {
-                const colors = getCandleColor(entry.count, entry.average);
-                return (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={colors.fill}
-                    stroke={colors.stroke}
-                    strokeWidth={2}
-                  />
-                );
-              })}
-            </Bar>
-          </ComposedChart>
-        </ResponsiveContainer>
-        <div className="flex items-center justify-center gap-6 mt-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded" style={{ backgroundColor: 'rgba(34, 197, 94, 0.7)' }} />
-            <span className="text-muted-foreground">Acima da média</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded" style={{ backgroundColor: 'rgba(239, 68, 68, 0.7)' }} />
-            <span className="text-muted-foreground">Abaixo da média</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-0.5 bg-slate-400" style={{ borderTop: '2px dashed #94a3b8' }} />
-            <span className="text-muted-foreground">Linha de média</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="border-border/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="truncate">{contractName}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs font-normal text-muted-foreground">{totalDocs} análises</span>
+              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded">{year}</span>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`areaGrad-${contractId}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                allowDecimals={false}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="count"
+                fill={`url(#areaGrad-${contractId})`}
+                stroke="transparent"
+              />
+              <Bar 
+                dataKey="count" 
+                radius={[3, 3, 0, 0]}
+                maxBarSize={28}
+                fill="hsl(var(--primary))"
+                fillOpacity={0.8}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="average" 
+                stroke="hsl(var(--muted-foreground))" 
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+                dot={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
