@@ -49,7 +49,7 @@ export const BIDepartmentChart = ({ data }: BIDepartmentChartProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(280px,1fr)] gap-6">
             {/* Bar chart */}
             <ResponsiveContainer width="100%" height={Math.max(300, sortedData.length * 50)}>
               <BarChart data={sortedData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
@@ -58,8 +58,8 @@ export const BIDepartmentChart = ({ data }: BIDepartmentChartProps) => {
                 <YAxis
                   type="category"
                   dataKey="department"
-                  width={140}
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  width={200}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -68,13 +68,13 @@ export const BIDepartmentChart = ({ data }: BIDepartmentChartProps) => {
               </BarChart>
             </ResponsiveContainer>
 
-            {/* Detail list */}
-            <div className="space-y-3 overflow-y-auto max-h-[400px] pr-2">
+            {/* Detail list - full height */}
+            <div className="space-y-3 overflow-y-auto pr-2" style={{ maxHeight: Math.max(300, sortedData.length * 50) }}>
               {sortedData.map((dept, i) => (
                 <div key={i} className="p-3 rounded-lg border border-border/30 bg-card/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">{dept.department}</span>
-                    <span className="text-xs text-muted-foreground">{dept.total} colab.</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-foreground break-words">{dept.department}</span>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">{dept.total} colab.</span>
                   </div>
                   <div className="space-y-1.5">
                     <div>
