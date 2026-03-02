@@ -644,6 +644,38 @@ const Employees = () => {
         .select('id, name');
       
       const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
+      const normalizedContractMap = new Map(contracts?.map(c => [c.name.toLowerCase().trim(), c.id]) || []);
+      
+      // Extract CG code pattern from contract names for fallback matching
+      const extractCgCode = (text: string): string | null => {
+        const match = text.match(/cg\s*\d{2,4}\s*\/\s*\d{4}/i);
+        return match ? match[0].toLowerCase().replace(/\s/g, '') : null;
+      };
+      
+      const cgCodeMap = new Map<string, string>();
+      contracts?.forEach(c => {
+        const code = extractCgCode(c.name);
+        if (code) cgCodeMap.set(code, c.id);
+      });
+      
+      const findContractId = (name: string): string | null => {
+        if (!name) return null;
+        // 1. Exact match
+        if (contractMap.has(name)) return contractMap.get(name)!;
+        // 2. Normalized (case-insensitive)
+        const normalized = name.toLowerCase().trim();
+        if (normalizedContractMap.has(normalized)) return normalizedContractMap.get(normalized)!;
+        // 3. Partial match (contains)
+        const partial = contracts?.find(c => {
+          const cNorm = c.name.toLowerCase().trim();
+          return normalized.includes(cNorm) || cNorm.includes(normalized);
+        });
+        if (partial) return partial.id;
+        // 4. CG code match
+        const code = extractCgCode(name);
+        if (code && cgCodeMap.has(code)) return cgCodeMap.get(code)!;
+        return null;
+      };
       
       // Track CPFs we've seen to skip duplicates within file
       const seenCpfs = new Set<string>();
@@ -677,10 +709,8 @@ const Employees = () => {
             }
           }
           
-          // Look up contract ID by name, or set to null if not found
-          const management_contract_id = contract_name && contractMap.has(contract_name) 
-            ? contractMap.get(contract_name) 
-            : null;
+          // Look up contract ID with flexible matching
+          const management_contract_id = findContractId(contract_name);
           
           return { 
             name: name || 'Nome não informado', 
