@@ -188,7 +188,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                <span>Ranking de Análises por Contrato</span>
+                <span>Comparativo por Contrato de Gestão</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-normal text-muted-foreground">
