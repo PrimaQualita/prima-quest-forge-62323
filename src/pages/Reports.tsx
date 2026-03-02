@@ -22,6 +22,7 @@ import { BIKpiCard } from "@/components/reports/BIKpiCard";
 import { BIGaugeChart } from "@/components/reports/BIGaugeChart";
 import { BIBarChart } from "@/components/reports/BIBarChart";
 import { BIComplianceHeatmap } from "@/components/reports/BIComplianceHeatmap";
+import { BIDepartmentChart } from "@/components/reports/BIDepartmentChart";
 
 const Reports = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -176,7 +177,7 @@ const Reports = () => {
       let from = 0;
       const pageSize = 1000;
       while (true) {
-        const { data: batch } = await supabase.from('employees').select('id, name').eq('is_active', true).order('name').range(from, from + pageSize - 1);
+        const { data: batch } = await supabase.from('employees').select('id, name, department').eq('is_active', true).order('name').range(from, from + pageSize - 1);
         if (!batch || batch.length === 0) break;
         allEmployees = [...allEmployees, ...batch];
         if (batch.length < pageSize) break;
@@ -336,6 +337,29 @@ const Reports = () => {
       percentage: t.percentage ?? 0,
     }));
   }, [trainingCompletion]);
+
+  // Department compliance data
+  const departmentData = useMemo(() => {
+    if (!employeesCompliance || !stats) return [];
+    const totalDocs = stats.totalDocuments;
+    const totalTrainings = stats.totalTrainings;
+    const deptMap = new Map<string, { total: number; docsAccepted: number; trainingsCompleted: number }>();
+    employeesCompliance.forEach(emp => {
+      const dept = emp.department || 'Sem departamento';
+      const cur = deptMap.get(dept) || { total: 0, docsAccepted: 0, trainingsCompleted: 0 };
+      cur.total++;
+      cur.docsAccepted += emp.docsAccepted;
+      cur.trainingsCompleted += emp.trainingsCompleted;
+      deptMap.set(dept, cur);
+    });
+    return Array.from(deptMap.entries()).map(([department, d]) => {
+      const maxDocs = d.total * totalDocs;
+      const maxTrainings = d.total * totalTrainings;
+      const docsRate = maxDocs > 0 ? (d.docsAccepted / maxDocs) * 100 : 0;
+      const trainingRate = maxTrainings > 0 ? (d.trainingsCompleted / maxTrainings) * 100 : 0;
+      return { department, total: d.total, docsRate, trainingRate, overallRate: (docsRate + trainingRate) / 2 };
+    });
+  }, [employeesCompliance, stats]);
 
   const renderPaginationControls = (
     current: number,
@@ -577,6 +601,11 @@ const Reports = () => {
           totalDocs={stats.totalDocuments}
           totalTrainings={stats.totalTrainings}
         />
+      )}
+
+      {/* Department Compliance Chart */}
+      {departmentData.length > 0 && (
+        <BIDepartmentChart data={departmentData} />
       )}
 
       {/* Bar Charts */}
