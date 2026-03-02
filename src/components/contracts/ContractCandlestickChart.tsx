@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +6,7 @@ import { AreaChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveC
 import { motion } from "framer-motion";
 import { Calendar, BarChart3, PieChart as PieIcon, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface ContractCandlestickChartProps {
   contractId: string;
@@ -18,16 +19,14 @@ const MONTHS = [
   "Jul", "Ago", "Set", "Out", "Nov", "Dez"
 ];
 
-// Dynamic color based on rank: green (highest) → blue → yellow → red (lowest)
 const VALUE_GRADIENT = [
-  "#16a34a", "#22c55e", "#4ade80", "#86efac",  // greens (top)
-  "#3b82f6", "#60a5fa", "#93c5fd",              // blues (mid-high)
-  "#facc15", "#fbbf24", "#f59e0b",              // yellows (mid-low)
-  "#f87171", "#ef4444",                          // reds (bottom)
+  "#16a34a", "#22c55e", "#4ade80", "#86efac",
+  "#3b82f6", "#60a5fa", "#93c5fd",
+  "#facc15", "#fbbf24", "#f59e0b",
+  "#f87171", "#ef4444",
 ];
 
 function getColorsByRank(data: { count: number }[]) {
-  // Get unique values sorted descending
   const uniqueValues = [...new Set(data.map(d => d.count))].sort((a, b) => b - a);
   const step = (VALUE_GRADIENT.length - 1) / Math.max(uniqueValues.length - 1, 1);
   const valueToColor = new Map<number, string>();
@@ -40,11 +39,39 @@ function getColorsByRank(data: { count: number }[]) {
 
 type ViewType = "mensal" | "pareto" | "pizza";
 
-export const ContractCandlestickChart = ({ contractId, contractName, year }: ContractCandlestickChartProps) => {
+export const ContractCandlestickChart = ({ contractId, contractName, year: initialYear }: ContractCandlestickChartProps) => {
   const [activeView, setActiveView] = useState<ViewType>("mensal");
+  const [selectedYear, setSelectedYear] = useState(initialYear);
+  const [selectedMonth, setSelectedMonth] = useState<"anual" | number>("anual");
+
+  // Sync with parent year prop
+  useEffect(() => {
+    setSelectedYear(initialYear);
+  }, [initialYear]);
+
+  useEffect(() => {
+    setSelectedMonth("anual");
+  }, [selectedYear]);
+
+  // Fetch available years for this contract
+  const { data: availableYears } = useQuery({
+    queryKey: ['contract-candlestick-years', contractId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('contract_documents')
+        .select('year')
+        .eq('contract_id', contractId);
+      if (!data) return [initialYear];
+      const years = [...new Set(data.map(d => d.year))].sort((a, b) => b - a);
+      // Always include the initial year
+      if (!years.includes(initialYear)) years.push(initialYear);
+      years.sort((a, b) => b - a);
+      return years.length > 0 ? years : [initialYear];
+    },
+  });
 
   const { data: monthlyData } = useQuery({
-    queryKey: ['contract-monthly-docs', contractId, year],
+    queryKey: ['contract-monthly-docs', contractId, selectedYear],
     queryFn: async () => {
       const monthlyStats = await Promise.all(
         Array.from({ length: 12 }, async (_, index) => {
@@ -53,7 +80,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
             .from('contract_documents')
             .select('*', { count: 'exact', head: true })
             .eq('contract_id', contractId)
-            .eq('year', year)
+            .eq('year', selectedYear)
             .eq('month', month);
           
           return {
@@ -74,17 +101,25 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     enabled: !!contractId,
   });
 
-  const totalDocs = monthlyData?.reduce((s, d) => s + d.count, 0) || 0;
+  // Filter data based on selected month
+  const filteredData = useMemo(() => {
+    if (!monthlyData) return [];
+    if (selectedMonth === "anual") return monthlyData;
+    return monthlyData.filter(d => d.monthNumber === selectedMonth);
+  }, [monthlyData, selectedMonth]);
+
+  const displayData = selectedMonth === "anual" ? monthlyData : filteredData;
+  const totalDocs = displayData?.reduce((s, d) => s + d.count, 0) || 0;
 
   const rankedColors = useMemo(() => {
-    if (!monthlyData) return [] as string[];
-    return getColorsByRank(monthlyData);
-  }, [monthlyData]);
+    if (!displayData?.length) return [] as string[];
+    return getColorsByRank(displayData);
+  }, [displayData]);
 
   const coloredData = useMemo(() => {
-    if (!monthlyData) return [];
-    return monthlyData.map((d, i) => ({ ...d, color: rankedColors[i] }));
-  }, [monthlyData, rankedColors]);
+    if (!displayData) return [];
+    return displayData.map((d, i) => ({ ...d, color: rankedColors[i] }));
+  }, [displayData, rankedColors]);
 
   const paretoData = useMemo(() => {
     if (!coloredData.length) return [];
@@ -101,12 +136,18 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     return coloredData.filter(d => d.count > 0);
   }, [coloredData]);
 
+  const periodLabel = selectedMonth === "anual"
+    ? `${selectedYear}`
+    : `${MONTHS[(selectedMonth as number) - 1]}/${selectedYear}`;
+
+  const yearsToShow = availableYears || [initialYear];
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const data = payload[0].payload;
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-        <p className="font-medium text-foreground mb-1">{data.month}/{year}</p>
+        <p className="font-medium text-foreground mb-1">{data.month}/{selectedYear}</p>
         <p style={{ color: data.color || 'hsl(var(--primary))' }} className="font-semibold">{data.count} análise(s)</p>
         {activeView === "pareto" && data.cumPercent !== undefined && (
           <p className="text-muted-foreground mt-0.5">Acumulado: {data.cumPercent}%</p>
@@ -124,7 +165,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     const pct = totalDocs > 0 ? Math.round((data.count / totalDocs) * 1000) / 10 : 0;
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-        <p className="font-medium text-foreground mb-1">{data.month}/{year}</p>
+        <p className="font-medium text-foreground mb-1">{data.month}/{selectedYear}</p>
         <p style={{ color: data.color || 'hsl(var(--primary))' }} className="font-semibold">{data.count} análise(s) ({pct}%)</p>
       </div>
     );
@@ -149,27 +190,72 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     >
       <Card className="border-border/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="truncate">{contractName}</span>
+          <CardTitle className="text-sm font-semibold flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="truncate">{contractName}</span>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-xs font-normal text-muted-foreground mr-1">{totalDocs}</span>
+                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded mr-2">{periodLabel}</span>
+                {views.map(v => (
+                  <Button
+                    key={v.key}
+                    size="sm"
+                    variant={activeView === v.key ? "default" : "ghost"}
+                    className="h-6 px-2 text-[10px] gap-1"
+                    onClick={() => setActiveView(v.key)}
+                  >
+                    {v.icon}
+                    {v.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="text-xs font-normal text-muted-foreground mr-1">{totalDocs}</span>
-              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded mr-2">{year}</span>
-              {views.map(v => (
-                <Button
-                  key={v.key}
-                  size="sm"
-                  variant={activeView === v.key ? "default" : "ghost"}
-                  className="h-6 px-2 text-[10px] gap-1"
-                  onClick={() => setActiveView(v.key)}
+            {/* Year & month tabs */}
+            <ScrollArea className="w-full">
+              <div className="flex items-center gap-1">
+                {yearsToShow.map(y => (
+                  <button
+                    key={y}
+                    onClick={() => setSelectedYear(y)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
+                      selectedYear === y
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {y}
+                  </button>
+                ))}
+                <div className="w-px h-4 bg-border mx-0.5" />
+                <button
+                  onClick={() => setSelectedMonth("anual")}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
+                    selectedMonth === "anual"
+                      ? "bg-secondary text-secondary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
                 >
-                  {v.icon}
-                  {v.label}
-                </Button>
-              ))}
-            </div>
+                  Anual
+                </button>
+                {MONTHS.map((label, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedMonth(i + 1)}
+                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors whitespace-nowrap ${
+                      selectedMonth === i + 1
+                        ? "bg-secondary text-secondary-foreground shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </CardTitle>
         </CardHeader>
         <CardContent>
