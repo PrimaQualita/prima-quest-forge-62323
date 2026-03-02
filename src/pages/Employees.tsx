@@ -646,9 +646,18 @@ const Employees = () => {
       const contractMap = new Map(contracts?.map(c => [c.name, c.id]) || []);
       const normalizedContractMap = new Map(contracts?.map(c => [c.name.toLowerCase().trim(), c.id]) || []);
       
+      // Known aliases: CSV name keywords -> DB contract name keywords
+      const knownAliases: Record<string, string> = {
+        'cigac': 'rateio',
+        'centro de ensino e pesq': 'processos unificados',
+        'centro de ensino e pesq.': 'processos unificados',
+        'centro de ensino e pesquisa': 'processos unificados',
+      };
+      
       // Extract CG code pattern from contract names for fallback matching
+      // Supports patterns like CG 033/2021, CG 033/03/2025, CG 068/2024
       const extractCgCode = (text: string): string | null => {
-        const match = text.match(/cg\s*\d{2,4}\s*\/\s*\d{4}/i);
+        const match = text.match(/cg\s*\d{2,4}(?:\s*\/\s*\d{2,4})*\s*\/\s*\d{4}/i);
         return match ? match[0].toLowerCase().replace(/\s/g, '') : null;
       };
       
@@ -665,13 +674,20 @@ const Employees = () => {
         // 2. Normalized (case-insensitive)
         const normalized = name.toLowerCase().trim();
         if (normalizedContractMap.has(normalized)) return normalizedContractMap.get(normalized)!;
-        // 3. Partial match (contains)
+        // 3. Known aliases match
+        for (const [alias, target] of Object.entries(knownAliases)) {
+          if (normalized.includes(alias)) {
+            const found = contracts?.find(c => c.name.toLowerCase().includes(target));
+            if (found) return found.id;
+          }
+        }
+        // 4. Partial match (contains)
         const partial = contracts?.find(c => {
           const cNorm = c.name.toLowerCase().trim();
           return normalized.includes(cNorm) || cNorm.includes(normalized);
         });
         if (partial) return partial.id;
-        // 4. CG code match
+        // 5. CG code match
         const code = extractCgCode(name);
         if (code && cgCodeMap.has(code)) return cgCodeMap.get(code)!;
         return null;
