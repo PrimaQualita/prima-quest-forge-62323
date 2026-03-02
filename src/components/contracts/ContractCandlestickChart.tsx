@@ -42,16 +42,11 @@ type ViewType = "mensal" | "pareto" | "pizza";
 export const ContractCandlestickChart = ({ contractId, contractName, year: initialYear }: ContractCandlestickChartProps) => {
   const [activeView, setActiveView] = useState<ViewType>("mensal");
   const [selectedYear, setSelectedYear] = useState(initialYear);
-  const [selectedMonth, setSelectedMonth] = useState<"anual" | number>("anual");
 
   // Sync with parent year prop
   useEffect(() => {
     setSelectedYear(initialYear);
   }, [initialYear]);
-
-  useEffect(() => {
-    setSelectedMonth("anual");
-  }, [selectedYear]);
 
   // Fetch available years for this contract
   const { data: availableYears } = useQuery({
@@ -99,14 +94,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
     enabled: !!contractId,
   });
 
-  // Filter data based on selected month
-  const filteredData = useMemo(() => {
-    if (!monthlyData) return [];
-    if (selectedMonth === "anual") return monthlyData;
-    return monthlyData.filter(d => d.monthNumber === selectedMonth);
-  }, [monthlyData, selectedMonth]);
-
-  const displayData = selectedMonth === "anual" ? monthlyData : filteredData;
+  const displayData = monthlyData;
   const totalDocs = displayData?.reduce((s, d) => s + d.count, 0) || 0;
 
   const rankedColors = useMemo(() => {
@@ -134,9 +122,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
     return coloredData.filter(d => d.count > 0);
   }, [coloredData]);
 
-  const periodLabel = selectedMonth === "anual"
-    ? `${selectedYear}`
-    : `${MONTHS[(selectedMonth as number) - 1]}/${selectedYear}`;
+  const periodLabel = `${selectedYear}`;
 
   const yearsToShow = availableYears || [initialYear];
 
@@ -225,32 +211,6 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
                   }`}
                 >
                   {y}
-                </button>
-              ))}
-            </div>
-            {/* Month tabs */}
-            <div className="flex flex-wrap items-center gap-1">
-              <button
-                onClick={() => setSelectedMonth("anual")}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
-                  selectedMonth === "anual"
-                    ? "bg-secondary text-secondary-foreground shadow-sm"
-                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                Anual
-              </button>
-              {MONTHS.map((label, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedMonth(i + 1)}
-                  className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
-                    selectedMonth === i + 1
-                      ? "bg-secondary text-secondary-foreground shadow-sm"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {label}
                 </button>
               ))}
             </div>
