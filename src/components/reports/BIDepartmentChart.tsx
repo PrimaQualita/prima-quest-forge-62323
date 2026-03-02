@@ -120,7 +120,7 @@ const ChartAndDetail = ({ data }: { data: DepartmentData[] }) => {
 };
 
 export const BIDepartmentChart = ({ data, employees, contracts, totalDocs = 0, totalTrainings = 0 }: BIDepartmentChartProps) => {
-  const [activeTab, setActiveTab] = useState<"departments" | "contracts">("departments");
+  const [activeTab, setActiveTab] = useState<"departments" | "contracts">("contracts");
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
 
   const hasContractData = employees && contracts && contracts.length > 0;
