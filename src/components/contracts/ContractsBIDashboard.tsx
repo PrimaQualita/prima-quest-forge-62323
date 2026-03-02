@@ -28,23 +28,25 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
   const inactiveContracts = contracts?.filter(c => !c.is_active) || [];
   const totalContracts = contracts?.length || 0;
 
-  // Fetch employees per contract
+  // Fetch active employees count per contract
   const { data: employeesPerContract } = useQuery({
-    queryKey: ['employees-per-contract-bi'],
+    queryKey: ['employees-per-contract-bi', contracts?.map(c => c.id)],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('employees')
-        .select('management_contract_id')
-        .eq('is_active', true)
-        .not('management_contract_id', 'is', null);
-      
+      if (!contracts || contracts.length === 0) return new Map<string, number>();
       const countMap = new Map<string, number>();
-      data?.forEach(e => {
-        const id = e.management_contract_id!;
-        countMap.set(id, (countMap.get(id) || 0) + 1);
-      });
+      await Promise.all(
+        contracts.map(async (c) => {
+          const { count } = await supabase
+            .from('employees')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true)
+            .eq('management_contract_id', c.id);
+          countMap.set(c.id, count || 0);
+        })
+      );
       return countMap;
     },
+    enabled: !!contracts && contracts.length > 0,
   });
 
   // Fetch total documents per contract for the year
