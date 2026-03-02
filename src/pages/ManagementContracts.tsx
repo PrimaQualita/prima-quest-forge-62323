@@ -372,6 +372,15 @@ const ManagementContracts = () => {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-4xl font-bold text-foreground uppercase">Contratos de Gestão</h1>
         <div className="flex items-center gap-3">
+          {mainTab === "bi" && (
+            <Tabs value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
+              <TabsList>
+                {years.map((year) => (
+                  <TabsTrigger key={year} value={year.toString()}>{year}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          )}
           <Tabs value={mainTab} onValueChange={setMainTab}>
             <TabsList>
               <TabsTrigger value="bi" className="gap-2">
@@ -589,16 +598,7 @@ const ManagementContracts = () => {
           <ContractsBIDashboard contracts={contracts} year={selectedYear} />
           
           <div className="space-y-6 mt-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
-              <Tabs defaultValue={selectedYear.toString()} onValueChange={(v) => setSelectedYear(Number(v))}>
-                <TabsList>
-                  {years.map((year) => (
-                    <TabsTrigger key={year} value={year.toString()}>{year}</TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
+            <h2 className="text-2xl font-bold text-foreground">Análises de Processos de Compras</h2>
 
             {contracts && contracts.length > 0 && (
               <AnnualContractComparisonChart contracts={contracts} year={selectedYear} />
