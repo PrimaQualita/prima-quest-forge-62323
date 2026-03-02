@@ -195,8 +195,9 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
                 <span className="truncate">{contractName}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <span className="text-xs font-normal text-muted-foreground mr-1">{totalDocs}</span>
-                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded mr-2">{periodLabel}</span>
+                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded mr-2">
+                  <span className="font-semibold text-foreground">{totalDocs}</span> análise{totalDocs !== 1 ? 's' : ''} • {periodLabel}
+                </span>
                 {views.map(v => (
                   <Button
                     key={v.key}
