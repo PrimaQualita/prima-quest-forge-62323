@@ -287,13 +287,30 @@ const Reports = () => {
   useEffect(() => { setCurrentPage(1); }, [activeSearch]);
   useEffect(() => { setInactiveCurrentPage(1); }, [inactiveSearch]);
 
-  // Get unique departments from both active and inactive
+  // Fix broken encoding in department names
+  const fixEncoding = (text: string) => {
+    return text
+      .replace(/\uFFFD\uFFFD/g, 'ÇÃ') // common double replacement for ÇÃ
+      .replace(/\uFFFD/g, 'Ç'); // single replacement character fallback
+  };
+
+  // Get unique departments filtered by selected contract
   const availableDepartments = useMemo(() => {
+    const allEmployees = [...(employeesCompliance || []), ...(inactiveEmployeesCompliance || [])];
+    const filtered = exportContract !== "all" 
+      ? allEmployees.filter(e => e.management_contract_id === exportContract)
+      : allEmployees;
     const depts = new Set<string>();
-    employeesCompliance?.forEach(e => { if (e.department) depts.add(e.department); });
-    inactiveEmployeesCompliance?.forEach(e => { if (e.department) depts.add(e.department); });
-    return Array.from(depts).sort();
-  }, [employeesCompliance, inactiveEmployeesCompliance]);
+    filtered.forEach(e => { if (e.department) depts.add(e.department); });
+    return Array.from(depts).sort((a, b) => fixEncoding(a).localeCompare(fixEncoding(b), 'pt-BR'));
+  }, [employeesCompliance, inactiveEmployeesCompliance, exportContract]);
+
+  // Reset department when contract changes and selected dept is no longer available
+  useEffect(() => {
+    if (exportDepartment !== "all" && !availableDepartments.includes(exportDepartment)) {
+      setExportDepartment("all");
+    }
+  }, [availableDepartments, exportDepartment]);
 
   const handleExportPDF = async () => {
     let dataToExport: typeof employeesCompliance = [];
@@ -357,7 +374,7 @@ const Reports = () => {
         userName, 
         baseUrl: window.location.origin,
         contractName: selectedContractName || undefined,
-        departmentName: exportDepartment !== "all" ? exportDepartment : undefined,
+        departmentName: exportDepartment !== "all" ? fixEncoding(exportDepartment) : undefined,
         filterLabel,
       });
       toast.success(`PDF gerado! Protocolo: ${protocol}`, { id: "pdf-loading" });
@@ -570,7 +587,7 @@ const Reports = () => {
                   <SelectContent>
                     <SelectItem value="all">Todos os departamentos</SelectItem>
                     {availableDepartments.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                      <SelectItem key={d} value={d}>{fixEncoding(d)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
