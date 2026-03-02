@@ -210,50 +210,47 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
                 ))}
               </div>
             </div>
-            {/* Year & month tabs */}
-            <div className="flex items-center gap-3">
-              <ScrollArea className="flex-1">
-                <div className="flex items-center gap-1">
-                  {yearsToShow.map(y => (
-                    <button
-                      key={y}
-                      onClick={() => setSelectedYear(y)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                        selectedYear === y
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      {y}
-                    </button>
-                  ))}
-                  <div className="w-px h-5 bg-border mx-1" />
-                  <button
-                    onClick={() => setSelectedPeriod("anual")}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                      selectedPeriod === "anual"
-                        ? "bg-secondary text-secondary-foreground shadow-sm"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    Anual
-                  </button>
-                  {MONTH_LABELS.map((label, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedPeriod(i + 1)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                        selectedPeriod === i + 1
-                          ? "bg-secondary text-secondary-foreground shadow-sm"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
+            {/* Year tabs */}
+            <div className="flex flex-wrap items-center gap-1">
+              {yearsToShow.map(y => (
+                <button
+                  key={y}
+                  onClick={() => setSelectedYear(y)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    selectedYear === y
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+            {/* Month tabs */}
+            <div className="flex flex-wrap items-center gap-1">
+              <button
+                onClick={() => setSelectedPeriod("anual")}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  selectedPeriod === "anual"
+                    ? "bg-secondary text-secondary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Anual
+              </button>
+              {MONTH_LABELS.map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedPeriod(i + 1)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                    selectedPeriod === i + 1
+                      ? "bg-secondary text-secondary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </CardTitle>
         </CardHeader>
