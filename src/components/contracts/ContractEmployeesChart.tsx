@@ -1,12 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, BarChart } from 'recharts';
 import { motion } from "framer-motion";
-import { Users, BarChart3, TrendingUp, PieChart as PieIcon } from "lucide-react";
+import { Users, BarChart3, TrendingUp, PieChart as PieIcon, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Contract {
   id: string;
@@ -16,6 +15,8 @@ interface Contract {
 
 interface ContractEmployeesChartProps {
   contracts: Contract[];
+  year: number;
+  month: number; // 0 = anual, 1-12 = specific month
 }
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -38,36 +39,18 @@ function getColorsByRank(data: { count: number }[]) {
   return data.map(d => valueToColor.get(d.count) || "#94a3b8");
 }
 
-type ViewType = "mensal" | "pareto" | "pizza";
+type ViewType = "vela" | "horizontal" | "pareto" | "pizza";
 
-export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProps) => {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedPeriod, setSelectedPeriod] = useState<"anual" | number>("anual");
-  const [activeView, setActiveView] = useState<ViewType>("mensal");
+export const ContractEmployeesChart = ({ contracts, year, month }: ContractEmployeesChartProps) => {
+  const [activeView, setActiveView] = useState<ViewType>("vela");
 
-  // Fetch available years from employee creation dates
-  const { data: availableYears } = useQuery({
-    queryKey: ['employees-available-years'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('employees')
-        .select('created_at')
-        .eq('is_active', true);
-      if (!data) return [currentYear];
-      const years = [...new Set(data.map(d => new Date(d.created_at!).getFullYear()))].sort((a, b) => b - a);
-      return years.length > 0 ? years : [currentYear];
-    },
-  });
+  const periodLabel = month === 0
+    ? `${year}`
+    : `${MONTH_LABELS[month - 1]}/${year}`;
 
-  useEffect(() => {
-    setSelectedPeriod("anual");
-  }, [selectedYear]);
-
-  // Fetch active employee counts per contract, considering period
+  // Fetch active employee counts per contract
   const { data: employeeCounts } = useQuery({
-    queryKey: ['employees-per-contract-chart', contracts?.map(c => c.id), selectedYear, selectedPeriod],
+    queryKey: ['employees-per-contract-chart', contracts?.map(c => c.id), year, month],
     queryFn: async () => {
       if (!contracts || contracts.length === 0) return [];
 
@@ -79,12 +62,11 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
             .eq('is_active', true)
             .eq('management_contract_id', c.id);
 
-          // If a specific month is selected, filter by created_at up to end of that month
-          if (selectedPeriod !== "anual") {
-            const endDate = new Date(selectedYear, selectedPeriod as number, 0, 23, 59, 59);
+          if (month !== 0) {
+            const endDate = new Date(year, month, 0, 23, 59, 59);
             query = query.lte('created_at', endDate.toISOString());
           } else {
-            const endDate = new Date(selectedYear, 11, 31, 23, 59, 59);
+            const endDate = new Date(year, 11, 31, 23, 59, 59);
             query = query.lte('created_at', endDate.toISOString());
           }
 
@@ -129,14 +111,9 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
     return coloredData.filter(d => d.count > 0);
   }, [coloredData]);
 
-  const periodLabel = selectedPeriod === "anual"
-    ? `${selectedYear}`
-    : `${MONTH_LABELS[(selectedPeriod as number) - 1]}/${selectedYear}`;
-
-  const yearsToShow = availableYears || [currentYear];
-
   const views: { key: ViewType; label: string; icon: React.ReactNode }[] = [
-    { key: "mensal", label: "Mensal", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { key: "vela", label: "Vela", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { key: "horizontal", label: "Barras", icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
     { key: "pareto", label: "Pareto", icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { key: "pizza", label: "Pizza", icon: <PieIcon className="w-3.5 h-3.5" /> },
   ];
@@ -182,76 +159,29 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
     >
       <Card className="border-border/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <span>Colaboradores Ativos por Contrato</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-normal text-muted-foreground">
-                  Total: {totalEmployees} · Média: {average}/contrato
-                </span>
-                <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded">{periodLabel}</span>
-                <div className="w-px h-5 bg-border mx-1" />
-                {views.map(v => (
-                  <Button
-                    key={v.key}
-                    size="sm"
-                    variant={activeView === v.key ? "default" : "ghost"}
-                    className="h-7 px-2.5 text-xs gap-1"
-                    onClick={() => setActiveView(v.key)}
-                  >
-                    {v.icon}
-                    {v.label}
-                  </Button>
-                ))}
-              </div>
+          <CardTitle className="text-base font-semibold flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span>Colaboradores Ativos por Contrato</span>
             </div>
-            {/* Year & month tabs */}
-            <div className="flex items-center gap-3">
-              <ScrollArea className="flex-1">
-                <div className="flex items-center gap-1">
-                  {yearsToShow.map(y => (
-                    <button
-                      key={y}
-                      onClick={() => setSelectedYear(y)}
-                      className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                        selectedYear === y
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      {y}
-                    </button>
-                  ))}
-                  <div className="w-px h-5 bg-border mx-1" />
-                  <button
-                    onClick={() => setSelectedPeriod("anual")}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                      selectedPeriod === "anual"
-                        ? "bg-secondary text-secondary-foreground shadow-sm"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    }`}
-                  >
-                    Anual
-                  </button>
-                  {MONTH_LABELS.map((label, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedPeriod(i + 1)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
-                        selectedPeriod === i + 1
-                          ? "bg-secondary text-secondary-foreground shadow-sm"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-normal text-muted-foreground">
+                Total: {totalEmployees} · Média: {average}/contrato
+              </span>
+              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded">{periodLabel}</span>
+              <div className="w-px h-5 bg-border mx-1" />
+              {views.map(v => (
+                <Button
+                  key={v.key}
+                  size="sm"
+                  variant={activeView === v.key ? "default" : "ghost"}
+                  className="h-7 px-2.5 text-xs gap-1"
+                  onClick={() => setActiveView(v.key)}
+                >
+                  {v.icon}
+                  {v.label}
+                </Button>
+              ))}
             </div>
           </CardTitle>
         </CardHeader>
@@ -262,7 +192,8 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
             </div>
           ) : (
             <>
-              {activeView === "mensal" && (
+              {/* VELA - Vertical bars (candlestick style) */}
+              {activeView === "vela" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={coloredData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -299,6 +230,40 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
                 </ResponsiveContainer>
               )}
 
+              {/* HORIZONTAL - Horizontal bars */}
+              {activeView === "horizontal" && (
+                <ResponsiveContainer width="100%" height={Math.max(450, coloredData.length * 35)}>
+                  <BarChart data={coloredData} layout="vertical" margin={{ top: 10, right: 60, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={160}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      interval={0}
+                    />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Bar
+                      dataKey="count"
+                      radius={[0, 4, 4, 0]}
+                      maxBarSize={24}
+                      name="Colaboradores"
+                      label={({ x, y, width, height, value }: any) => (
+                        <text x={x + width + 4} y={y + height / 2 + 4} fill="hsl(var(--muted-foreground))" fontSize={10} fontWeight={500}>
+                          {value}
+                        </text>
+                      )}
+                    >
+                      {coloredData.map((entry, index) => (
+                        <Cell key={`cell-h-${index}`} fill={entry.count === 0 ? 'hsl(var(--muted))' : entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+
+              {/* PARETO */}
               {activeView === "pareto" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={paretoData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
@@ -324,6 +289,7 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
                 </ResponsiveContainer>
               )}
 
+              {/* PIZZA */}
               {activeView === "pizza" && (
                 <ResponsiveContainer width="100%" height={450}>
                   <PieChart>
@@ -349,7 +315,8 @@ export const ContractEmployeesChart = ({ contracts }: ContractEmployeesChartProp
                 </ResponsiveContainer>
               )}
 
-              {activeView === "mensal" && (
+              {/* Legend for vela */}
+              {activeView === "vela" && (
                 <div className="flex items-center justify-center gap-6 mt-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: '#16a34a' }} />
