@@ -411,52 +411,6 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
         </motion.div>
       </div>
 
-      {/* Row 6: Stacked Monthly Distribution by Contract */}
-      {docsPerContract && docsPerContract.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}>
-          <Card className="border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-muted-foreground" />
-                Ranking de Análises por Contrato — {year}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {(() => {
-                const sorted = [...(docsPerContract || [])].sort((a, b) => b.count - a.count);
-                const maxCount = Math.max(...sorted.map(d => d.count), 1);
-                return (
-                  <div className="space-y-3">
-                    {sorted.map((item, i) => (
-                      <div key={item.id} className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-muted-foreground w-6 text-right">{i + 1}º</span>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-foreground truncate max-w-[250px]">{item.name}</span>
-                            <span className="text-xs font-bold text-primary ml-2">{item.count}</span>
-                          </div>
-                          <div className="h-3 bg-muted/50 rounded-full overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: COLORS[i % COLORS.length] }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${(item.count / maxCount) * 100}%` }}
-                              transition={{ duration: 0.8, delay: i * 0.05 }}
-                            />
-                          </div>
-                        </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${item.is_active ? 'bg-secondary/15 text-secondary' : 'bg-destructive/15 text-destructive'}`}>
-                          {item.is_active ? 'Vigente' : 'Encerrado'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
     </div>
   );
 };
