@@ -19,9 +19,9 @@ const MONTHS = [
 ];
 
 const MONTH_COLORS = [
-  "#3b82f6", "#8b5cf6", "#ec4899", "#f97316",
-  "#eab308", "#22c55e", "#06b6d4", "#6366f1",
-  "#14b8a6", "#f43f5e", "#a855f7", "#0ea5e9"
+  "#3b82f6", "#6366f1", "#8b5cf6", "#06b6d4",
+  "#0ea5e9", "#14b8a6", "#2563eb", "#4f46e5",
+  "#7c3aed", "#0891b2", "#0284c7", "#0d9488"
 ];
 
 type ViewType = "mensal" | "pareto" | "pizza";
