@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BIKpiCard } from "@/components/reports/BIKpiCard";
 import { BIGaugeChart } from "@/components/reports/BIGaugeChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, FolderOpen, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Calendar, Activity } from "lucide-react";
+import { FileText, FolderOpen, CheckCircle2, AlertTriangle, TrendingUp, BarChart3, Calendar, Activity, Trophy, Medal } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, Line, AreaChart, Area, ComposedChart } from "recharts";
 
@@ -218,31 +218,52 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
           </Card>
         </motion.div>
 
-        {/* Top Contract Card */}
+        {/* Top 5 Ranking */}
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
           <Card className="border-border/50 h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Destaque do Ano
+                <Trophy className="w-4 h-4" />
+                Ranking do Ano — Top 5
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col justify-center h-[calc(100%-60px)]">
-              {contractWithMostDocs && contractWithMostDocs.count > 0 ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Contrato com mais análises</p>
-                  <p className="text-base font-semibold text-foreground leading-tight">{contractWithMostDocs.name}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-primary">{contractWithMostDocs.count}</span>
-                    <span className="text-sm text-muted-foreground">análises</span>
+            <CardContent>
+              {(() => {
+                const top5 = [...(docsPerContract || [])].filter(d => d.count > 0).sort((a, b) => b.count - a.count).slice(0, 5);
+                if (top5.length === 0) return <p className="text-sm text-muted-foreground text-center py-4">Nenhuma análise em {year}</p>;
+                const maxCount = top5[0]?.count || 1;
+                const medals = ['🥇', '🥈', '🥉'];
+                return (
+                  <div className="space-y-3">
+                    {top5.map((item, i) => (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <span className="text-lg w-7 text-center font-bold">
+                          {i < 3 ? medals[i] : <span className="text-xs text-muted-foreground">{i + 1}º</span>}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-xs truncate max-w-[70%] ${i === 0 ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                              {item.name}
+                            </span>
+                            <span className={`text-xs font-bold ${i === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                              {item.count} {item.count === 1 ? 'análise' : 'análises'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-1.5">
+                            <motion.div
+                              className="h-1.5 rounded-full"
+                              style={{ backgroundColor: i === 0 ? 'hsl(var(--primary))' : i === 1 ? 'hsl(var(--secondary))' : 'hsl(var(--muted-foreground) / 0.4)' }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(item.count / maxCount) * 100}%` }}
+                              transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalDocs > 0 ? Math.round((contractWithMostDocs.count / totalDocs) * 100) : 0}% do total de análises
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center">Nenhuma análise registrada em {year}</p>
-              )}
+                );
+              })()}
             </CardContent>
           </Card>
         </motion.div>
