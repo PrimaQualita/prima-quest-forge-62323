@@ -452,7 +452,7 @@ export const ContractsBIDashboard = ({ contracts, year }: ContractsBIDashboardPr
             </CardHeader>
             <CardContent>
               {(() => {
-                const sorted = [...(docsPerContract || [])].sort((a, b) => b.count - a.count).slice(0, 10);
+                const sorted = [...(docsPerContract || [])].sort((a, b) => b.count - a.count);
                 const maxCount = Math.max(...sorted.map(d => d.count), 1);
                 return (
                   <div className="space-y-3">
