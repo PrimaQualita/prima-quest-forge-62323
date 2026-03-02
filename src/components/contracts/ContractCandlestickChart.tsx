@@ -211,7 +211,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
                 ))}
               </div>
             </div>
-            {/* Year & month tabs */}
+            {/* Year tabs */}
             <div className="flex flex-wrap items-center gap-1">
               {yearsToShow.map(y => (
                 <button
@@ -226,7 +226,9 @@ export const ContractCandlestickChart = ({ contractId, contractName, year: initi
                   {y}
                 </button>
               ))}
-              <div className="w-px h-4 bg-border mx-0.5" />
+            </div>
+            {/* Month tabs */}
+            <div className="flex flex-wrap items-center gap-1">
               <button
                 onClick={() => setSelectedMonth("anual")}
                 className={`px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors ${
