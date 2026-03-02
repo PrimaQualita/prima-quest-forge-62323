@@ -18,11 +18,24 @@ const MONTHS = [
   "Jul", "Ago", "Set", "Out", "Nov", "Dez"
 ];
 
-const MONTH_COLORS = [
-  "#3b82f6", "#6366f1", "#8b5cf6", "#06b6d4",
-  "#0ea5e9", "#14b8a6", "#2563eb", "#4f46e5",
-  "#7c3aed", "#0891b2", "#0284c7", "#0d9488"
+// Dynamic color based on rank: green (highest) → blue → yellow → red (lowest)
+const VALUE_GRADIENT = [
+  "#16a34a", "#22c55e", "#4ade80", "#86efac",  // greens (top)
+  "#3b82f6", "#60a5fa", "#93c5fd",              // blues (mid-high)
+  "#facc15", "#fbbf24", "#f59e0b",              // yellows (mid-low)
+  "#f87171", "#ef4444",                          // reds (bottom)
 ];
+
+function getColorsByRank(data: { count: number }[]) {
+  const sorted = [...data].map((d, i) => ({ count: d.count, origIndex: i })).sort((a, b) => b.count - a.count);
+  const colors = new Array(data.length).fill("#94a3b8");
+  const step = (VALUE_GRADIENT.length - 1) / Math.max(sorted.length - 1, 1);
+  sorted.forEach((item, rank) => {
+    const gradientIdx = Math.round(rank * step);
+    colors[item.origIndex] = VALUE_GRADIENT[Math.min(gradientIdx, VALUE_GRADIENT.length - 1)];
+  });
+  return colors;
+}
 
 type ViewType = "mensal" | "pareto" | "pizza";
 
@@ -47,7 +60,6 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
             monthNumber: month,
             count: count || 0,
             average: 0,
-            color: MONTH_COLORS[index],
           };
         })
       );
@@ -63,20 +75,30 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
 
   const totalDocs = monthlyData?.reduce((s, d) => s + d.count, 0) || 0;
 
-  const paretoData = useMemo(() => {
+  const rankedColors = useMemo(() => {
+    if (!monthlyData) return [] as string[];
+    return getColorsByRank(monthlyData);
+  }, [monthlyData]);
+
+  const coloredData = useMemo(() => {
     if (!monthlyData) return [];
-    const sorted = [...monthlyData].sort((a, b) => b.count - a.count);
+    return monthlyData.map((d, i) => ({ ...d, color: rankedColors[i] }));
+  }, [monthlyData, rankedColors]);
+
+  const paretoData = useMemo(() => {
+    if (!coloredData.length) return [];
+    const sorted = [...coloredData].sort((a, b) => b.count - a.count);
     let cumulative = 0;
     return sorted.map(d => {
       cumulative += d.count;
       return { ...d, cumPercent: totalDocs > 0 ? Math.round((cumulative / totalDocs) * 1000) / 10 : 0 };
     });
-  }, [monthlyData, totalDocs]);
+  }, [coloredData, totalDocs]);
 
   const pieData = useMemo(() => {
-    if (!monthlyData) return [];
-    return monthlyData.filter(d => d.count > 0);
-  }, [monthlyData]);
+    if (!coloredData.length) return [];
+    return coloredData.filter(d => d.count > 0);
+  }, [coloredData]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -84,7 +106,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
         <p className="font-medium text-foreground mb-1">{data.month}/{year}</p>
-        <p style={{ color: data.color }} className="font-semibold">{data.count} análise(s)</p>
+        <p style={{ color: data.color || 'hsl(var(--primary))' }} className="font-semibold">{data.count} análise(s)</p>
         {activeView === "pareto" && data.cumPercent !== undefined && (
           <p className="text-muted-foreground mt-0.5">Acumulado: {data.cumPercent}%</p>
         )}
@@ -102,17 +124,14 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
     return (
       <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
         <p className="font-medium text-foreground mb-1">{data.month}/{year}</p>
-        <p style={{ color: data.color }} className="font-semibold">{data.count} análise(s) ({pct}%)</p>
+        <p style={{ color: data.color || 'hsl(var(--primary))' }} className="font-semibold">{data.count} análise(s) ({pct}%)</p>
       </div>
     );
   };
 
   const CustomBar = (props: any) => {
-    const { x, y, width, height, index } = props;
-    const color = activeView === "pareto"
-      ? paretoData[index]?.color
-      : monthlyData?.[index]?.color || "hsl(var(--primary))";
-    return <rect x={x} y={y} width={width} height={height} rx={3} ry={3} fill={color} fillOpacity={0.85} />;
+    const { x, y, width, height, payload } = props;
+    return <rect x={x} y={y} width={width} height={height} rx={3} ry={3} fill={payload?.color || "hsl(var(--primary))"} fillOpacity={0.85} />;
   };
 
   const views: { key: ViewType; label: string; icon: React.ReactNode }[] = [
@@ -155,7 +174,7 @@ export const ContractCandlestickChart = ({ contractId, contractName, year }: Con
         <CardContent>
           {activeView === "mensal" && (
             <ResponsiveContainer width="100%" height={220}>
-              <ComposedChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <ComposedChart data={coloredData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <defs>
                   <linearGradient id={`areaGrad-${contractId}`} x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
