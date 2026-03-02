@@ -29,14 +29,14 @@ const VALUE_GRADIENT = [
 ];
 
 function getColorsByRank(data: { count: number }[]) {
-  const sorted = [...data].map((d, i) => ({ count: d.count, origIndex: i })).sort((a, b) => b.count - a.count);
-  const colors = new Array(data.length).fill("#94a3b8");
-  const step = (VALUE_GRADIENT.length - 1) / Math.max(sorted.length - 1, 1);
-  sorted.forEach((item, rank) => {
+  const uniqueValues = [...new Set(data.map(d => d.count))].sort((a, b) => b - a);
+  const step = (VALUE_GRADIENT.length - 1) / Math.max(uniqueValues.length - 1, 1);
+  const valueToColor = new Map<number, string>();
+  uniqueValues.forEach((val, rank) => {
     const gradientIdx = Math.round(rank * step);
-    colors[item.origIndex] = VALUE_GRADIENT[Math.min(gradientIdx, VALUE_GRADIENT.length - 1)];
+    valueToColor.set(val, VALUE_GRADIENT[Math.min(gradientIdx, VALUE_GRADIENT.length - 1)]);
   });
-  return colors;
+  return data.map(d => valueToColor.get(d.count) || "#94a3b8");
 }
 
 type ViewType = "mensal" | "pareto" | "pizza";
