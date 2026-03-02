@@ -259,7 +259,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
             <>
               {/* MENSAL VIEW */}
               {activeView === "mensal" && (
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={coloredData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
@@ -300,7 +300,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
 
               {/* PARETO VIEW */}
               {activeView === "pareto" && (
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={450}>
                   <ComposedChart data={paretoData} margin={{ top: 20, right: 30, left: 20, bottom: 70 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
@@ -326,7 +326,7 @@ export const AnnualContractComparisonChart = ({ contracts }: AnnualContractCompa
 
               {/* PIZZA VIEW */}
               {activeView === "pizza" && (
-                <ResponsiveContainer width="100%" height={320}>
+                <ResponsiveContainer width="100%" height={450}>
                   <PieChart>
                     <Pie
                       data={pieData}
