@@ -468,6 +468,30 @@ export type Database = {
         }
         Relationships: []
       }
+      gamification_score_history: {
+        Row: {
+          game_id: string
+          id: string
+          points: number
+          scored_at: string
+          user_id: string
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          points: number
+          scored_at?: string
+          user_id: string
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          points?: number
+          scored_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       management_contracts: {
         Row: {
           created_at: string | null
