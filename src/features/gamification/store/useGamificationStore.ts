@@ -380,11 +380,18 @@ export const useGamificationStore = create<GamificationState>()(
       },
 
       /**
-       * Carrega ranking do servidor
+       * Carrega ranking do servidor (total acumulado)
        */
       loadRanking: async () => {
         const ranking = await carregarRankingDoServidor();
         set({ ranking });
+      },
+
+      /**
+       * Carrega ranking filtrado por período
+       */
+      loadRankingByPeriod: async (year: number, month?: number) => {
+        return await carregarRankingPorPeriodo(year, month);
       },
 
       /**
