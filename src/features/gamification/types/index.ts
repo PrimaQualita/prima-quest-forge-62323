@@ -40,6 +40,7 @@ export interface GamificationState {
   resetProgress: () => void;
   loadUserData: () => Promise<void>;
   loadRanking: () => Promise<void>;
+  loadRankingByPeriod: (year: number, month?: number) => Promise<RankingPlayer[]>;
 }
 
 export interface GameInfo {
