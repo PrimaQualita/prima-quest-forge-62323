@@ -312,13 +312,17 @@ export const useGamificationStore = create<GamificationState>()(
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           console.log('[Gamification] Salvando no Supabase para user:', user.id);
-          await salvarProgressoNoServidor(
-            user.id,
-            newTotalScore,
-            newIntegrityLevel,
-            newGamesProgress,
-            get().badges
-          );
+          // Salva progresso geral e registra no histórico em paralelo
+          await Promise.all([
+            salvarProgressoNoServidor(
+              user.id,
+              newTotalScore,
+              newIntegrityLevel,
+              newGamesProgress,
+              get().badges
+            ),
+            registrarScoreNoHistorico(user.id, gameId, points)
+          ]);
           console.log('[Gamification] Salvo no Supabase com sucesso');
         } else {
           console.error('[Gamification] Usuário não autenticado, não foi possível salvar no servidor');
