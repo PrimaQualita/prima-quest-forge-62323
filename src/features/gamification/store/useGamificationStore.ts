@@ -91,95 +91,153 @@ export const carregarProgressoDoServidor = async (userId: string) => {
 };
 
 /**
- * Carrega ranking de colaboradores e gestores (exclui fornecedores)
- * Retorna TODOS os colaboradores, incluindo os que não têm progresso (score 0)
+ * Registra um evento de pontuação no histórico
+ */
+export const registrarScoreNoHistorico = async (
+  userId: string,
+  gameId: string,
+  points: number
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('gamification_score_history')
+      .insert({
+        user_id: userId,
+        game_id: gameId,
+        points,
+        scored_at: new Date().toISOString()
+      });
+    if (error) throw error;
+  } catch (error) {
+    console.error('Erro ao registrar score no histórico:', error);
+  }
+};
+
+/**
+ * Busca todos os colaboradores com user_id válido (paginado)
+ */
+const fetchAllEmployees = async (): Promise<{ user_id: string | null; name: string }[]> => {
+  let allEmployees: { user_id: string | null; name: string }[] = [];
+  let offset = 0;
+  const batchSize = 1000;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('user_id, name')
+      .not('user_id', 'is', null)
+      .range(offset, offset + batchSize - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      hasMore = false;
+    } else {
+      allEmployees = [...allEmployees, ...data];
+      offset += batchSize;
+      if (data.length < batchSize) hasMore = false;
+    }
+  }
+  return allEmployees;
+};
+
+/**
+ * Carrega ranking geral (total acumulado) de colaboradores e gestores
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
   try {
-    // Busca TODOS os colaboradores que têm user_id válido (sem limite de 1000)
-    let allEmployees: { user_id: string | null; name: string }[] = [];
-    let offset = 0;
-    const batchSize = 1000;
-    let hasMore = true;
-
-    // Pagina através de todos os colaboradores
-    while (hasMore) {
-      const { data: employeesData, error: employeesError } = await supabase
-        .from('employees')
-        .select('user_id, name')
-        .not('user_id', 'is', null)
-        .range(offset, offset + batchSize - 1);
-
-      if (employeesError) throw employeesError;
-      
-      if (!employeesData || employeesData.length === 0) {
-        hasMore = false;
-      } else {
-        allEmployees = [...allEmployees, ...employeesData];
-        offset += batchSize;
-        if (employeesData.length < batchSize) {
-          hasMore = false;
-        }
-      }
-    }
-
+    const allEmployees = await fetchAllEmployees();
     if (allEmployees.length === 0) return [];
 
-    // Filtra user_ids válidos e garante que são strings
     const userIds = allEmployees
       .map(e => e.user_id)
-      .filter((id): id is string => id !== null && id !== undefined);
-    
+      .filter((id): id is string => id !== null);
     if (userIds.length === 0) return [];
 
-    // Busca progresso de TODOS os usuários (paginado também)
     let allProgress: { user_id: string; total_score: number }[] = [];
-    
-    // Divide userIds em lotes de 500 para evitar limites de query
     const userIdBatches = [];
     for (let i = 0; i < userIds.length; i += 500) {
       userIdBatches.push(userIds.slice(i, i + 500));
     }
 
     for (const batch of userIdBatches) {
-      const { data: progressData, error: progressError } = await supabase
+      const { data, error } = await supabase
         .from('gamification_progress')
         .select('user_id, total_score')
         .in('user_id', batch);
-
-      if (progressError) {
-        console.error('Erro ao buscar progresso:', progressError);
-        // Mesmo com erro no progresso, continua
-      } else if (progressData) {
-        allProgress = [...allProgress, ...progressData];
-      }
+      if (!error && data) allProgress = [...allProgress, ...data];
     }
 
-    // Mapeia colaboradores com seu progresso (ou 0 se não tiver)
-    // Ordena por totalScore decrescente (maior primeiro), depois por nome alfabético para desempate
-    const ranking: RankingPlayer[] = allEmployees
+    return allEmployees
       .map(employee => {
         const progress = allProgress.find(p => p.user_id === employee.user_id);
         const totalScore = progress?.total_score || 0;
-
-        return {
-          name: employee.name,
-          totalScore,
-          level: calculateLevel(totalScore)
-        };
+        return { name: employee.name, totalScore, level: calculateLevel(totalScore) };
       })
-      .sort((a, b) => {
-        // Primeiro ordena por pontuação decrescente
-        if (b.totalScore !== a.totalScore) {
-          return b.totalScore - a.totalScore;
-        }
-        // Em caso de empate, ordena alfabeticamente pelo nome
-        return a.name.localeCompare(b.name);
-      });
-
-    return ranking;
+      .sort((a, b) => b.totalScore !== a.totalScore ? b.totalScore - a.totalScore : a.name.localeCompare(b.name));
   } catch (error) {
     console.error('Erro ao carregar ranking:', error);
+    return [];
+  }
+};
+
+/**
+ * Carrega ranking filtrado por período (mensal ou anual) usando score_history
+ */
+export const carregarRankingPorPeriodo = async (year: number, month?: number): Promise<RankingPlayer[]> => {
+  try {
+    const allEmployees = await fetchAllEmployees();
+    if (allEmployees.length === 0) return [];
+
+    const userIds = allEmployees
+      .map(e => e.user_id)
+      .filter((id): id is string => id !== null);
+    if (userIds.length === 0) return [];
+
+    // Define date range
+    let startDate: string;
+    let endDate: string;
+    if (month !== undefined) {
+      startDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00.000Z`;
+      const nextMonth = month === 12 ? 1 : month + 1;
+      const nextYear = month === 12 ? year + 1 : year;
+      endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00.000Z`;
+    } else {
+      startDate = `${year}-01-01T00:00:00.000Z`;
+      endDate = `${year + 1}-01-01T00:00:00.000Z`;
+    }
+
+    // Fetch scores in the period (batched by user)
+    let allScores: { user_id: string; points: number }[] = [];
+    const userIdBatches = [];
+    for (let i = 0; i < userIds.length; i += 500) {
+      userIdBatches.push(userIds.slice(i, i + 500));
+    }
+
+    for (const batch of userIdBatches) {
+      const { data, error } = await supabase
+        .from('gamification_score_history')
+        .select('user_id, points')
+        .in('user_id', batch)
+        .gte('scored_at', startDate)
+        .lt('scored_at', endDate);
+      if (!error && data) allScores = [...allScores, ...data];
+    }
+
+    // Aggregate scores per user
+    const scoreMap: Record<string, number> = {};
+    for (const s of allScores) {
+      scoreMap[s.user_id] = (scoreMap[s.user_id] || 0) + s.points;
+    }
+
+    return allEmployees
+      .map(employee => {
+        const totalScore = employee.user_id ? (scoreMap[employee.user_id] || 0) : 0;
+        return { name: employee.name, totalScore, level: calculateLevel(totalScore) };
+      })
+      .sort((a, b) => b.totalScore !== a.totalScore ? b.totalScore - a.totalScore : a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Erro ao carregar ranking por período:', error);
     return [];
   }
 };
