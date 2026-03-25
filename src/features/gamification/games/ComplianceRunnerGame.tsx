@@ -233,9 +233,8 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         for (let i = 0; i < enemyCount; i++) {
           const x = Phaser.Math.Between(300, 1000);
           const enemy = this.enemies.create(x, 0, 'enemy') as Phaser.Physics.Arcade.Sprite;
-          enemy.setBounce(0.5);
-          enemy.setCollideWorldBounds(true);
-          enemy.setVelocity(Phaser.Math.Between(-100, 100), 20);
+          enemy.setBounce(0.1);
+          enemy.setCollideWorldBounds(false);
           enemy.setScale(0.7);
         }
 
@@ -501,10 +500,42 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           this.player.setScale(0.8, 0.8);
         }
 
+        // IA dos inimigos: perseguir o jogador
         this.enemies?.children.entries.forEach((enemy) => {
           const sprite = enemy as Phaser.Physics.Arcade.Sprite;
-          if (sprite.body?.blocked.right || sprite.body?.blocked.left) {
-            sprite.setVelocityX(-sprite.body.velocity.x);
+          if (!sprite.active || !sprite.body) return;
+
+          // Remover inimigo que caiu no buraco e respawnar
+          if (sprite.y > 650) {
+            sprite.setPosition(Phaser.Math.Between(200, 1100), 0);
+            sprite.setVelocity(0, 0);
+            return;
+          }
+
+          const playerX = this.player!.x;
+          const playerY = this.player!.y;
+          const chaseSpeed = 80 + (currentPhase * 20);
+
+          // Mover na direção do jogador
+          if (sprite.x < playerX - 20) {
+            sprite.setVelocityX(chaseSpeed);
+            sprite.setFlipX(false);
+          } else if (sprite.x > playerX + 20) {
+            sprite.setVelocityX(-chaseSpeed);
+            sprite.setFlipX(true);
+          } else {
+            sprite.setVelocityX(0);
+          }
+
+          // Pular se o jogador está acima e o inimigo está no chão
+          const isOnGround = sprite.body.blocked.down || sprite.body.touching.down;
+          if (isOnGround && playerY < sprite.y - 50) {
+            sprite.setVelocityY(-450);
+          }
+
+          // Pular se bloqueado por uma parede
+          if (isOnGround && (sprite.body.blocked.right || sprite.body.blocked.left)) {
+            sprite.setVelocityY(-400);
           }
         });
       }
