@@ -233,9 +233,8 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         for (let i = 0; i < enemyCount; i++) {
           const x = Phaser.Math.Between(300, 1000);
           const enemy = this.enemies.create(x, 0, 'enemy') as Phaser.Physics.Arcade.Sprite;
-          enemy.setBounce(0.5);
-          enemy.setCollideWorldBounds(true);
-          enemy.setVelocity(Phaser.Math.Between(-100, 100), 20);
+          enemy.setBounce(0.1);
+          enemy.setCollideWorldBounds(false);
           enemy.setScale(0.7);
         }
 
