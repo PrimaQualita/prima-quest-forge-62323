@@ -300,6 +300,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           padding: { x: 10, y: 5 }
         });
 
+        this.physics.world.setBounds(0, 0, 1280, 800);
         this.cameras.main.setBounds(0, 0, 1280, 600);
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
       }
