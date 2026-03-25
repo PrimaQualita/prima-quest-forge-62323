@@ -326,6 +326,12 @@ ${knowledgeBase}
 - Use emojis para tornar mais visual e organizado
 - Quando citar colaboradores ou fornecedores, use os dados reais
 
+⚠️ REGRA CRÍTICA DE FORMATAÇÃO:
+- NUNCA use tabelas (markdown tables com | ou qualquer formato tabular)
+- Responda SEMPRE em texto corrido, listas numeradas ou listas com bullet points
+- Para dados comparativos, use listas em vez de tabelas
+- Mantenha as respostas em formato de texto simples e legível
+
 IMPORTANTE: Você tem acesso a dados reais do sistema. Use-os para dar respostas precisas e contextualizadas!
 
 Responda sempre em português brasileiro!`;
