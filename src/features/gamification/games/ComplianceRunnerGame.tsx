@@ -500,10 +500,42 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           this.player.setScale(0.8, 0.8);
         }
 
+        // IA dos inimigos: perseguir o jogador
         this.enemies?.children.entries.forEach((enemy) => {
           const sprite = enemy as Phaser.Physics.Arcade.Sprite;
-          if (sprite.body?.blocked.right || sprite.body?.blocked.left) {
-            sprite.setVelocityX(-sprite.body.velocity.x);
+          if (!sprite.active || !sprite.body) return;
+
+          // Remover inimigo que caiu no buraco e respawnar
+          if (sprite.y > 650) {
+            sprite.setPosition(Phaser.Math.Between(200, 1100), 0);
+            sprite.setVelocity(0, 0);
+            return;
+          }
+
+          const playerX = this.player!.x;
+          const playerY = this.player!.y;
+          const chaseSpeed = 80 + (currentPhase * 20);
+
+          // Mover na direção do jogador
+          if (sprite.x < playerX - 20) {
+            sprite.setVelocityX(chaseSpeed);
+            sprite.setFlipX(false);
+          } else if (sprite.x > playerX + 20) {
+            sprite.setVelocityX(-chaseSpeed);
+            sprite.setFlipX(true);
+          } else {
+            sprite.setVelocityX(0);
+          }
+
+          // Pular se o jogador está acima e o inimigo está no chão
+          const isOnGround = sprite.body.blocked.down || sprite.body.touching.down;
+          if (isOnGround && playerY < sprite.y - 50) {
+            sprite.setVelocityY(-450);
+          }
+
+          // Pular se bloqueado por uma parede
+          if (isOnGround && (sprite.body.blocked.right || sprite.body.blocked.left)) {
+            sprite.setVelocityY(-400);
           }
         });
       }
