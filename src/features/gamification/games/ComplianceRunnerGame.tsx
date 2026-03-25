@@ -186,7 +186,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         this.platforms = this.physics.add.staticGroup();
         
         // Buracos no chão (índices das tiles que NÃO serão criadas)
-        const holeIndices = [7, 8, 13, 14, 18, 19];
+        const holeIndices = [4, 8, 12, 15, 18];
         
         for (let i = 0; i < 20; i++) {
           if (holeIndices.includes(i)) continue; // pular para criar buraco
