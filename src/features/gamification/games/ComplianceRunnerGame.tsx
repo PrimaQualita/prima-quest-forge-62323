@@ -185,7 +185,11 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
 
         this.platforms = this.physics.add.staticGroup();
         
+        // Buracos no chão (índices das tiles que NÃO serão criadas)
+        const holeIndices = [7, 8, 13, 14, 18, 19];
+        
         for (let i = 0; i < 20; i++) {
+          if (holeIndices.includes(i)) continue; // pular para criar buraco
           const platform = this.platforms.create(i * 64, 568, null) as Phaser.Physics.Arcade.Sprite;
           platform.setDisplaySize(64, 32);
           platform.setTint(0x059669);
@@ -207,7 +211,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
 
         this.player = this.physics.add.sprite(100, 450, 'player');
         this.player.setBounce(0.1);
-        this.player.setCollideWorldBounds(true);
+        this.player.setCollideWorldBounds(false);
         this.player.setScale(0.8);
         this.player.body!.setSize(40, 60);
 
