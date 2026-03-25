@@ -266,6 +266,12 @@ export const useGamificationStore = create<GamificationState>()(
        * - Persiste no Supabase
        */
       updateScore: async (gameId: string, points: number) => {
+        // Ignora pontuações zero - não registra no histórico nem atualiza estado
+        if (points <= 0) {
+          console.log(`[Gamification] Ignorando score zero - Game: ${gameId}, Points: ${points}`);
+          return;
+        }
+
         const state = get();
         const newTotalScore = state.totalScore + points;
         
