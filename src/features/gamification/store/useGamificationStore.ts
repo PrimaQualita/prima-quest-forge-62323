@@ -316,9 +316,17 @@ export const useGamificationStore = create<GamificationState>()(
           // Busca progresso de gamificação
           const progressData = await carregarProgressoDoServidor(user.id);
           if (progressData) {
-            const historyRanking = await carregarRankingDoServidor();
-            const currentUserRanking = historyRanking.find(player => player.name === employeeData?.name);
-            const resolvedTotalScore = currentUserRanking?.totalScore ?? progressData.total_score;
+            const { data: currentUserHistory, error: currentUserHistoryError } = await supabase.rpc('get_gamification_ranking', {
+              p_year: null,
+              p_month: null,
+            });
+
+            if (currentUserHistoryError) {
+              throw currentUserHistoryError;
+            }
+
+            const currentUserRanking = currentUserHistory?.find((player: { user_id: string }) => player.user_id === user.id);
+            const resolvedTotalScore = Number(currentUserRanking?.total_score ?? progressData.total_score ?? 0);
             set({
               totalScore: resolvedTotalScore,
               integrityLevel: Math.min(100, Math.floor((resolvedTotalScore / 50))),
