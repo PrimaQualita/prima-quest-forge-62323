@@ -99,14 +99,11 @@ export const registrarScoreNoHistorico = async (
   points: number
 ): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('gamification_score_history')
-      .insert({
-        user_id: userId,
-        game_id: gameId,
-        points,
-        scored_at: new Date().toISOString()
-      });
+    const { error } = await supabase.rpc('record_gamification_score', {
+      p_game_id: gameId,
+      p_points: points,
+      p_scored_at: new Date().toISOString()
+    });
     if (error) throw error;
   } catch (error) {
     console.error('Erro ao registrar score no histórico:', error);
