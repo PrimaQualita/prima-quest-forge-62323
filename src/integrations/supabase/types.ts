@@ -1158,6 +1158,10 @@ export type Database = {
           needs_user_creation: boolean
         }[]
       }
+      record_gamification_score: {
+        Args: { p_game_id: string; p_points: number; p_scored_at?: string }
+        Returns: undefined
+      }
       validate_compliance_quiz_answer: {
         Args: { p_document_id: string; p_user_answer: string }
         Returns: boolean
