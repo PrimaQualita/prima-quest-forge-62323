@@ -20,6 +20,17 @@ const calculateLevel = (score: number): string => {
   return 'Iniciante Ético';
 };
 
+const buildRankingFromRows = (rows: Array<{ name: string; total_score: number | string | null }>): RankingPlayer[] => {
+  return rows.map((row) => {
+    const totalScore = Number(row.total_score ?? 0);
+    return {
+      name: row.name,
+      totalScore,
+      level: calculateLevel(totalScore),
+    };
+  });
+};
+
 /**
  * Salva progresso de gamificação no Supabase
  */
@@ -143,35 +154,13 @@ const fetchAllEmployees = async (): Promise<{ user_id: string | null; name: stri
  */
 export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
   try {
-    const allEmployees = await fetchAllEmployees();
-    if (allEmployees.length === 0) return [];
+    const { data, error } = await supabase.rpc('get_gamification_ranking', {
+      p_year: null,
+      p_month: null,
+    });
 
-    const userIds = allEmployees
-      .map(e => e.user_id)
-      .filter((id): id is string => id !== null);
-    if (userIds.length === 0) return [];
-
-    let allProgress: { user_id: string; total_score: number }[] = [];
-    const userIdBatches = [];
-    for (let i = 0; i < userIds.length; i += 500) {
-      userIdBatches.push(userIds.slice(i, i + 500));
-    }
-
-    for (const batch of userIdBatches) {
-      const { data, error } = await supabase
-        .from('gamification_progress')
-        .select('user_id, total_score')
-        .in('user_id', batch);
-      if (!error && data) allProgress = [...allProgress, ...data];
-    }
-
-    return allEmployees
-      .map(employee => {
-        const progress = allProgress.find(p => p.user_id === employee.user_id);
-        const totalScore = progress?.total_score || 0;
-        return { name: employee.name, totalScore, level: calculateLevel(totalScore) };
-      })
-      .sort((a, b) => b.totalScore !== a.totalScore ? b.totalScore - a.totalScore : a.name.localeCompare(b.name));
+    if (error) throw error;
+    return buildRankingFromRows(data ?? []);
   } catch (error) {
     console.error('Erro ao carregar ranking:', error);
     return [];
@@ -183,56 +172,13 @@ export const carregarRankingDoServidor = async (): Promise<RankingPlayer[]> => {
  */
 export const carregarRankingPorPeriodo = async (year: number, month?: number): Promise<RankingPlayer[]> => {
   try {
-    const allEmployees = await fetchAllEmployees();
-    if (allEmployees.length === 0) return [];
+    const { data, error } = await supabase.rpc('get_gamification_ranking', {
+      p_year: year,
+      p_month: month ?? null,
+    });
 
-    const userIds = allEmployees
-      .map(e => e.user_id)
-      .filter((id): id is string => id !== null);
-    if (userIds.length === 0) return [];
-
-    // Define date range
-    let startDate: string;
-    let endDate: string;
-    if (month !== undefined) {
-      startDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00.000Z`;
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? year + 1 : year;
-      endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00.000Z`;
-    } else {
-      startDate = `${year}-01-01T00:00:00.000Z`;
-      endDate = `${year + 1}-01-01T00:00:00.000Z`;
-    }
-
-    // Fetch scores in the period (batched by user)
-    let allScores: { user_id: string; points: number }[] = [];
-    const userIdBatches = [];
-    for (let i = 0; i < userIds.length; i += 500) {
-      userIdBatches.push(userIds.slice(i, i + 500));
-    }
-
-    for (const batch of userIdBatches) {
-      const { data, error } = await supabase
-        .from('gamification_score_history')
-        .select('user_id, points')
-        .in('user_id', batch)
-        .gte('scored_at', startDate)
-        .lt('scored_at', endDate);
-      if (!error && data) allScores = [...allScores, ...data];
-    }
-
-    // Aggregate scores per user
-    const scoreMap: Record<string, number> = {};
-    for (const s of allScores) {
-      scoreMap[s.user_id] = (scoreMap[s.user_id] || 0) + s.points;
-    }
-
-    return allEmployees
-      .map(employee => {
-        const totalScore = employee.user_id ? (scoreMap[employee.user_id] || 0) : 0;
-        return { name: employee.name, totalScore, level: calculateLevel(totalScore) };
-      })
-      .sort((a, b) => b.totalScore !== a.totalScore ? b.totalScore - a.totalScore : a.name.localeCompare(b.name));
+    if (error) throw error;
+    return buildRankingFromRows(data ?? []);
   } catch (error) {
     console.error('Erro ao carregar ranking por período:', error);
     return [];
@@ -370,9 +316,20 @@ export const useGamificationStore = create<GamificationState>()(
           // Busca progresso de gamificação
           const progressData = await carregarProgressoDoServidor(user.id);
           if (progressData) {
+            const { data: currentUserHistory, error: currentUserHistoryError } = await supabase.rpc('get_gamification_ranking', {
+              p_year: null,
+              p_month: null,
+            });
+
+            if (currentUserHistoryError) {
+              throw currentUserHistoryError;
+            }
+
+            const currentUserRanking = currentUserHistory?.find((player: { user_id: string }) => player.user_id === user.id);
+            const resolvedTotalScore = Number(currentUserRanking?.total_score ?? progressData.total_score ?? 0);
             set({
-              totalScore: progressData.total_score,
-              integrityLevel: progressData.integrity_level,
+              totalScore: resolvedTotalScore,
+              integrityLevel: Math.min(100, Math.floor((resolvedTotalScore / 50))),
               gamesProgress: (progressData.games_progress as any) || {},
               badges: (progressData.badges as any) || availableBadges.map(badge => ({ ...badge, unlocked: false }))
             });

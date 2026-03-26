@@ -1139,6 +1139,14 @@ export type Database = {
     }
     Functions: {
       fix_encoding: { Args: { text_value: string }; Returns: string }
+      get_gamification_ranking: {
+        Args: { p_month?: number; p_year?: number }
+        Returns: {
+          name: string
+          total_score: number
+          user_id: string
+        }[]
+      }
       get_system_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
