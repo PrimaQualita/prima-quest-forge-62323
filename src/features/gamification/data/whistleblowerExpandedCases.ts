@@ -3,1071 +3,1065 @@ import { shuffleArray } from './expandedQuestions';
 
 /**
  * 80 Casos para o jogo Canal de Denúncias
- * Questões com respostas não óbvias, exigindo conhecimento real de compliance
- * Os índices corretos variam entre todas as posições (0-3)
+ * Questões de dificuldade média a difícil, exigindo conhecimento real de compliance.
+ * Todas as opções são plausíveis — a correta exige raciocínio e conhecimento.
+ * Os índices corretos variam entre todas as posições (0-3).
  */
 export const expandedWhistleblowerCases: WhistleblowerCase[] = [
   {
     id: 'case-1',
-    report: 'Funcionário relata que planilhas com salários de todos os funcionários foram compartilhadas em grupo de WhatsApp.',
+    report: 'Durante uma auditoria, você identifica que um diretor autorizou pagamento antecipado a um fornecedor fora do fluxo de aprovação normal. O fornecedor entregou o serviço dentro do prazo e com qualidade.',
     options: [
-      'Identificar quem compartilhou',
-      'Apagar mensagens do grupo',
-      'Encaminhar ao DPO e Compliance para investigação de vazamento',
-      'Alertar sobre confidencialidade'
+      'Arquivar, pois o serviço foi prestado adequadamente',
+      'Solicitar que o diretor regularize retroativamente a aprovação no sistema',
+      'Avaliar se há padrão recorrente de desvio do fluxo antes de definir a ação',
+      'Bloquear pagamentos futuros ao fornecedor até esclarecimento',
     ],
     idealIndex: 2,
-    impacts: { trust: 20, risk: -30, reputation: 20 },
-    explanation: 'Vazamento de dados salariais é incidente de segurança da informação. O DPO precisa avaliar o impacto sob a LGPD e o Compliance deve investigar a origem e adotar medidas corretivas formais, não apenas ações informais.'
+    impacts: { trust: 15, risk: -20, reputation: 12 },
+    explanation: 'Um caso isolado pode ser erro processual, mas se houver padrão recorrente indica fraude. Antes de agir, é fundamental investigar o contexto para não tomar decisões desproporcionais nem negligenciar indícios.'
   },
   {
     id: 'case-2',
-    report: 'Colaborador percebe que seu gestor aprova despesas de viagem sem conferir comprovantes, confiando na "palavra" dos subordinados.',
+    report: 'Você recebe uma denúncia anônima sobre assédio moral, mas o relato é vago — sem datas, testemunhas ou detalhes específicos que permitam identificar vítima ou agressor.',
     options: [
-      'Sugerir que o gestor passe a conferir comprovantes',
-      'Registrar a situação no canal de denúncias para auditoria interna',
-      'Não reportar pois não há fraude comprovada',
-      'Conversar com o gestor sobre o risco'
+      'Iniciar investigação completa imediatamente',
+      'Arquivar por falta de elementos mínimos para apuração',
+      'Convocar reunião geral sobre assédio no departamento mencionado',
+      'Registrar formalmente e buscar mais informações antes de abrir investigação',
     ],
-    idealIndex: 1,
-    impacts: { trust: 15, risk: -20, reputation: 10 },
-    explanation: 'Mesmo sem fraude comprovada, a ausência de controle é uma vulnerabilidade. Registrar no canal permite que a auditoria avalie o processo e implemente controles preventivos.'
+    idealIndex: 3,
+    impacts: { trust: 16, risk: -21, reputation: 13 },
+    explanation: 'Denúncias vagas não devem ser descartadas nem gerar investigação às cegas. O correto é registrar, preservar o sigilo e buscar elementos adicionais para decidir se há base para investigação formal.'
   },
   {
     id: 'case-3',
-    report: 'Funcionário relata que informações sobre pacientes VIPs estão sendo vendidas para tabloides.',
+    report: "Um colaborador que participou de processo seletivo interno não foi selecionado e ameaça fazer uma denúncia 'inventada' contra o gestor que o reprovou, como retaliação.",
     options: [
-      'Restringir acessos do funcionário suspeito',
-      'Demitir por justa causa imediatamente',
-      'Alertar os pacientes afetados',
-      'Encaminhar ao Compliance, Jurídico e autoridades com análise de acessos'
+      'Ignorar, pois denúncias anônimas serão investigadas de qualquer forma',
+      'Orientar que denúncias falsas configuram infração disciplinar e podem ter consequências',
+      'Abrir investigação preventiva contra o gestor',
+      'Comunicar ao gestor que ele poderá ser alvo de denúncia',
     ],
-    idealIndex: 3,
-    impacts: { trust: 30, risk: -45, reputation: 35 },
-    explanation: 'Venda de dados sensíveis de saúde é crime. É necessário envolver Compliance, Jurídico e autoridades, além de fazer análise forense dos acessos para identificar o responsável antes de tomar medidas precipitadas.'
+    idealIndex: 1,
+    impacts: { trust: 17, risk: -22, reputation: 14 },
+    explanation: 'Denúncias falsas deliberadas são infrações graves. O colaborador deve ser orientado sobre as consequências de má-fé, sem intimidá-lo, mas garantindo que entenda a seriedade do canal.'
   },
   {
     id: 'case-4',
-    report: 'Um fornecedor oferece ingressos VIP para a Copa do Mundo ao comprador da empresa, sem nenhuma contrapartida explícita.',
+    report: 'Ao investigar uma denúncia de fraude em licitação, você descobre que o denunciante é também um dos envolvidos no esquema, mas fez a denúncia para prejudicar um rival interno.',
     options: [
-      'Aceitar pois não há contrapartida solicitada',
-      'Recusar educadamente e registrar o ocorrido conforme política de brindes',
-      'Aceitar e compartilhar com a equipe',
-      'Denunciar o fornecedor às autoridades'
+      'Desconsiderar a denúncia por má-fé do denunciante',
+      'Punir o denunciante por participação no esquema e encerrar',
+      'Apurar os fatos relatados independentemente da motivação do denunciante',
+      'Investigar apenas o denunciante por sua participação',
     ],
-    idealIndex: 1,
-    impacts: { trust: 18, risk: -15, reputation: 15 },
-    explanation: 'Mesmo sem contrapartida explícita, presentes de alto valor podem configurar tentativa de influência. A política de brindes da empresa deve ser seguida, recusando e registrando formalmente.'
+    idealIndex: 2,
+    impacts: { trust: 18, risk: -23, reputation: 15 },
+    explanation: 'A motivação do denunciante é irrelevante para a apuração dos fatos. Mesmo denúncias feitas por má-fé podem revelar irregularidades reais que devem ser investigadas no mérito.'
   },
   {
     id: 'case-5',
-    report: 'Colaborador descobre que o sistema de ponto eletrônico permite que gestores alterem registros de horário dos subordinados.',
+    report: 'Durante o processo de investigação de uma denúncia, o investigador percebe que a testemunha-chave é cônjuge do denunciado. O depoimento dela inocenta completamente o acusado.',
     options: [
-      'Reportar à TI para correção da vulnerabilidade e ao Compliance para auditoria',
-      'Verificar se gestores estão de fato alterando',
-      'Não reportar pois é funcionalidade do sistema',
-      'Pedir ao RH que monitore as alterações'
+      'Aceitar o depoimento como evidência válida',
+      'Considerar o depoimento com ressalvas, buscando corroboração em outras fontes',
+      'Descartar o depoimento por conflito de interesse evidente',
+      'Convocar nova testemunha para substituir',
     ],
-    idealIndex: 0,
-    impacts: { trust: 20, risk: -25, reputation: 18 },
-    explanation: 'A vulnerabilidade no sistema permite fraude trabalhista. TI deve corrigir a falha e Compliance deve auditar se houve alterações indevidas, mesmo que não haja evidência imediata de uso.'
+    idealIndex: 1,
+    impacts: { trust: 19, risk: -24, reputation: 16 },
+    explanation: 'Depoimentos de pessoas com vínculo próximo não devem ser automaticamente descartados nem aceitos sem ressalvas. Devem ser considerados com cautela e corroborados por evidências independentes.'
   },
   {
     id: 'case-6',
-    report: 'Funcionária descobre que seu colega está usando a impressora da empresa para imprimir material de campanha política.',
+    report: "Um gestor pede acesso aos registros do canal de denúncias para 'melhorar o ambiente do seu departamento'. Ele não é membro do Comitê de Ética.",
     options: [
-      'Ignorar por ser algo pequeno',
-      'Alertar o colega que isso não é permitido',
-      'Reportar ao gestor imediato como uso indevido de recurso corporativo',
-      'Denunciar ao Ministério Público Eleitoral'
+      'Negar qualquer acesso, pois a confidencialidade é absoluta no canal',
+      'Conceder acesso restrito aos casos do departamento dele',
+      'Fornecer apenas estatísticas agregadas sem identificação de denúncias',
+      'Encaminhar a solicitação ao Comitê de Ética para deliberação',
     ],
     idealIndex: 2,
-    impacts: { trust: 12, risk: -10, reputation: 10 },
-    explanation: 'Uso de recursos corporativos para fins político-partidários viola políticas internas e pode configurar irregularidade eleitoral. O gestor imediato deve ser informado para correção proporcional.'
+    impacts: { trust: 20, risk: -25, reputation: 17 },
+    explanation: 'O gestor tem interesse legítimo em melhorar o ambiente, mas não pode acessar denúncias individuais. Estatísticas agregadas e sem identificação atendem a necessidade sem violar a confidencialidade.'
   },
   {
     id: 'case-7',
-    report: 'Denúncia anônima relata que um gerente está contratando familiares para cargos temporários sem processo seletivo.',
+    report: 'Ao finalizar uma investigação, você conclui que houve assédio moral, mas o agressor é um diretor com excelentes resultados financeiros e forte apoio do CEO.',
     options: [
-      'Verificar se os familiares são qualificados para os cargos',
-      'Solicitar ao RH revisão dos contratos com análise de conflito de interesse',
-      'Cancelar todos os contratos temporários',
-      'Confrontar o gerente sobre a prática'
+      'Aplicar a medida disciplinar prevista, independente do cargo ou resultados',
+      'Registrar a conclusão e recomendar coaching ao diretor como alternativa',
+      'Apresentar os resultados ao CEO para que ele decida a melhor abordagem',
+      'Sugerir transferência da vítima para resolver o conflito',
     ],
-    idealIndex: 1,
-    impacts: { trust: 20, risk: -22, reputation: 18 },
-    explanation: 'Contratação de familiares sem processo seletivo configura nepotismo e conflito de interesse. O RH deve revisar os contratos e Compliance deve avaliar se houve violação de política, independente da qualificação.'
+    idealIndex: 0,
+    impacts: { trust: 21, risk: -26, reputation: 18 },
+    explanation: 'O resultado da investigação deve gerar consequências proporcionais, independente do cargo, desempenho ou influência do agressor. Tratar de forma diferente por hierarquia compromete todo o programa de integridade.'
   },
   {
     id: 'case-8',
-    report: 'Funcionário percebe que dados de cartão de crédito de clientes ficam visíveis na tela do sistema de atendimento por tempo indeterminado.',
+    report: 'Um colaborador faz uma denúncia identificada contra seu próprio gestor por favorecimento em promoções. Durante a investigação, o gestor descobre quem é o denunciante.',
     options: [
-      'Reportar à TI como vulnerabilidade de segurança para correção urgente',
-      'Minimizar a tela quando não estiver usando',
-      'Aguardar a próxima atualização do sistema',
-      'Informar ao gestor para que oriente a equipe'
+      'Transferir o denunciante para outro departamento preventivamente',
+      'Encerrar a investigação por comprometimento do sigilo',
+      'Investigar como o gestor descobriu e aplicar medidas de proteção ao denunciante',
+      'Acelerar a conclusão da investigação antes que haja retaliação',
     ],
-    idealIndex: 0,
-    impacts: { trust: 22, risk: -35, reputation: 20 },
-    explanation: 'Exposição de dados de cartão viola PCI-DSS e LGPD. É uma vulnerabilidade técnica que deve ser corrigida urgentemente pela TI, não apenas mitigada com práticas manuais.'
+    idealIndex: 2,
+    impacts: { trust: 22, risk: -27, reputation: 19 },
+    explanation: 'A quebra de sigilo é uma violação grave que deve ser investigada em paralelo. A prioridade é proteger o denunciante contra retaliação, não encerrar o processo nem punir antecipadamente.'
   },
   {
     id: 'case-9',
-    report: 'Colaborador relata que a empresa não está recolhendo FGTS há 3 meses, apesar de descontar dos funcionários.',
+    report: 'Uma funcionária relata que foi demitida 15 dias após ter feito uma denúncia no canal. A empresa alega baixo desempenho como motivo da demissão.',
     options: [
-      'Verificar com o financeiro se há atraso no pagamento',
-      'Orientar o colaborador a consultar o extrato do FGTS',
-      'Registrar no canal de denúncias e encaminhar para auditoria trabalhista',
-      'Aguardar o próximo ciclo de pagamento'
+      'Aceitar a justificativa da empresa, pois desempenho é motivo válido',
+      'Anular a demissão automaticamente por ser retaliação presumida',
+      'Analisar cronologia, evidências de desempenho anteriores à denúncia e processo decisório',
+      'Readmitir a funcionária e demitir quem autorizou a dispensa',
     ],
     idealIndex: 2,
-    impacts: { trust: 25, risk: -40, reputation: 22 },
-    explanation: 'Retenção de FGTS é infração trabalhista grave e pode configurar apropriação indébita. Deve ser formalizado por canal oficial para garantir investigação e regularização.'
+    impacts: { trust: 23, risk: -28, reputation: 20 },
+    explanation: 'Nem toda demissão após denúncia é retaliação, mas a proximidade temporal gera presunção que deve ser investigada. É necessário analisar se havia documentação prévia de desempenho e quem decidiu a demissão.'
   },
   {
     id: 'case-10',
-    report: 'Funcionário descobre que relatórios de auditoria interna estão sendo alterados antes de serem apresentados à diretoria.',
+    report: 'Uma investigação de compliance revela que 3 funcionários participaram de um esquema de notas fiscais frias. Um deles colaborou voluntariamente com a investigação e forneceu provas decisivas.',
     options: [
-      'Guardar cópias originais como evidência',
-      'Confrontar o auditor responsável',
-      'Reportar diretamente ao Conselho de Administração ou Comitê de Auditoria',
-      'Informar ao diretor financeiro'
+      'Aplicar a mesma punição aos três, pois todos participaram',
+      'Considerar atenuante para quem colaborou, mas manter responsabilização proporcional',
+      'Isentar completamente o colaborador que ajudou',
+      'Demitir os três por justa causa imediatamente',
     ],
-    idealIndex: 2,
-    impacts: { trust: 30, risk: -45, reputation: 30 },
-    explanation: 'Adulteração de relatórios de auditoria compromete toda a governança. Deve ser reportado ao nível mais alto de governança (Conselho/Comitê de Auditoria), pois a gestão pode estar envolvida.'
+    idealIndex: 1,
+    impacts: { trust: 24, risk: -29, reputation: 21 },
+    explanation: 'Programas de leniência premiam a colaboração com atenuantes, não com isenção total. O colaborador deve ser responsabilizado proporcionalmente, mas sua contribuição para a apuração deve ser considerada.'
   },
   {
     id: 'case-11',
-    report: 'Colaborador percebe que a empresa está classificando funcionários como PJ para evitar encargos trabalhistas, mas eles trabalham com subordinação e horário fixo.',
+    report: 'Um gerente comercial oferece desconto de 40% a um cliente em troca de um contrato de exclusividade de 5 anos, sem aprovação da diretoria comercial.',
     options: [
-      'Não se envolver pois não é problema seu',
-      'Sugerir ao RH que revise os contratos',
-      'Reportar ao Compliance como possível fraude à legislação trabalhista',
-      'Orientar os PJs sobre seus direitos'
+      'Analisar se o desconto está dentro da alçada do gerente e se há política para exclusividade',
+      'É prática comercial legítima se o contrato compensar financeiramente',
+      'Cancelar o contrato imediatamente por irregularidade',
+      'Aprovar retroativamente se o contrato for lucrativo',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -35, reputation: 20 },
-    explanation: 'A "pejotização" com subordinação e habitualidade configura fraude trabalhista. Compliance deve avaliar para mitigar riscos legais significativos para a empresa.'
+    idealIndex: 0,
+    impacts: { trust: 25, risk: -30, reputation: 22 },
+    explanation: 'Antes de julgar a ação, é preciso verificar se há política de alçadas para descontos e exclusividade. Pode ser apenas descumprimento de processo ou pode indicar favorecimento — depende do contexto normativo.'
   },
   {
     id: 'case-12',
-    report: 'Funcionário de TI descobre que o backup de dados não está sendo feito há 6 meses por falha no sistema automatizado.',
+    report: 'O Compliance recebe uma denúncia indicando que o próprio Diretor de Compliance está envolvido em conflito de interesse com um fornecedor de consultoria.',
     options: [
-      'Corrigir o backup manualmente e informar ao gestor de TI',
-      'Documentar a falha e reportar formalmente à gestão de riscos e TI',
-      'Não reportar para não gerar pânico',
-      'Aguardar a manutenção programada do sistema'
+      'O Compliance investiga normalmente pois tem autonomia',
+      'Comunicar ao CEO para que ele investigue',
+      'Contratar auditoria externa imediatamente',
+      'Encaminhar ao Conselho de Administração ou Comitê de Auditoria para apuração independente',
     ],
-    idealIndex: 1,
-    impacts: { trust: 20, risk: -40, reputation: 18 },
-    explanation: 'Falha em backup por 6 meses é risco crítico de continuidade. Além de corrigir tecnicamente, deve ser reportado formalmente à gestão de riscos para avaliação de impacto e plano de contingência.'
+    idealIndex: 3,
+    impacts: { trust: 26, risk: -31, reputation: 23 },
+    explanation: 'Quando o próprio Compliance é alvo, a apuração deve ser conduzida por instância superior e independente — o Conselho ou Comitê de Auditoria. O CEO pode estar conflitado se tiver proximidade com o diretor.'
   },
   {
     id: 'case-13',
-    report: 'Colaborador relata que medicamentos controlados estão sendo descartados sem registro formal, contrariando normas da ANVISA.',
+    report: 'Um fornecedor vence uma licitação com preço 30% abaixo do mercado. Não há indícios de fraude, mas a equipe técnica questiona a viabilidade de entrega nessas condições.',
     options: [
-      'Orientar sobre procedimento correto de descarte',
-      'Registrar no canal e encaminhar ao Compliance e Farmácia para apuração e regularização',
-      'Interromper descartes até nova orientação',
-      'Comunicar diretamente à ANVISA'
+      'Aceitar pois o processo licitatório foi regular',
+      'Cancelar a licitação e abrir novo processo',
+      'Solicitar demonstração de capacidade técnica e financeira antes de contratar',
+      'Desclassificar por preço inexequível',
     ],
-    idealIndex: 1,
-    impacts: { trust: 25, risk: -42, reputation: 25 },
-    explanation: 'Descarte irregular de medicamentos controlados viola normas sanitárias e pode ter implicações criminais. Compliance e a área responsável devem apurar e implementar controles antes de comunicar ao regulador.'
+    idealIndex: 2,
+    impacts: { trust: 27, risk: -32, reputation: 24 },
+    explanation: 'Preço abaixo do mercado não é automaticamente fraude, mas pode indicar inexequibilidade. O correto é exigir comprovação de que o fornecedor tem condições de entregar, preservando o processo licitatório.'
   },
   {
     id: 'case-14',
-    report: 'Funcionário percebe que o Wi-Fi corporativo não tem segmentação: visitantes acessam a mesma rede que contém dados sensíveis.',
+    report: 'Um funcionário do financeiro relata que há duas versões do balanço patrimonial: uma para o banco e outra para a Receita Federal.',
     options: [
-      'Sugerir à TI que crie uma rede separada para visitantes',
-      'Reportar como vulnerabilidade de segurança à TI e ao DPO',
-      'Não usar o Wi-Fi para dados sensíveis',
-      'Pedir aos visitantes que usem dados móveis'
+      'Comunicar imediatamente à Receita Federal',
+      'Preservar ambos os documentos como evidência e reportar ao Comitê de Auditoria',
+      'Confrontar o diretor financeiro com as evidências',
+      'Verificar se as diferenças são explicáveis por critérios contábeis diferentes',
     ],
     idealIndex: 1,
-    impacts: { trust: 18, risk: -30, reputation: 15 },
-    explanation: 'Ausência de segmentação de rede é vulnerabilidade séria que expõe dados sensíveis. Deve ser reportado formalmente à TI e ao DPO, não apenas sugerido informalmente.'
+    impacts: { trust: 28, risk: -33, reputation: 25 },
+    explanation: 'Duas versões de balanço podem indicar fraude contábil grave. As evidências devem ser preservadas antes de qualquer confrontação, e o reporte deve ir ao Comitê de Auditoria, não diretamente ao regulador sem apuração.'
   },
   {
     id: 'case-15',
-    report: 'Colaborador descobre que contratos com fornecedores estão sendo renovados automaticamente sem reavaliação de preços ou qualidade.',
+    report: 'Uma colaboradora reporta que foi pressionada por seu gestor a omitir uma não-conformidade no relatório de qualidade de um produto que será exportado.',
     options: [
-      'Renegociar preços diretamente com fornecedores',
-      'Reportar ao Compliance e área de compras para revisão dos processos de contratação',
-      'Não é problema pois a renovação é legal',
-      'Aguardar o ciclo orçamentário para revisão'
+      'Orientar a colaboradora a incluir a não-conformidade no relatório',
+      'Verificar a materialidade da não-conformidade antes de agir',
+      'Garantir que o relatório reflita a realidade e investigar a conduta do gestor',
+      'Substituir a colaboradora por outro profissional para refazer o relatório',
     ],
-    idealIndex: 1,
-    impacts: { trust: 15, risk: -18, reputation: 12 },
-    explanation: 'Renovação automática sem reavaliação pode gerar desperdício e favoritismo. O processo deve ser auditado pelo Compliance e área de compras para garantir competitividade e transparência.'
+    idealIndex: 2,
+    impacts: { trust: 29, risk: -34, reputation: 26 },
+    explanation: 'A omissão de não-conformidade em exportação pode ter consequências regulatórias internacionais. É necessário corrigir o relatório E investigar por que o gestor pressionou — pode indicar padrão de encobrimento.'
   },
   {
     id: 'case-16',
-    report: 'Funcionário de RH percebe que avaliações de desempenho de uma equipe foram todas preenchidas pelo gestor sem consultar os avaliados.',
+    report: 'Durante due diligence de uma aquisição, você descobre que a empresa-alvo possui passivo trabalhista oculto significativo não declarado nas demonstrações financeiras.',
     options: [
-      'Invalidar as avaliações e refazer',
-      'Comunicar ao RH e Compliance como fraude no processo de avaliação',
-      'Orientar o gestor sobre o processo correto',
-      'Aceitar pois o gestor conhece bem sua equipe'
+      'Informar ao conselho para renegociação do preço de aquisição',
+      'Cancelar a aquisição imediatamente',
+      'Reportar apenas ao departamento jurídico para avaliação',
+      'Documentar a descoberta e avaliar impacto na tese de investimento junto ao conselho e assessores jurídicos',
     ],
-    idealIndex: 1,
-    impacts: { trust: 18, risk: -15, reputation: 15 },
-    explanation: 'Avaliações fraudadas comprometem a gestão de pessoas e podem encobrir problemas. Deve ser comunicado formalmente para invalidação e investigação de possível motivação.'
+    idealIndex: 3,
+    impacts: { trust: 30, risk: -35, reputation: 27 },
+    explanation: 'Passivo oculto é fato relevante que pode mudar completamente a tese de aquisição. A decisão não é automática (cancelar ou renegociar) — exige análise multidisciplinar com documentação adequada.'
   },
   {
     id: 'case-17',
-    report: 'Colaborador descobre que a empresa está usando software pirata em estações de trabalho para "reduzir custos".',
+    report: 'Você descobre que um trainee está coletando dados pessoais de colegas (fotos, endereços, redes sociais) e armazenando em planilha pessoal. Ele alega que é para um projeto de integração da equipe.',
     options: [
-      'Orientar a TI a regularizar as licenças',
-      'Ignorar pois é decisão da gestão',
-      'Reportar ao Compliance como violação de propriedade intelectual e risco legal',
-      'Substituir por software gratuito equivalente'
+      'Advertir verbalmente e pedir que apague os dados',
+      'Verificar se há base legal para o tratamento e se o gestor autorizou a coleta',
+      'Demitir por violação de LGPD',
+      'Autorizar desde que os dados sejam mantidos em servidor corporativo',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -30, reputation: 20 },
-    explanation: 'Uso de software pirata é crime contra propriedade intelectual e expõe a empresa a multas pesadas. Compliance deve ser envolvido para regularização e avaliação de responsabilidades.'
+    idealIndex: 1,
+    impacts: { trust: 31, risk: -36, reputation: 28 },
+    explanation: 'Mesmo com boa intenção, coleta de dados pessoais exige base legal e autorização. Antes de punir, deve-se verificar se o gestor sabia, se havia consentimento e qual a extensão dos dados coletados.'
   },
   {
     id: 'case-18',
-    report: 'Funcionário relata que documentos de rescisão de ex-funcionários estão sendo armazenados sem prazo definido de retenção, incluindo dados sensíveis.',
+    report: 'Um executivo pede para usar o jato corporativo para levar a família em viagem de férias, se comprometendo a reembolsar o custo do combustível.',
     options: [
-      'Destruir todos os documentos antigos imediatamente',
-      'Solicitar ao DPO a definição de política de retenção conforme LGPD',
-      'Manter tudo guardado por segurança jurídica',
-      'Digitalizar e destruir os físicos'
+      'Autorizar pois haverá reembolso',
+      'Negar, pois ativos corporativos não podem ser usados para fins pessoais independente de reembolso',
+      'Consultar a política de uso de ativos corporativos antes de decidir',
+      'Autorizar se o CEO aprovar por escrito',
     ],
-    idealIndex: 1,
-    impacts: { trust: 15, risk: -20, reputation: 12 },
-    explanation: 'A LGPD exige que dados pessoais tenham prazo de retenção definido. O DPO deve estabelecer política baseada em obrigações legais trabalhistas e fiscais, equilibrando necessidade de guarda com minimização de dados.'
+    idealIndex: 2,
+    impacts: { trust: 32, risk: -37, reputation: 29 },
+    explanation: 'A resposta depende da política da empresa. Algumas permitem uso pessoal com reembolso integral, outras proíbem categoricamente. Não se deve presumir — a política interna deve ser o guia.'
   },
   {
     id: 'case-19',
-    report: 'Colaborador percebe que o sistema de CFTV grava áreas de descanso e vestiários dos funcionários.',
+    report: 'Um membro do Comitê de Ética revela em conversa informal com amigos (não funcionários) detalhes de uma investigação em andamento, sem citar nomes.',
     options: [
-      'Cobrir as câmeras nesses ambientes',
-      'Reportar ao DPO e Compliance como violação de privacidade para remoção e apuração',
-      'Verificar se há aviso sobre as câmeras',
-      'Orientar funcionários a usar outros espaços'
+      'Não é violação pois não citou nomes',
+      'Substituí-lo do Comitê de Ética por quebra de confidencialidade',
+      'Anular a investigação por comprometimento',
+      'Advertir formalmente sobre o dever de sigilo e avaliar se houve prejuízo à investigação',
     ],
-    idealIndex: 1,
-    impacts: { trust: 25, risk: -35, reputation: 25 },
-    explanation: 'Câmeras em vestiários e áreas de descanso violam direito à privacidade e intimidade (art. 5° CF). DPO e Compliance devem remover câmeras, apurar quem autorizou e verificar se imagens foram acessadas.'
+    idealIndex: 3,
+    impacts: { trust: 33, risk: -38, reputation: 30 },
+    explanation: 'Mesmo sem citar nomes, compartilhar detalhes de investigação é quebra de confidencialidade. A resposta deve ser proporcional: advertência formal com avaliação de impacto real, não automaticamente a remoção.'
   },
   {
     id: 'case-20',
-    report: 'Funcionário descobre que a empresa divulga lista de devedores inadimplentes em mural público na recepção.',
+    report: 'Um funcionário relata que o RH está usando algoritmo de IA para triagem de currículos, mas o algoritmo parece rejeitar sistematicamente candidatos acima de 50 anos.',
     options: [
-      'Sugerir que use meios privados de cobrança',
-      'Retirar a lista imediatamente',
-      'Reportar ao Compliance e DPO como exposição indevida de dados e cobrança vexatória',
-      'Verificar se há autorização dos clientes'
+      'Solicitar auditoria de viés algorítmico e análise estatística dos resultados de triagem',
+      'Suspender o uso do algoritmo imediatamente',
+      'Informar aos candidatos rejeitados sobre o possível viés',
+      'Substituir o algoritmo por triagem manual',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -30, reputation: 25 },
-    explanation: 'Exposição pública de devedores configura cobrança vexatória (CDC) e violação da LGPD. Compliance e DPO devem atuar para cessar a prática e avaliar danos aos titulares.'
+    idealIndex: 0,
+    impacts: { trust: 34, risk: -39, reputation: 31 },
+    explanation: 'Viés algorítmico é questão complexa que exige evidência estatística. Antes de suspender ou substituir, é preciso auditar para confirmar se o viés existe e em que grau, para então decidir a ação corretiva adequada.'
   },
   {
     id: 'case-21',
-    report: 'Colaborador percebe que um colega está vendendo materiais de escritório da empresa em marketplace online.',
+    report: 'Empresa multinacional. O escritório do Brasil segue prática local de dar presentes em datas comemorativas a funcionários públicos. O valor individual é baixo (R$ 50), mas são 200 funcionários públicos beneficiados.',
     options: [
-      'Confrontar o colega diretamente',
-      'Comprar os materiais para devolver à empresa',
-      'Registrar no canal de denúncias com evidências para investigação patrimonial',
-      'Informar ao gestor verbalmente'
+      'Permitir pois o valor individual é insignificante',
+      'Substituir presentes por doações a instituições de caridade',
+      'Proibir qualquer presente a funcionário público',
+      'Avaliar o valor agregado total e verificar conformidade com FCPA, UK Bribery Act e legislação anticorrupção local',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -20, reputation: 15 },
-    explanation: 'Desvio de patrimônio corporativo é falta grave que deve ser formalmente registrado com evidências. O canal de denúncias garante apuração adequada sem exposição do denunciante.'
+    idealIndex: 3,
+    impacts: { trust: 15, risk: -40, reputation: 32 },
+    explanation: 'Em multinacionais, o valor individual pode parecer baixo, mas o valor agregado (R$ 10.000) e a frequência podem configurar padrão de pagamentos facilitadores sob FCPA e UK Bribery Act.'
   },
   {
     id: 'case-22',
-    report: 'Funcionário descobre que a empresa coleta biometria dos funcionários sem consentimento formal e sem informar a finalidade.',
+    report: 'Colaborador descobre que a empresa subcontrata serviço de limpeza de uma empresa que emprega imigrantes em situação irregular, com jornadas de 14h diárias.',
     options: [
-      'Solicitar ao DPO adequação à LGPD com consentimento e informação de finalidade',
-      'Parar de usar o ponto biométrico',
-      'Não se preocupar pois biometria no ponto é comum',
-      'Exigir que a empresa pare de coletar biometria'
+      'Rescindir contrato imediatamente com a empresa de limpeza',
+      'Não é responsabilidade da empresa contratante',
+      'Avaliar a responsabilidade solidária da empresa e notificar as autoridades trabalhistas',
+      'Exigir regularização documental dos trabalhadores pelo subcontratado',
     ],
-    idealIndex: 0,
-    impacts: { trust: 20, risk: -28, reputation: 18 },
-    explanation: 'Dados biométricos são dados sensíveis sob a LGPD e requerem consentimento específico e informado. O DPO deve adequar o tratamento com base legal apropriada e transparência.'
+    idealIndex: 2,
+    impacts: { trust: 16, risk: -41, reputation: 33 },
+    explanation: 'A empresa contratante pode ser responsável solidariamente por condições análogas a trabalho escravo na cadeia produtiva. A avaliação jurídica e notificação às autoridades são prioritárias.'
   },
   {
     id: 'case-23',
-    report: 'Colaborador relata que o gestor obriga a equipe a participar de eventos religiosos da empresa durante horário de trabalho.',
+    report: 'O setor de marketing quer publicar cases de sucesso usando dados reais de clientes que deram consentimento verbal durante reuniões, sem documento formal.',
     options: [
-      'Participar para não criar problemas',
-      'Pedir dispensa individual ao RH',
-      'Reportar ao RH e Compliance como possível violação de liberdade religiosa',
-      'Sugerir eventos neutros alternativos'
+      'Obter consentimento formal por escrito especificando a finalidade antes da publicação',
+      'Publicar pois houve consentimento verbal',
+      'Publicar anonimizando os dados dos clientes',
+      'Solicitar aprovação apenas do departamento jurídico',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -18, reputation: 18 },
-    explanation: 'Obrigar participação em eventos religiosos viola liberdade de crença (art. 5° CF). RH e Compliance devem investigar e garantir que eventos corporativos respeitem a diversidade religiosa.'
+    idealIndex: 0,
+    impacts: { trust: 17, risk: -42, reputation: 12 },
+    explanation: 'Consentimento verbal não é verificável e pode ser insuficiente sob LGPD. O consentimento deve ser formal, específico e documentado, indicando exatamente como os dados serão utilizados.'
   },
   {
     id: 'case-24',
-    report: 'Funcionário percebe que relatórios financeiros apresentados a investidores contêm projeções infladas que não condizem com a realidade operacional.',
+    report: 'Uma investigação interna revela que o CFO movimentou R$ 2 milhões da conta da empresa para uma offshore de sua propriedade. Ele alega que foi empréstimo temporário e já devolveu.',
     options: [
-      'Reportar diretamente ao Comitê de Auditoria ou Conselho como possível fraude contábil',
-      'Alertar o diretor financeiro',
-      'Aguardar a auditoria externa identificar',
-      'Não se envolver em assuntos da diretoria'
+      'Aceitar a explicação pois o valor foi devolvido',
+      'Exigir apenas formalização retroativa do empréstimo',
+      'Aplicar advertência formal e monitorar movimentações futuras',
+      'Tratar como desvio financeiro independente da devolução e reportar ao Conselho e autoridades',
     ],
-    idealIndex: 0,
-    impacts: { trust: 30, risk: -50, reputation: 35 },
-    explanation: 'Projeções infladas a investidores podem configurar fraude de valores mobiliários. Deve ser reportado ao mais alto nível de governança independente, pois a gestão pode ser parte do problema.'
+    idealIndex: 3,
+    impacts: { trust: 18, risk: -43, reputation: 13 },
+    explanation: 'Movimentação não autorizada de recursos da empresa para conta pessoal/offshore é desvio financeiro, independente de devolução. A devolução pode ser tentativa de acobertar após descoberta.'
   },
   {
     id: 'case-25',
-    report: 'Colaborador descobre que o setor comercial oferece descontos informais ("por fora") a clientes específicos sem registro no sistema.',
+    report: "Você identifica que a área comercial mantém um 'caixa dois' informal para pagar comissões extras a vendedores de alta performance, fora da folha de pagamento.",
     options: [
-      'Pedir que registrem os descontos no sistema',
-      'Não reportar pois é estratégia comercial',
-      'Informar ao gestor comercial',
-      'Registrar no canal de denúncias como possível fraude ou desvio financeiro'
+      'Encerrar a prática e apurar responsabilidades, incluindo análise fiscal e trabalhista',
+      'Regularizar as comissões incluindo-as na folha de pagamento',
+      'Tolerar temporariamente até o fim do trimestre para não impactar vendas',
+      'Consultar o departamento fiscal sobre como regularizar',
     ],
-    idealIndex: 3,
-    impacts: { trust: 20, risk: -25, reputation: 18 },
-    explanation: 'Descontos informais sem registro podem encobrir desvios financeiros ou propinas. Deve ser registrado formalmente para investigação, pois os envolvidos podem incluir gestores.'
+    idealIndex: 0,
+    impacts: { trust: 19, risk: -44, reputation: 14 },
+    explanation: 'Caixa dois configura sonegação fiscal e fraude trabalhista. Não basta regularizar — é necessário apurar quem autorizou, quantificar o impacto fiscal e avaliar necessidade de denúncia espontânea.'
   },
   {
     id: 'case-26',
-    report: 'Funcionário de compras recebe proposta de fornecedor oferecendo 5% de comissão pessoal sobre cada pedido aprovado.',
+    report: 'Um colaborador é flagrado tirando fotos de documentos confidenciais na mesa de um colega com o celular pessoal.',
     options: [
-      'Recusar e não reportar para não criar constrangimento',
-      'Negociar desconto para a empresa em vez de comissão pessoal',
-      'Recusar, documentar e reportar ao Compliance como tentativa de suborno',
-      'Aceitar se beneficiar também a empresa'
+      'Exigir que apague as fotos imediatamente',
+      'Registrar o incidente, ouvir o colaborador e avaliar a natureza dos documentos fotografados',
+      'Apreender o celular como evidência',
+      'Demitir por justa causa por violação de confidencialidade',
     ],
-    idealIndex: 2,
-    impacts: { trust: 25, risk: -30, reputation: 22 },
-    explanation: 'Oferta de comissão pessoal é tentativa de suborno. Deve ser recusada, documentada e reportada ao Compliance. Apenas recusar sem registrar permite que o fornecedor tente novamente com outros.'
+    idealIndex: 1,
+    impacts: { trust: 20, risk: -45, reputation: 15 },
+    explanation: 'Antes de agir, é preciso entender o contexto: quais documentos foram fotografados, com qual finalidade e se houve dolo. A empresa não pode apreender celular pessoal, e a demissão sem apuração pode ser revertida.'
   },
   {
     id: 'case-27',
-    report: 'Colaborador percebe que dados de geolocalização dos celulares corporativos estão sendo monitorados sem conhecimento dos funcionários.',
+    report: 'A diretoria decide reduzir o orçamento do programa de compliance em 60% alegando necessidade de corte de custos. Você é o Compliance Officer.',
     options: [
-      'Desativar a localização do celular',
-      'Verificar se há política de monitoramento publicada',
-      'Reportar ao DPO como possível violação de privacidade e LGPD',
-      'Aceitar pois o celular é corporativo'
+      'Aceitar o corte e priorizar atividades essenciais',
+      'Recusar o corte e escalar ao Conselho de Administração',
+      'Apresentar análise de risco-retorno mostrando o custo potencial de não-conformidade versus o investimento em compliance',
+      'Pedir demissão por impossibilidade de exercer a função',
     ],
     idealIndex: 2,
-    impacts: { trust: 22, risk: -28, reputation: 20 },
-    explanation: 'Monitoramento de geolocalização sem ciência do funcionário viola LGPD e pode configurar invasão de privacidade. O DPO deve avaliar base legal, finalidade e implementar transparência.'
+    impacts: { trust: 21, risk: -46, reputation: 16 },
+    explanation: 'O Compliance Officer deve demonstrar objetivamente o valor do programa. Uma análise de risco-retorno com dados de multas, processos e reputação é mais eficaz que simplesmente recusar ou aceitar.'
   },
   {
     id: 'case-28',
-    report: 'Funcionário descobre que a empresa está descartando resíduos hospitalares no lixo comum para economizar com descarte especializado.',
+    report: 'Funcionário descobre que o sistema de controle de acesso do prédio registra a biometria facial dos visitantes sem informá-los e sem política de retenção definida.',
     options: [
-      'Registrar no canal de denúncias e reportar ao Compliance e órgão ambiental',
-      'Orientar a equipe sobre separação correta',
-      'Informar ao gestor de facilities',
-      'Contratar empresa de descarte adequado'
+      'Desativar o sistema de reconhecimento facial imediatamente',
+      'Comunicar diretamente à ANPD como incidente de segurança',
+      'Implementar aviso aos visitantes e criar política de retenção antes de qualquer ação drástica',
+      'Substituir por crachás de visitante sem biometria',
     ],
-    idealIndex: 0,
-    impacts: { trust: 28, risk: -50, reputation: 30 },
-    explanation: 'Descarte irregular de resíduos hospitalares é crime ambiental e sanitário grave. Deve ser reportado formalmente ao Compliance e ao órgão ambiental competente para cessação imediata e responsabilização.'
+    idealIndex: 2,
+    impacts: { trust: 22, risk: -47, reputation: 17 },
+    explanation: 'Dados biométricos são sensíveis sob LGPD e exigem consentimento específico. Porém, desativar abruptamente pode comprometer segurança. O correto é implementar transparência e controles, criando política adequada.'
   },
   {
     id: 'case-29',
-    report: 'Colaborador percebe que estagiários estão realizando atividades incompatíveis com o plano de estágio, equivalentes a funcionários efetivos.',
+    report: 'Empresa farmacêutica. Um pesquisador altera dados de teste clínico para que um medicamento atinja o limiar de eficácia exigido pela ANVISA.',
     options: [
-      'Não reportar pois é bom para o aprendizado do estagiário',
-      'Sugerir ao gestor que atualize o plano de estágio',
-      'Reportar ao RH e Compliance como possível desvirtuamento da relação de estágio',
-      'Orientar o estagiário sobre seus direitos'
+      'Refazer os testes com supervisão adicional',
+      'Interromper o estudo clínico e notificar ANVISA, CEP e patrocinador simultaneamente',
+      'Confrontar o pesquisador e solicitar correção dos dados',
+      'Aguardar revisão por pares para confirmar a alteração',
     ],
-    idealIndex: 2,
-    impacts: { trust: 15, risk: -22, reputation: 12 },
-    explanation: 'Desvio de função de estagiário pode gerar vínculo empregatício e passivo trabalhista. RH e Compliance devem avaliar e corrigir para conformidade com a Lei do Estágio.'
+    idealIndex: 1,
+    impacts: { trust: 23, risk: -48, reputation: 18 },
+    explanation: 'Fraude em dados clínicos é gravíssima — pode colocar vidas em risco. O estudo deve ser interrompido imediatamente e todas as autoridades competentes notificadas sem esperar confirmação adicional.'
   },
   {
     id: 'case-30',
-    report: 'Funcionário descobre que a empresa emite certificados de treinamento de NR (Normas Regulamentadoras) para funcionários que não participaram dos treinamentos.',
+    report: "Em uma fusão, você descobre que a empresa adquirida pagava 'taxas de facilitação' a fiscais portuários para agilizar liberação de mercadorias. A prática era documentada como 'serviços de despachante'.",
     options: [
-      'Realizar treinamentos corretivos',
-      'Cancelar os certificados emitidos',
-      'Reportar ao Compliance e SESMT como fraude documental com risco de segurança',
-      'Investigar quem autorizou a prática'
+      'Encerrar a prática e incluir cláusula anticorrupção no contrato de aquisição',
+      'Manter temporariamente para não prejudicar operações',
+      'Renegociar o preço de aquisição para cobrir multas potenciais',
+      'Avaliar exposição legal cumulativa, cessar imediatamente e considerar auto-denúncia às autoridades',
     ],
-    idealIndex: 2,
-    impacts: { trust: 25, risk: -45, reputation: 22 },
-    explanation: 'Emissão de certificados de NR sem treinamento real é fraude documental que coloca vidas em risco. Compliance e SESMT devem apurar responsabilidades e garantir treinamento efetivo.'
+    idealIndex: 3,
+    impacts: { trust: 24, risk: -49, reputation: 19 },
+    explanation: 'Pagamentos de facilitação são proibidos pela Lei Anticorrupção e FCPA. Como eram sistemáticos e documentados, há exposição legal significativa que pode exigir auto-denúncia para mitigação de penalidades.'
   },
   {
     id: 'case-31',
-    report: 'Colaborador relata que o gestor pede para a equipe registrar horas extras que não foram trabalhadas para complementar renda.',
+    report: 'Funcionário relata que colegas de trabalho criaram grupo de WhatsApp onde compartilham piadas ofensivas sobre orientação sexual de outro colega.',
     options: [
-      'Aceitar pois beneficia os funcionários',
-      'Registrar no canal de denúncias como fraude trabalhista',
-      'Recusar individualmente sem reportar',
-      'Alertar o gestor sobre os riscos'
+      'Advertir os participantes do grupo',
+      'Apurar a situação, ouvindo envolvidos e vítima, e avaliar se configura assédio moral coletivo',
+      'Encaminhar ao jurídico para avaliação de dano moral',
+      'Solicitar que apaguem o grupo',
     ],
     idealIndex: 1,
-    impacts: { trust: 22, risk: -30, reputation: 20 },
-    explanation: 'Registro de horas extras fictícias é fraude trabalhista que prejudica a empresa financeiramente. Deve ser reportado formalmente, mesmo que pareça beneficiar os funcionários.'
+    impacts: { trust: 25, risk: -20, reputation: 20 },
+    explanation: 'Piadas discriminatórias podem configurar assédio moral coletivo e discriminação. A apuração deve ser completa — ouvindo todos os lados — para definir a gravidade e medida disciplinar adequada.'
   },
   {
     id: 'case-32',
-    report: 'Funcionário de TI descobre uma vulnerabilidade grave no sistema que permite acesso a prontuários sem autenticação.',
+    report: 'O board solicita que o Compliance assine um parecer favorável a uma operação que você não teve tempo de analisar adequadamente. A decisão é urgente.',
     options: [
-      'Corrigir silenciosamente sem informar ninguém',
-      'Publicar a vulnerabilidade para pressionar correção rápida',
-      'Documentar, corrigir e reportar formalmente ao DPO e gestão de segurança',
-      'Aguardar o próximo pentest para documentar'
+      'Recusar assinar e solicitar prazo mínimo para análise',
+      'Assinar com ressalvas documentadas sobre a análise incompleta',
+      'Assinar pois o board assumirá a responsabilidade',
+      'Delegar a assinatura a um subordinado',
     ],
-    idealIndex: 2,
-    impacts: { trust: 28, risk: -50, reputation: 25 },
-    explanation: 'Vulnerabilidade em prontuários é crítica. Deve ser documentada, corrigida e reportada formalmente para avaliação de impacto (possível incidente LGPD) e implementação de controles adicionais.'
+    idealIndex: 0,
+    impacts: { trust: 26, risk: -21, reputation: 21 },
+    explanation: 'O Compliance Officer não pode validar o que não analisou. A pressão por urgência não justifica comprometer a integridade do parecer. Deve-se recusar e documentar a solicitação para proteção própria.'
   },
   {
     id: 'case-33',
-    report: 'Colaborador percebe que a empresa solicita exame de gravidez em processos seletivos de mulheres.',
+    report: 'Você descobre que a empresa terceiriza call center em cidade do interior onde os operadores recebem por produtividade, sem salário fixo, sem registro CLT e sem benefícios.',
     options: [
-      'Orientar candidatas a recusar o exame',
-      'Reportar ao RH e Compliance como prática discriminatória ilegal',
-      'Verificar se é prática do setor de saúde',
-      'Sugerir que façam exame após contratação'
+      'Rescindir contrato com a empresa de call center',
+      'Não é responsabilidade da contratante como os terceirizados são remunerados',
+      'Exigir que a empresa terceirizada regularize os vínculos em 30 dias',
+      'Mapear a extensão do problema, avaliar responsabilidade solidária e notificar autoridades',
     ],
-    idealIndex: 1,
-    impacts: { trust: 25, risk: -35, reputation: 28 },
-    explanation: 'Exigir exame de gravidez em processo seletivo é proibido por lei (art. 373-A CLT) e configura discriminação de gênero. Deve ser reportado formalmente para cessação imediata.'
+    idealIndex: 3,
+    impacts: { trust: 27, risk: -22, reputation: 22 },
+    explanation: 'Ausência de salário fixo e CLT pode configurar trabalho irregular e até análogo ao escravo. A contratante tem responsabilidade solidária na cadeia. Precisa mapear o problema para dimensionar o risco legal.'
   },
   {
     id: 'case-34',
-    report: 'Funcionário descobre que a empresa mantém "lista negra" informal de ex-funcionários que moveram ações trabalhistas, impedindo recontratação.',
+    report: 'Um funcionário é eleito vereador e pretende conciliar o mandato político com seu cargo na empresa. Ele é gerente do setor de relações governamentais.',
     options: [
-      'Reportar ao Compliance e Jurídico como prática discriminatória',
-      'Verificar se a lista é oficial',
-      'Não reportar pois é direito da empresa',
-      'Destruir a lista para eliminar evidências'
+      'Avaliar conflito de interesse pela natureza do cargo e considerar licença ou mudança de função',
+      'Permitir pois é direito constitucional exercer mandato político',
+      'Exigir que se licencie do cargo durante todo o mandato',
+      'Demitir pois funcionário público não pode manter vínculo CLT',
     ],
     idealIndex: 0,
-    impacts: { trust: 22, risk: -28, reputation: 22 },
-    explanation: 'Lista negra de ex-funcionários configura discriminação e viola o direito de ação judicial. Compliance e Jurídico devem cessar a prática e avaliar possíveis reparações.'
+    impacts: { trust: 28, risk: -23, reputation: 23 },
+    explanation: 'O direito ao mandato é constitucional, mas o cargo de relações governamentais gera conflito de interesse direto. A análise deve ser caso a caso, considerando mudança de função ou licença parcial.'
   },
   {
     id: 'case-35',
-    report: 'Colaborador relata que amostras grátis de medicamentos são distribuídas à equipe para uso pessoal em vez de serem destinadas a pacientes.',
+    report: 'Investigação revela que um gerente contratou sua ex-esposa como consultora. Ela tem qualificação técnica comprovada e foi a melhor proposta técnica e financeira.',
     options: [
-      'Aceitar pois as amostras são gratuitas',
-      'Devolver as amostras à farmácia',
-      'Reportar ao Compliance como desvio de finalidade de amostras conforme regulamentação sanitária',
-      'Orientar colegas sobre uso correto'
+      'Manter o contrato, mas transferir a gestão para outro gerente sem vínculo pessoal',
+      'Encerrar o contrato por conflito de interesse',
+      'Ignorar pois são ex-cônjuges e a contratação foi técnica',
+      'Refazer a licitação excluindo a consultora',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -25, reputation: 15 },
-    explanation: 'Amostras grátis têm regulamentação específica da ANVISA e devem ser destinadas a pacientes. Desvio para uso pessoal viola normas sanitárias e deve ser reportado ao Compliance.'
+    idealIndex: 0,
+    impacts: { trust: 29, risk: -24, reputation: 24 },
+    explanation: 'Mesmo com qualificação técnica, o vínculo pessoal gera conflito de interesse na gestão do contrato. A solução equilibrada é manter o contrato (foi a melhor proposta) mas transferir a supervisão.'
   },
   {
     id: 'case-36',
-    report: 'Funcionário percebe que a empresa não realiza due diligence em fornecedores antes de contratá-los, incluindo verificação de trabalho escravo na cadeia produtiva.',
+    report: 'Um whistleblower externo (ex-funcionário) entrega documentos que provam fraude, mas admite que obteve os documentos acessando ilegalmente o sistema da empresa após sua demissão.',
     options: [
-      'Solicitar ao departamento de compras que implemente processo de due diligence',
-      'Reportar ao Compliance como falha nos controles anticorrupção e direitos humanos',
-      'Verificar apenas fornecedores de maior valor',
-      'Não é responsabilidade da empresa verificar fornecedores'
+      'Rejeitar as evidências por serem obtidas ilegalmente',
+      'Avaliar as evidências no mérito, investigar a fraude e também apurar o acesso não autorizado',
+      'Denunciar o ex-funcionário por invasão de sistema',
+      'Usar as evidências para investigar mas sem revelar a fonte',
     ],
     idealIndex: 1,
-    impacts: { trust: 20, risk: -35, reputation: 22 },
-    explanation: 'Ausência de due diligence expõe a empresa a riscos de cumplicidade em trabalho escravo e violação da Lei Anticorrupção. Compliance deve implementar programa formal de verificação.'
+    impacts: { trust: 30, risk: -25, reputation: 25 },
+    explanation: 'Evidências obtidas ilegalmente não devem ser automaticamente descartadas na esfera administrativa interna. Os fatos devem ser apurados, e o acesso ilegal deve ser tratado separadamente.'
   },
   {
     id: 'case-37',
-    report: 'Colaborador descobre que o gestor está usando o cartão corporativo para despesas pessoais como combustível e restaurantes nos fins de semana.',
+    report: 'Uma multinacional descobre que sua fábrica no Sudeste Asiático utiliza trabalho infantil na cadeia de suprimentos de terceiro nível (subfornecedor do subfornecedor).',
     options: [
-      'Alertar o gestor sobre a irregularidade',
-      'Verificar se há política de uso do cartão',
-      'Registrar no canal de denúncias com datas e valores para auditoria',
-      'Pedir ao financeiro que monitore os gastos'
+      'Não é responsabilidade pois está muito distante na cadeia',
+      'Implementar due diligence aprofundada na cadeia, plano de remediação e monitoramento contínuo',
+      'Cortar relações com toda a cadeia de suprimentos da região',
+      'Comunicar às autoridades locais e aguardar providências',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -25, reputation: 18 },
-    explanation: 'Uso de cartão corporativo para despesas pessoais é desvio patrimonial. Deve ser registrado formalmente com evidências para que auditoria investigue, pois alertar diretamente pode comprometer provas.'
+    idealIndex: 1,
+    impacts: { trust: 31, risk: -26, reputation: 26 },
+    explanation: 'Sob os Princípios Orientadores da ONU e legislações como a alemã de cadeias de suprimentos, empresas têm dever de diligência em toda a cadeia. A resposta deve ser remediação progressiva, não corte abrupto.'
   },
   {
     id: 'case-38',
-    report: 'Funcionário percebe que a empresa não possui plano de resposta a incidentes de segurança de dados, apesar de tratar dados sensíveis de saúde.',
+    report: 'Auditor interno descobre que a empresa está classificando incorretamente receitas entre trimestres para atingir metas de performance e liberar bônus à diretoria.',
     options: [
-      'Criar um plano informalmente',
-      'Não reportar pois nunca houve incidente',
-      'Reportar ao DPO e gestão como não conformidade crítica com a LGPD',
-      'Aguardar exigência da ANPD'
+      'Corrigir os registros contábeis e recalcular os bônus',
+      'Informar ao diretor financeiro para que corrija',
+      'Reportar ao Comitê de Auditoria como potencial manipulação de resultados e avaliar implicações regulatórias',
+      'Consultar a empresa de auditoria externa sobre o tratamento contábil',
     ],
     idealIndex: 2,
-    impacts: { trust: 18, risk: -35, reputation: 15 },
-    explanation: 'A LGPD exige plano de resposta a incidentes. A ausência é não conformidade crítica, especialmente para dados de saúde. DPO deve implementar imediatamente, sem esperar que um incidente ocorra.'
+    impacts: { trust: 32, risk: -27, reputation: 27 },
+    explanation: 'Reclassificação intencional de receitas para atingir metas é manipulação contábil. O reporte deve ir ao Comitê de Auditoria, não ao CFO que pode estar envolvido, e as implicações regulatórias devem ser avaliadas.'
   },
   {
     id: 'case-39',
-    report: 'Colaborador relata que um diretor utiliza informações privilegiadas sobre fusão da empresa para negociar ações no mercado.',
+    report: 'Uma funcionária do RH descobre que seu próprio salário está significativamente abaixo do piso praticado para sua função, mas não tem certeza se é discriminação de gênero ou apenas defasagem.',
     options: [
-      'Alertar o diretor sobre ilegalidade',
-      'Reportar anonimamente à CVM e ao Comitê de Ética da empresa',
-      'Verificar se as ações deram lucro',
-      'Informar ao departamento jurídico'
+      'Pedir aumento ao gestor direto',
+      'Solicitar análise de equidade salarial por função e gênero ao Compliance antes de concluir qualquer coisa',
+      'Registrar queixa formal de discriminação',
+      'Consultar advogado trabalhista externo',
     ],
     idealIndex: 1,
-    impacts: { trust: 35, risk: -50, reputation: 35 },
-    explanation: 'Uso de informação privilegiada (insider trading) é crime contra o mercado de capitais. Deve ser reportado à CVM e ao Comitê de Ética, pois o jurídico interno pode ter conflito de interesse.'
+    impacts: { trust: 33, risk: -28, reputation: 28 },
+    explanation: 'Antes de concluir que é discriminação, é necessário análise estatística de equidade salarial. Pode ser defasagem geral. A análise objetiva evita acusações infundadas ou negligência de discriminação real.'
   },
   {
     id: 'case-40',
-    report: 'Funcionário descobre que a empresa está operando com alvará de funcionamento vencido há mais de um ano.',
+    report: 'Empresa está implementando programa de ESG e o marketing quer divulgar metas ambientais ambiciosas que a operação admite internamente que são inatingíveis no prazo proposto.',
     options: [
-      'Solicitar renovação ao departamento administrativo',
-      'Não reportar pois a empresa está funcionando normalmente',
-      'Registrar formalmente para que Compliance e Jurídico providenciem regularização urgente',
-      'Informar aos bombeiros sobre a situação'
+      'Alinhar metas públicas com capacidade real de entrega, documentando riscos de greenwashing',
+      'Publicar metas aspiracionais pois motivam a empresa',
+      'Não publicar nenhuma meta ambiental',
+      'Publicar as metas mas com disclaimers legais',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -35, reputation: 18 },
-    explanation: 'Operar com alvará vencido é infração administrativa que pode resultar em interdição. Compliance e Jurídico devem ser acionados formalmente para regularização urgente e avaliação de riscos.'
+    idealIndex: 0,
+    impacts: { trust: 34, risk: -29, reputation: 29 },
+    explanation: 'Divulgar metas sabidamente inatingíveis configura greenwashing, prática cada vez mais penalizada por reguladores e investidores. Metas devem ser ambiciosas mas factíveis, com transparência sobre metodologia.'
   },
   {
     id: 'case-41',
-    report: 'Colaborador percebe que fotografias de pacientes são tiradas e compartilhadas em grupo de WhatsApp da equipe médica para "discussão de casos".',
+    report: "Um concorrente entra em contato propondo que as duas empresas 'alinhem' reajustes de preços no próximo trimestre para 'estabilizar o mercado'.",
     options: [
-      'Verificar se pacientes assinaram termo de consentimento',
-      'Reportar ao DPO e Compliance como violação de privacidade e sigilo médico',
-      'Orientar equipe a não incluir rostos',
-      'Aceitar pois tem finalidade educativa'
+      'Recusar, documentar o contato e reportar ao jurídico antitruste imediatamente',
+      'Recusar educadamente sem registrar',
+      'Ouvir a proposta sem se comprometer para entender a intenção',
+      'Consultar a associação do setor sobre práticas de mercado',
     ],
-    idealIndex: 1,
-    impacts: { trust: 25, risk: -38, reputation: 28 },
-    explanation: 'Compartilhamento de fotos de pacientes via WhatsApp viola sigilo médico, LGPD e resolução do CFM sobre telemedicina. Deve ser reportado ao DPO e Compliance independente de haver consentimento.'
+    idealIndex: 0,
+    impacts: { trust: 15, risk: -30, reputation: 30 },
+    explanation: 'Qualquer discussão sobre preços com concorrentes pode configurar cartel. Além de recusar, é crucial documentar o contato e reportar ao jurídico, pois a omissão pode ser interpretada como participação.'
   },
   {
     id: 'case-42',
-    report: 'Funcionário relata que colegas utilizam sistemas corporativos com a senha de funcionários que saíram da empresa e não tiveram seus acessos revogados.',
+    report: 'Colaborador descobre que a empresa utiliza software pirata em 30% das estações de trabalho, incluindo departamentos que lidam com dados sensíveis.',
     options: [
-      'Revogar os acessos imediatamente',
-      'Reportar à TI e Compliance como falha no processo de offboarding e risco de segurança',
-      'Pedir aos colegas que parem de usar senhas alheias',
-      'Verificar se há política de desligamento'
+      'Comprar licenças imediatamente para regularizar',
+      'Denunciar à BSA (Business Software Alliance)',
+      'Formatar as máquinas irregulares',
+      'Avaliar risco jurídico e de segurança, planejar regularização e reforçar política de software autorizado',
     ],
-    idealIndex: 1,
-    impacts: { trust: 20, risk: -35, reputation: 18 },
-    explanation: 'Acessos não revogados no desligamento são falha grave de segurança. Deve ser reportado formalmente à TI e Compliance para correção imediata e revisão do processo de offboarding.'
+    idealIndex: 3,
+    impacts: { trust: 16, risk: -31, reputation: 31 },
+    explanation: 'Software pirata gera risco jurídico (multas), de segurança (sem patches) e reputacional. A resposta deve ser planejada: avaliar extensão, regularizar e prevenir reincidência com política e controles.'
   },
   {
     id: 'case-43',
-    report: 'Colaborador descobre que a empresa está realizando pagamentos a "empresas fantasma" que não possuem sede física ou funcionários.',
+    report: "Durante entrevista de desligamento, ex-funcionário revela que lhe ofereciam 'por fora' 2% do valor de cada contrato que aprovasse. Ele diz que recusou todas as vezes.",
     options: [
-      'Verificar se os serviços foram prestados',
-      'Informar ao departamento financeiro',
-      'Reportar ao Compliance e considerar comunicação ao Ministério Público como possível lavagem de dinheiro',
-      'Solicitar comprovantes de entrega'
+      'Agradecer a informação e registrar',
+      'Pedir que formalize a denúncia por escrito antes de investigar',
+      'Contratar o ex-funcionário como consultor para ajudar na investigação',
+      'Investigar quem ofereceu, se outros aprovadores aceitaram e se há contratos comprometidos',
     ],
-    idealIndex: 2,
-    impacts: { trust: 30, risk: -50, reputation: 30 },
-    explanation: 'Pagamentos a empresas fantasma são forte indício de lavagem de dinheiro ou caixa dois. Compliance deve investigar com urgência e, se confirmado, comunicar às autoridades competentes.'
+    idealIndex: 3,
+    impacts: { trust: 17, risk: -32, reputation: 32 },
+    explanation: 'A revelação indica esquema estruturado de corrupção. É urgente investigar quem oferecia, quantos aprovadores foram abordados e se contratos foram comprometidos — outros podem ter aceitado.'
   },
   {
     id: 'case-44',
-    report: 'Funcionário percebe que o sistema de ar condicionado do centro cirúrgico não está sendo submetido à manutenção preventiva conforme cronograma obrigatório.',
+    report: 'O departamento de TI implementa monitoramento de e-mails corporativos sem comunicar aos funcionários. Compliance é informado após a implementação.',
     options: [
-      'Solicitar manutenção ao setor de facilities',
-      'Reportar ao Compliance e CCIH como risco sanitário que pode contaminar procedimentos',
-      'Não operar no centro cirúrgico até manutenção',
-      'Verificar se há filtro reserva'
+      'Exigir que antes de continuar o monitoramento, seja publicada política clara e comunicação a todos os colaboradores',
+      'Validar pois e-mail corporativo é propriedade da empresa',
+      'Desativar o monitoramento imediatamente',
+      'Verificar apenas se está em conformidade com a LGPD',
     ],
-    idealIndex: 1,
-    impacts: { trust: 25, risk: -45, reputation: 22 },
-    explanation: 'Falha na manutenção do ar condicionado em centro cirúrgico é risco sanitário grave que pode causar infecções hospitalares. Deve ser reportado formalmente ao Compliance e CCIH para ação imediata.'
+    idealIndex: 0,
+    impacts: { trust: 18, risk: -33, reputation: 33 },
+    explanation: 'Mesmo em e-mail corporativo, o monitoramento sem comunicação prévia pode violar expectativa legítima de privacidade e LGPD. A solução não é desativar, mas implementar transparência com política clara.'
   },
   {
     id: 'case-45',
-    report: 'Colaborador relata que um gestor promete promoção a subordinados em troca de apoio a candidato político nas eleições.',
+    report: 'Um fornecedor estratégico (único fornecedor de componente crítico) é flagrado com trabalho análogo ao escravo pelo Ministério do Trabalho.',
     options: [
-      'Reportar ao Compliance e considerar comunicação ao Ministério Público Eleitoral',
-      'Orientar o gestor sobre neutralidade política',
-      'Ignorar pois é período eleitoral',
-      'Informar ao RH sobre a promessa de promoção'
+      'Rescindir contrato imediatamente por violação de cláusula anticorrupção',
+      'Manter o contrato pois não há alternativa',
+      'Avaliar alternativas de fornecimento, estabelecer prazo para remediação e monitorar, com plano de contingência',
+      'Suspender compras até regularização completa',
     ],
-    idealIndex: 0,
-    impacts: { trust: 25, risk: -35, reputation: 25 },
-    explanation: 'Assédio eleitoral no trabalho é crime e viola liberdade política dos funcionários. Deve ser reportado ao Compliance e, dependendo da gravidade, ao MPE para investigação.'
+    idealIndex: 2,
+    impacts: { trust: 19, risk: -34, reputation: 12 },
+    explanation: 'Com fornecedor único de componente crítico, rescisão imediata pode paralisar operações. A abordagem deve equilibrar ética e continuidade: exigir remediação com prazo, monitorar e buscar alternativas.'
   },
   {
     id: 'case-46',
-    report: 'Funcionário descobre que a empresa não cumpre a cota legal de aprendizes, contratando apenas para aparentar conformidade sem oferecer formação real.',
+    report: 'Ao analisar registros de acesso, você nota que o CEO acessa o sistema de RH às 3h da manhã, consultando dados pessoais de funcionários específicos sem justificativa aparente.',
     options: [
-      'Sugerir melhorias no programa de aprendizagem',
-      'Não reportar pois há aprendizes contratados',
-      'Reportar ao Compliance como descumprimento da Lei de Aprendizagem',
-      'Informar ao Ministério do Trabalho'
+      'Não questionar pois o CEO tem acesso a todos os sistemas',
+      'Documentar o padrão de acesso e reportar ao presidente do Conselho de Administração',
+      'Confrontar o CEO diretamente sobre os acessos',
+      'Restringir o acesso do CEO ao sistema de RH',
     ],
-    idealIndex: 2,
-    impacts: { trust: 15, risk: -22, reputation: 12 },
-    explanation: 'Contratação de aprendizes sem formação real descumpre a Lei de Aprendizagem e pode gerar autuações. Compliance deve avaliar e garantir programa efetivo conforme legislação.'
+    idealIndex: 1,
+    impacts: { trust: 20, risk: -35, reputation: 13 },
+    explanation: 'Acessos sem justificativa são red flag, independente do cargo. O CEO não deve ser confrontado diretamente — o reporte deve ir ao Conselho. Restringir acesso sem autorização do Conselho pode gerar conflito.'
   },
   {
     id: 'case-47',
-    report: 'Colaborador percebe que reuniões de comitê de ética não são realizadas há mais de um ano, apesar de estarem previstas no código de conduta.',
+    report: 'Empresa de construção. Engenheiro sênior reporta que materiais utilizados na obra estão abaixo da especificação técnica, comprometendo a segurança estrutural do edifício.',
     options: [
-      'Solicitar ao presidente do comitê que retome reuniões',
-      'Reportar ao Compliance como não conformidade com o programa de integridade',
-      'Não reportar pois não há casos pendentes',
-      'Organizar uma reunião informal'
+      'Comunicar ao órgão regulador e aos compradores',
+      'Substituir os materiais inadequados e continuar',
+      'Verificar se o desvio é aceitável dentro das margens de tolerância',
+      'Interromper a obra imediatamente e realizar laudo técnico independente',
     ],
-    idealIndex: 1,
-    impacts: { trust: 15, risk: -18, reputation: 12 },
-    explanation: 'Inatividade do comitê de ética enfraquece o programa de integridade e pode ser vista como falta de comprometimento pela Alta Administração. Deve ser formalmente reportado ao Compliance.'
+    idealIndex: 3,
+    impacts: { trust: 21, risk: -36, reputation: 14 },
+    explanation: 'Risco à segurança estrutural exige interrupção imediata. Antes de substituir materiais ou comunicar externamente, é necessário laudo independente para dimensionar o risco e definir se há necessidade de demolição parcial.'
   },
   {
     id: 'case-48',
-    report: 'Funcionário relata que a empresa cobra dos pacientes por procedimentos cobertos pelo SUS, realizando dupla cobrança.',
+    report: 'Um consultor externo que presta serviços à empresa é também membro do conselho de uma ONG que recebe doações da mesma empresa. Ele vota a favor de aumentar essas doações.',
     options: [
-      'Orientar pacientes sobre seus direitos',
-      'Verificar se há erro no sistema de faturamento',
-      'Reportar ao Compliance e considerar comunicação ao Ministério da Saúde como fraude ao SUS',
-      'Informar ao setor de faturamento'
+      'Não há conflito pois são atividades independentes',
+      'Cancelar a doação à ONG',
+      'Exigir que o consultor se abstenha de votar em matérias relacionadas à empresa doadora e divulgue o vínculo',
+      'Encerrar o contrato de consultoria',
     ],
     idealIndex: 2,
-    impacts: { trust: 30, risk: -48, reputation: 30 },
-    explanation: 'Dupla cobrança por procedimentos do SUS é fraude ao sistema de saúde pública, com penalidades graves. Compliance deve apurar e, se confirmado, comunicar ao Ministério da Saúde.'
+    impacts: { trust: 22, risk: -37, reputation: 15 },
+    explanation: 'Há conflito de interesse claro: o consultor se beneficia indiretamente das doações que a empresa faz à ONG onde ele tem voto. A solução é transparência e abstenção, não necessariamente o fim de nenhuma relação.'
   },
   {
     id: 'case-49',
-    report: 'Colaborador descobre que terceirizados não recebem os mesmos EPIs que funcionários efetivos, apesar de realizarem atividades idênticas.',
+    report: 'Funcionário descobre que a empresa está armazenando dados de saúde de funcionários (resultados de exames periódicos) no mesmo servidor que dados comerciais, sem criptografia diferenciada.',
     options: [
-      'Compartilhar EPIs com os terceirizados',
-      'Verificar contrato de terceirização',
-      'Reportar ao SESMT e Compliance como descumprimento de normas de segurança',
-      'Informar à empresa terceirizada'
+      'Avaliar a criticidade, classificar os dados e implementar controles proporcionais ao risco',
+      'Exigir migração imediata para servidor segregado e criptografado',
+      'Reportar à ANPD como incidente de segurança',
+      'Comunicar aos funcionários sobre a exposição de seus dados',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -38, reputation: 20 },
-    explanation: 'A empresa contratante é corresponsável pela segurança de terceirizados. Não fornecer EPIs adequados viola NRs e pode gerar responsabilidade solidária. SESMT e Compliance devem corrigir.'
+    idealIndex: 0,
+    impacts: { trust: 23, risk: -38, reputation: 16 },
+    explanation: 'Dados de saúde são sensíveis e exigem proteção especial, mas a resposta deve ser proporcional. Antes de migrar ou notificar, avalie se houve acesso indevido, classifique os dados e implemente controles adequados.'
   },
   {
     id: 'case-50',
-    report: 'Funcionário percebe que a empresa permite que menores de 18 anos trabalhem em horário noturno em setores administrativos.',
+    report: "Em treinamento de compliance, um funcionário questiona: 'Se eu denunciar meu chefe e depois não for comprovado nada, posso ser processado por denunciação caluniosa?'",
     options: [
-      'Verificar se há autorização dos pais',
-      'Reportar ao RH e Compliance como violação do ECA e CLT',
-      'Não reportar pois é apenas setor administrativo',
-      'Sugerir mudança de horário para os menores'
+      'Sim, pode ser processado se a denúncia for falsa',
+      'Não, o denunciante tem proteção absoluta contra qualquer consequência',
+      'O denunciante de boa-fé é protegido; denúncia sabidamente falsa pode ter consequências, mas dúvida genuína é protegida',
+      'Orientar que consulte um advogado antes de denunciar',
     ],
-    idealIndex: 1,
-    impacts: { trust: 22, risk: -35, reputation: 20 },
-    explanation: 'Trabalho noturno de menores é proibido pelo ECA e CLT, independente do setor. RH e Compliance devem corrigir imediatamente para evitar autuações e proteger os menores.'
+    idealIndex: 2,
+    impacts: { trust: 24, risk: -39, reputation: 17 },
+    explanation: 'A proteção ao denunciante cobre boa-fé, mesmo que a investigação não comprove. Porém, denúncias comprovadamente caluniosas podem ter consequências. A distinção é entre boa-fé e má-fé deliberada.'
   },
   {
     id: 'case-51',
-    report: 'Colaborador relata que o gestor solicita que funcionários assinem documentos em branco "para agilizar processos".',
+    report: 'Empresa contrata influenciadores digitais para promover produto sem exigir que divulguem a relação comercial nas postagens.',
     options: [
-      'Assinar confiando no gestor',
-      'Recusar e alertar colegas informalmente',
-      'Registrar no canal de denúncias como prática irregular com risco de fraude',
-      'Pedir ao gestor que explique o conteúdo antes'
+      'Exigir disclosure transparente conforme normas do CONAR e CDC sobre publicidade identificada',
+      'É prática comum no mercado e não há regulamentação',
+      'Publicar apenas em plataformas que identificam automaticamente conteúdo patrocinado',
+      'Criar hashtag corporativa para diferenciar conteúdo orgânico',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -30, reputation: 20 },
-    explanation: 'Solicitar assinatura em documento em branco é prática irregular que pode encobrir fraudes. Deve ser registrado formalmente para investigação, pois a pressão do gestor pode intimidar denúncias verbais.'
+    idealIndex: 0,
+    impacts: { trust: 25, risk: -40, reputation: 18 },
+    explanation: 'Publicidade disfarçada viola o CDC e normas do CONAR. Independente de prática de mercado, a empresa deve exigir transparência sobre a relação comercial para evitar riscos legais e reputacionais.'
   },
   {
     id: 'case-52',
-    report: 'Funcionário descobre que a empresa está usando base de dados de clientes para envio de marketing sem opt-in, incluindo dados obtidos de parceiros comerciais.',
+    report: 'Funcionário pede para trabalhar remotamente de outro país por 6 meses. O gestor aprova, mas ninguém consulta as implicações fiscais, trabalhistas e de proteção de dados.',
     options: [
-      'Incluir opção de descadastro nos e-mails',
-      'Verificar se há contrato de compartilhamento de dados',
-      'Reportar ao DPO como violação da LGPD por uso sem base legal e consentimento',
-      'Parar o envio de marketing temporariamente'
+      'Aprovar pois trabalho remoto é flexível',
+      'Negar pois a empresa não tem estrutura para empregados no exterior',
+      'Avaliar implicações de permanent establishment fiscal, legislação trabalhista local e transferência internacional de dados antes de autorizar',
+      'Consultar apenas o departamento de TI sobre segurança',
     ],
     idealIndex: 2,
-    impacts: { trust: 20, risk: -30, reputation: 22 },
-    explanation: 'Marketing sem consentimento e com dados de terceiros viola múltiplos princípios da LGPD. O DPO deve avaliar base legal, cessar uso indevido e implementar processo adequado de consentimento.'
+    impacts: { trust: 26, risk: -41, reputation: 19 },
+    explanation: 'Trabalho remoto internacional pode criar obrigação tributária no país de destino (establishment permanente), sujeitar a empresa à legislação trabalhista local e implicar em transferência internacional de dados sob LGPD.'
   },
   {
     id: 'case-53',
-    report: 'Colaborador percebe que a empresa não possui canal de denúncias acessível a terceiros e fornecedores, apenas a funcionários internos.',
+    report: 'O compliance officer descobre que ele próprio cometeu um erro: aprovou uma transação sem perceber que envolvia empresa listada em sanções internacionais.',
     options: [
-      'Não reportar pois já existe canal para internos',
-      'Sugerir expansão do canal ao RH',
-      'Reportar ao Compliance como não conformidade com a Lei Anticorrupção e boas práticas',
-      'Criar formulário online informal'
+      'Corrigir silenciosamente e monitorar',
+      'Consultar o jurídico sobre como minimizar sua responsabilidade pessoal',
+      'Delegar a correção a um subordinado',
+      'Auto-reportar o erro ao Conselho, bloquear a transação e avaliar necessidade de comunicação ao regulador',
     ],
-    idealIndex: 2,
-    impacts: { trust: 15, risk: -20, reputation: 12 },
-    explanation: 'A Lei Anticorrupção e programas de integridade recomendam canal acessível a todos os stakeholders. A limitação é não conformidade que deve ser reportada ao Compliance para adequação.'
+    idealIndex: 3,
+    impacts: { trust: 27, risk: -42, reputation: 20 },
+    explanation: 'A integridade do compliance officer se demonstra na auto-responsabilização. O auto-reporte ao Conselho, o bloqueio da transação e a avaliação regulatória mostram que o programa funciona mesmo quando o próprio CO erra.'
   },
   {
     id: 'case-54',
-    report: 'Funcionário relata que a empresa utiliza câmeras ocultas nos banheiros alegando prevenção de furtos.',
+    report: 'Empresa do ramo alimentício. Funcionário do controle de qualidade relata que lotes com validade próxima ao vencimento estão sendo re-etiquetados com nova data para venda.',
     options: [
-      'Verificar se há aviso sobre monitoramento',
-      'Reportar ao Compliance, DPO e considerar comunicação à polícia como crime contra privacidade',
-      'Desativar as câmeras imediatamente',
-      'Informar aos funcionários sobre as câmeras'
+      'Verificar se os produtos ainda estão dentro do padrão de qualidade',
+      'Recolher os lotes re-etiquetados do mercado e notificar ANVISA e Procon imediatamente',
+      'Advertir o responsável pela re-etiquetagem',
+      'Implementar desconto para venda rápida dos lotes próximos ao vencimento',
     ],
     idealIndex: 1,
-    impacts: { trust: 35, risk: -50, reputation: 35 },
-    explanation: 'Câmeras em banheiros é crime contra a intimidade, independente da justificativa. Deve ser reportado ao Compliance, DPO e possivelmente à polícia, pois configura violação grave de direitos fundamentais.'
+    impacts: { trust: 28, risk: -43, reputation: 21 },
+    explanation: 'Re-etiquetagem de validade é fraude ao consumidor e infração sanitária grave com risco à saúde pública. Os lotes devem ser recolhidos e as autoridades notificadas — verificar qualidade depois não protege o consumidor.'
   },
   {
     id: 'case-55',
-    report: 'Colaborador descobre que a empresa recebeu notificação da ANPD sobre incidente de dados mas não comunicou aos titulares afetados conforme determinado.',
+    report: 'Funcionário do setor fiscal descobre que a empresa vem aplicando crédito tributário de forma agressiva, em interpretação que já foi derrubada pela jurisprudência majoritária dos tribunais.',
     options: [
-      'Verificar o prazo para comunicação',
-      'Informar ao diretor jurídico',
-      'Reportar ao DPO e Compliance como descumprimento de determinação da ANPD',
-      'Aguardar nova notificação da ANPD'
+      'Manter a posição tributária atual pois não é ilegal',
+      'Contratar consultoria tributária externa renomada para validar',
+      'Recolher a diferença tributária retroativamente',
+      'Reavaliar a posição com parecer jurídico atualizado e provisionar contingência adequada nas demonstrações',
     ],
-    idealIndex: 2,
-    impacts: { trust: 28, risk: -45, reputation: 30 },
-    explanation: 'Descumprir determinação da ANPD pode resultar em sanções agravadas. DPO e Compliance devem providenciar comunicação imediata aos titulares e documentar as razões do atraso.'
+    idealIndex: 3,
+    impacts: { trust: 29, risk: -44, reputation: 22 },
+    explanation: 'Posição tributária contra jurisprudência majoritária gera contingência fiscal alta. É necessário reavaliar com parecer atualizado, provisionar adequadamente e decidir se mantém o risco ou regulariza.'
   },
   {
     id: 'case-56',
-    report: 'Funcionário percebe que a empresa está contratando trabalhadores estrangeiros em situação irregular, sem documentação adequada.',
+    report: 'Ao revisar contratos antigos, compliance descobre que um contrato de patrocínio esportivo de R$ 5 milhões foi aprovado apenas pelo diretor comercial, sem due diligence no atleta patrocinado.',
     options: [
-      'Reportar ao Compliance e RH como possível facilitação de imigração ilegal e exploração',
-      'Orientar os trabalhadores a regularizarem documentos',
-      'Não se envolver em questões migratórias',
-      'Informar à Polícia Federal'
+      'O contrato já foi executado, apenas registrar a falha processual',
+      'Comunicar ao Conselho sobre falha de governança',
+      'Cancelar o patrocínio por irregularidade processual',
+      'Realizar due diligence retroativa no atleta e revisar controles de aprovação para futuros patrocínios',
     ],
-    idealIndex: 0,
-    impacts: { trust: 25, risk: -40, reputation: 25 },
-    explanation: 'Contratar trabalhadores sem documentação pode configurar exploração e facilitar imigração ilegal. Compliance e RH devem atuar para regularizar e proteger os direitos dos trabalhadores.'
+    idealIndex: 3,
+    impacts: { trust: 30, risk: -45, reputation: 23 },
+    explanation: 'Due diligence retroativa pode revelar problemas no patrocinado que ainda geram risco. Além disso, a revisão dos controles evita recorrência. Cancelar contrato executado pode gerar litígio desnecessário.'
   },
   {
     id: 'case-57',
-    report: 'Colaborador relata que o gestor exige que ele forneça atestados médicos detalhados com CID para justificar ausências de um dia.',
+    report: 'Empresa de mineração. Comunidade indígena próxima à operação relata contaminação de rio. Laudos técnicos internos são inconclusivos.',
     options: [
-      'Fornecer o atestado com CID para evitar problemas',
-      'Verificar se há política da empresa sobre atestados',
-      'Reportar ao RH e Compliance como violação de privacidade médica',
-      'Solicitar ao médico atestado sem CID'
+      'Aguardar laudo conclusivo para agir',
+      'Contratar laudo independente, implementar medidas preventivas imediatas e dialogar com a comunidade',
+      'Comunicar ao IBAMA que os laudos são inconclusivos',
+      'Fornecer água potável à comunidade como gesto de boa vontade',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -20, reputation: 15 },
-    explanation: 'Exigir CID em atestados viola sigilo médico e privacidade do trabalhador. A empresa pode exigir atestado, mas não o diagnóstico. RH e Compliance devem corrigir a prática.'
+    idealIndex: 1,
+    impacts: { trust: 31, risk: -46, reputation: 24 },
+    explanation: 'Laudos inconclusivos não permitem inação. O princípio da precaução exige medidas preventivas imediatas, laudo independente para credibilidade e diálogo transparente com a comunidade afetada.'
   },
   {
     id: 'case-58',
-    report: 'Funcionário descobre que a empresa realiza testes de drogas em funcionários sem previsão contratual ou política formal.',
+    report: 'Funcionário com acesso privilegiado ao sistema de TI usa suas credenciais para acessar informações pessoais de uma ex-namorada que também é funcionária.',
     options: [
-      'Aceitar pois é para segurança do trabalho',
-      'Recusar o teste individualmente',
-      'Reportar ao RH e Compliance como possível violação de direitos trabalhistas e privacidade',
-      'Verificar se há base legal para o teste'
+      'Advertir o funcionário e revogar acesso temporariamente',
+      'Revogar acessos privilegiados, apurar extensão do uso indevido e avaliar medida disciplinar proporcional',
+      'Reportar à polícia como crime cibernético',
+      'Comunicar à ex-namorada sobre o acesso indevido',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -25, reputation: 18 },
-    explanation: 'Testes de drogas sem previsão contratual ou política formal podem violar direitos do trabalhador. RH e Compliance devem avaliar a legalidade e implementar política transparente se justificável.'
+    idealIndex: 1,
+    impacts: { trust: 32, risk: -47, reputation: 25 },
+    explanation: 'Uso indevido de credenciais privilegiadas para fins pessoais é violação grave de segurança. Além de revogar, é preciso apurar toda a extensão do acesso e aplicar medida proporcional.'
   },
   {
     id: 'case-59',
-    report: 'Colaborador percebe que atas de reunião do conselho de administração contêm informações falsas sobre deliberações que não ocorreram.',
+    report: 'Banco descobre que clientes de alta renda estão usando contas da instituição para estruturar depósitos abaixo do limite de comunicação ao COAF.',
     options: [
-      'Reportar ao Comitê de Auditoria como falsificação documental societária',
-      'Alertar o secretário do conselho',
-      'Verificar com outros conselheiros',
-      'Solicitar retificação da ata'
+      'Comunicar ao COAF apenas as operações acima do limite legal',
+      'Encerrar as contas dos clientes envolvidos',
+      'Comunicar ao COAF como operação suspeita de structuring, independente dos valores individuais',
+      'Alertar os clientes que a prática é monitorada',
     ],
-    idealIndex: 0,
-    impacts: { trust: 30, risk: -45, reputation: 30 },
-    explanation: 'Falsificação de atas do conselho é fraude societária grave que pode afetar stakeholders. Deve ser reportado ao Comitê de Auditoria como órgão independente de governança.'
+    idealIndex: 2,
+    impacts: { trust: 33, risk: -48, reputation: 26 },
+    explanation: 'Structuring (fracionamento para evitar limites de comunicação) é técnica clássica de lavagem de dinheiro. Deve ser comunicada ao COAF como operação suspeita, independente dos valores individuais.'
   },
   {
     id: 'case-60',
-    report: 'Funcionário descobre que a empresa mantém dois sistemas de contabilidade: um oficial e outro paralelo com números diferentes.',
+    report: 'Uma startup de saúde digital quer compartilhar dados anonimizados de pacientes com parceiro de pesquisa farmacêutica. A anonimização utiliza apenas remoção de nomes.',
     options: [
-      'Verificar qual sistema tem os números corretos',
-      'Informar ao contador responsável',
-      'Reportar ao Comitê de Auditoria e Compliance como possível fraude contábil',
-      'Aguardar a auditoria externa descobrir'
+      'Autorizar pois os dados estão anonimizados',
+      'Exigir consentimento individual de cada paciente',
+      'Avaliar se a anonimização é efetiva (se não é possível re-identificação) e se há base legal adequada',
+      'Solicitar aprovação do comitê de ética em pesquisa',
     ],
     idealIndex: 2,
-    impacts: { trust: 35, risk: -50, reputation: 35 },
-    explanation: 'Contabilidade paralela é forte indício de fraude e evasão fiscal. Deve ser reportado ao mais alto nível de governança independente para investigação imediata.'
+    impacts: { trust: 34, risk: -49, reputation: 27 },
+    explanation: 'Remoção de nomes não garante anonimização efetiva — dados podem ser re-identificados por combinação de atributos. É necessário avaliar técnicas de anonimização adequadas e base legal específica.'
   },
   {
     id: 'case-61',
-    report: 'Colaborador percebe que resultados de exames laboratoriais são enviados por e-mail sem criptografia, com dados de pacientes visíveis no corpo do e-mail.',
+    report: "Gestor pressiona equipe para não registrar horas extras no sistema de ponto, argumentando que 'todos fazem isso' e que 'faz parte da cultura da empresa'.",
     options: [
-      'Sugerir uso de sistema seguro de envio',
-      'Reportar ao DPO e TI como vulnerabilidade de dados sensíveis de saúde',
-      'Orientar pacientes a não usarem e-mail',
-      'Pedir que coloquem resultados em PDF protegido'
+      'Acatar pois é prática comum',
+      'Registrar horas extras silenciosamente contra a orientação',
+      'Documentar a orientação do gestor e reportar como possível fraude trabalhista e risco de passivo',
+      'Discutir com colegas para fazer uma queixa coletiva',
     ],
-    idealIndex: 1,
-    impacts: { trust: 22, risk: -35, reputation: 22 },
-    explanation: 'Envio de dados de saúde sem criptografia viola LGPD e boas práticas de segurança. DPO e TI devem implementar canal seguro para transmissão de resultados sensíveis.'
+    idealIndex: 2,
+    impacts: { trust: 15, risk: -20, reputation: 28 },
+    explanation: 'Não registrar horas extras é fraude trabalhista que gera passivo. A documentação da orientação do gestor é fundamental como evidência, e o reporte formal protege tanto o funcionário quanto a empresa.'
   },
   {
     id: 'case-62',
-    report: 'Funcionário relata que a empresa obriga funcionários em aviso prévio a treinar seus substitutos sob ameaça de desconto no acerto.',
+    report: 'Empresa recebe intimação judicial para preservar todos os e-mails de determinado departamento dos últimos 5 anos. O departamento de TI diz que a política de retenção apaga e-mails após 3 anos.',
     options: [
-      'Aceitar pois é prática de mercado',
-      'Reportar ao RH e Compliance como possível coação trabalhista',
-      'Verificar se há previsão contratual',
-      'Orientar o funcionário a buscar advogado'
+      'Suspender imediatamente qualquer exclusão (litigation hold), recuperar o que for possível e comunicar ao juízo sobre a situação',
+      'Informar ao juízo que os e-mails foram apagados conforme política',
+      'Produzir apenas os e-mails disponíveis sem informar sobre os apagados',
+      'Alterar a política de retenção para 5 anos retroativamente',
     ],
-    idealIndex: 1,
-    impacts: { trust: 18, risk: -22, reputation: 15 },
-    explanation: 'Ameaçar descontos no acerto para forçar treinamento é coação e pode configurar assédio moral. RH e Compliance devem avaliar e garantir que o aviso prévio respeite direitos trabalhistas.'
+    idealIndex: 0,
+    impacts: { trust: 16, risk: -21, reputation: 29 },
+    explanation: 'Litigation hold é obrigação imediata. Destruir evidências após intimação é spoliation. Deve-se preservar o que existe, tentar recuperar o que foi apagado e ser transparente com o juízo sobre a situação.'
   },
   {
     id: 'case-63',
-    report: 'Colaborador descobre que a empresa não possui política de prevenção à lavagem de dinheiro, apesar de operar em setor regulado.',
+    report: "Funcionário do setor de compras recebe proposta de fornecedor incluindo 'verba de relacionamento' que seria depositada em conta pessoal do comprador como 'consultoria'.",
     options: [
-      'Criar uma política informal',
-      'Não reportar pois nunca houve caso',
-      'Reportar ao Compliance como não conformidade regulatória crítica',
-      'Aguardar exigência do órgão regulador'
+      'Recusar e registrar como tentativa de suborno',
+      'Avaliar se o valor é compatível com consultoria real',
+      'Denunciar o fornecedor à polícia',
+      'Recusar, documentar detalhadamente a proposta e reportar para investigação de possível padrão com outros compradores',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -38, reputation: 18 },
-    explanation: 'Em setores regulados, a ausência de política PLD é não conformidade grave que pode resultar em sanções severas. Compliance deve implementar programa imediatamente.'
+    idealIndex: 3,
+    impacts: { trust: 17, risk: -22, reputation: 30 },
+    explanation: 'Além de recusar, é crucial documentar e investigar se outros compradores receberam propostas similares. Um caso isolado pode ser ponta de esquema maior. A documentação detalhada é evidência fundamental.'
   },
   {
     id: 'case-64',
-    report: 'Funcionário percebe que a empresa destruiu documentos que estavam sob ordem de preservação judicial (litigation hold).',
+    report: 'Empresa de logística. Motoristas relatam que são obrigados a dirigir além do limite legal de horas para cumprir metas de entrega.',
     options: [
-      'Verificar se a destruição foi acidental',
-      'Reportar ao Jurídico e Compliance como possível obstrução de justiça',
-      'Tentar recuperar os documentos',
-      'Não reportar para não piorar a situação'
+      'Ajustar metas de entrega para serem compatíveis com limites legais de jornada',
+      'Contratar mais motoristas para distribuir a demanda',
+      'Instalar rastreadores nos caminhões para monitorar jornada',
+      'Investigar se a situação é sistêmica, recalibrar rotas e metas, e garantir mecanismos de registro que não possam ser burlados',
     ],
-    idealIndex: 1,
-    impacts: { trust: 30, risk: -50, reputation: 30 },
-    explanation: 'Destruição de documentos sob litigation hold pode configurar obstrução de justiça e resultar em sanções severas. Jurídico e Compliance devem ser informados imediatamente para mitigação de danos.'
+    idealIndex: 3,
+    impacts: { trust: 18, risk: -23, reputation: 31 },
+    explanation: 'O problema pode ser sistêmico — metas irreais, pressão de gestores, registros fraudados. Instalar rastreadores sem mudar metas apenas documenta a irregularidade. É preciso atacar a causa raiz.'
   },
   {
     id: 'case-65',
-    report: 'Colaborador relata que a empresa está armazenando dados de clientes em servidores localizados fora do país sem informar aos titulares.',
+    report: 'Ao revisar contratos com governo, compliance descobre que a empresa usa intermediários (brokers) em licitações públicas sem due diligence ou justificativa documentada.',
     options: [
-      'Verificar se o país tem lei de proteção de dados adequada',
-      'Migrar dados para servidor nacional',
-      'Reportar ao DPO como possível transferência internacional irregular sob a LGPD',
-      'Não reportar pois cloud computing é globalizado'
+      'Consultar o governo sobre a legalidade dos intermediários',
+      'Encerrar todos os contratos com intermediários imediatamente',
+      'Aceitar pois intermediários são prática comum em licitações',
+      'Realizar due diligence retroativa em todos os intermediários e suspender novas contratações de brokers até implementação de controles',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -30, reputation: 18 },
-    explanation: 'Transferência internacional de dados sem informar titulares e sem mecanismo legal adequado viola a LGPD. O DPO deve avaliar e implementar medidas de conformidade para transferências internacionais.'
+    idealIndex: 3,
+    impacts: { trust: 19, risk: -24, reputation: 32 },
+    explanation: 'Intermediários em licitações públicas são red flag clássico de corrupção. A due diligence retroativa pode revelar problemas existentes, e a suspensão de novas contratações previne riscos até que controles sejam implementados.'
   },
   {
     id: 'case-66',
-    report: 'Funcionário descobre que a equipe de vendas tem acesso irrestrito a todos os prontuários do hospital para "prospecção de clientes".',
+    report: 'Funcionário nota que a empresa oferece condições comerciais significativamente melhores para clientes que indicam novos clientes, sem limite de bonificação.',
     options: [
-      'Restringir acesso do time de vendas',
-      'Verificar se há base legal para o acesso',
-      'Reportar ao DPO e Compliance como desvio de finalidade e acesso indevido a dados sensíveis',
-      'Orientar vendas a não usar informações de saúde'
+      'É estratégia comercial legítima',
+      'Avaliar se o programa pode configurar pirâmide financeira ou se os incentivos são proporcionais e sustentáveis',
+      'Limitar bonificações a um valor máximo por indicação',
+      'Consultar o jurídico sobre legalidade do programa',
     ],
-    idealIndex: 2,
-    impacts: { trust: 28, risk: -45, reputation: 30 },
-    explanation: 'Acesso a prontuários para prospecção comercial é desvio grave de finalidade e viola LGPD e sigilo médico. DPO e Compliance devem cessar imediatamente e investigar uso indevido.'
+    idealIndex: 1,
+    impacts: { trust: 20, risk: -25, reputation: 33 },
+    explanation: 'Programas de indicação sem limite podem se aproximar de esquemas de pirâmide. A análise deve verificar se a remuneração é pela indicação real ou pelo recrutamento em cadeia, e se é sustentável.'
   },
   {
     id: 'case-67',
-    report: 'Colaborador percebe que a empresa está pagando propina a fiscais municipais para evitar multas por irregularidades sanitárias.',
+    report: 'Empresa de tecnologia descobre que um algoritmo de precificação dinâmica está cobrando preços mais altos de usuários que acessam via dispositivos Apple.',
     options: [
-      'Corrigir as irregularidades sanitárias primeiro',
-      'Informar ao diretor operacional',
-      'Registrar no canal de denúncias e considerar comunicação ao Ministério Público',
-      'Aceitar como custo operacional do negócio'
+      'É prática legal de segmentação de mercado',
+      'Avaliar se constitui discriminação de preço ilegal e se há transparência adequada ao consumidor',
+      'Cobrar o mesmo preço de todos os dispositivos',
+      'Comunicar aos usuários que preços variam por dispositivo',
     ],
-    idealIndex: 2,
-    impacts: { trust: 30, risk: -50, reputation: 30 },
-    explanation: 'Pagamento de propina a fiscais é crime de corrupção ativa. Deve ser registrado no canal de denúncias e, pela gravidade, considerada comunicação ao Ministério Público.'
+    idealIndex: 1,
+    impacts: { trust: 21, risk: -26, reputation: 12 },
+    explanation: 'Precificação diferenciada por dispositivo pode configurar prática abusiva sob CDC e legislações de defesa do consumidor. A análise deve verificar legalidade, proporcionalidade e transparência.'
   },
   {
     id: 'case-68',
-    report: 'Funcionário relata que a empresa obriga o uso de uniformes com logomarca de patrocinador sem previsão contratual ou compensação.',
+    report: 'O sistema de compliance detecta que um PEP (Pessoa Exposta Politicamente) abriu conta na empresa com documentação regular e sem alertas em listas restritivas.',
     options: [
-      'Usar o uniforme para evitar problemas',
-      'Recusar individualmente',
-      'Reportar ao RH e Compliance como possível violação de direito de imagem',
-      'Negociar compensação coletivamente'
+      'Recusar a abertura por ser PEP',
+      'Aceitar normalmente pois a documentação está regular',
+      'Consultar o Banco Central antes de aceitar',
+      'Aceitar com monitoramento reforçado (enhanced due diligence) conforme regulamentação de PLD',
     ],
-    idealIndex: 2,
-    impacts: { trust: 12, risk: -15, reputation: 10 },
-    explanation: 'Uso obrigatório de logomarca de patrocinador sem previsão contratual pode violar direito de imagem dos funcionários. RH e Compliance devem avaliar e adequar a prática.'
+    idealIndex: 3,
+    impacts: { trust: 22, risk: -27, reputation: 13 },
+    explanation: 'PEPs não podem ser automaticamente recusados, mas exigem enhanced due diligence e monitoramento contínuo reforçado. A regulamentação de PLD requer tratamento diferenciado, não proibitivo.'
   },
   {
     id: 'case-69',
-    report: 'Colaborador descobre que a empresa não mantém registro das atividades de tratamento de dados pessoais (ROPA) conforme exigido pela LGPD.',
+    report: 'Empresa quer doar R$ 500 mil para campanha política de candidato que prometeu destravar licença ambiental de projeto da empresa.',
     options: [
-      'Criar um inventário de dados informalmente',
-      'Reportar ao DPO como não conformidade com a LGPD que requer ação imediata',
-      'Não reportar pois ainda não há fiscalização intensa',
-      'Aguardar orientação da ANPD'
+      'Doar pois é direito de expressão política da empresa',
+      'Doar valor menor para reduzir risco',
+      'Doar através de fundação da empresa para não vincular diretamente',
+      'Recusar a doação pois pode configurar quid pro quo e violação da Lei Anticorrupção',
     ],
-    idealIndex: 1,
-    impacts: { trust: 18, risk: -28, reputation: 15 },
-    explanation: 'O ROPA é obrigação legal da LGPD e demonstra accountability. Sua ausência é não conformidade que o DPO deve corrigir imediatamente, independente do nível de fiscalização.'
+    idealIndex: 3,
+    impacts: { trust: 23, risk: -28, reputation: 14 },
+    explanation: 'Doação empresarial com expectativa de contraprestação governamental configura corrupção. Após 2015, doações corporativas a campanhas são proibidas no Brasil, e mesmo onde permitidas, o quid pro quo é crime.'
   },
   {
     id: 'case-70',
-    report: 'Funcionário percebe que gestores estão monitorando e-mails pessoais dos funcionários acessados durante horário de trabalho.',
+    report: 'Funcionário relata que há câmeras de vigilância dentro dos banheiros do escritório. A empresa alega que é por segurança após furtos.',
     options: [
-      'Não acessar e-mail pessoal no trabalho',
-      'Verificar se há política de monitoramento',
-      'Reportar ao DPO e Compliance como possível violação de sigilo de comunicações',
-      'Informar aos colegas sobre o monitoramento'
+      'Remover imediatamente as câmeras pois violam dignidade e privacidade, independente da justificativa',
+      'Aceitar a justificativa de segurança e manter as câmeras',
+      'Manter câmeras apenas nas áreas comuns do banheiro (lavatórios)',
+      'Consultar os funcionários sobre preferência',
     ],
-    idealIndex: 2,
-    impacts: { trust: 22, risk: -28, reputation: 20 },
-    explanation: 'Monitorar e-mails pessoais pode violar sigilo de correspondência, garantido constitucionalmente. DPO e Compliance devem avaliar a legalidade e proporcionalidade da prática.'
+    idealIndex: 0,
+    impacts: { trust: 24, risk: -29, reputation: 15 },
+    explanation: 'Câmeras em banheiros violam a dignidade humana e são ilegais independente de justificativa. A segurança pode ser garantida por outros meios (controle de acesso, câmeras em corredores externos).'
   },
   {
     id: 'case-71',
-    report: 'Colaborador relata que a empresa está usando reconhecimento facial para controle de acesso sem informar funcionários sobre coleta e tratamento dos dados biométricos.',
+    report: "Empresa de alimentos usa embalagem com selo 'natural' e '100% integral' em produto que contém 40% de ingredientes refinados.",
     options: [
-      'Aceitar pois melhora a segurança',
-      'Solicitar informações ao departamento de segurança',
-      'Reportar ao DPO como tratamento de dados sensíveis sem transparência e possível base legal inadequada',
-      'Sugerir alternativas como cartão de acesso'
+      'Reformular o produto para corresponder à embalagem',
+      "Manter pois não há definição legal precisa de 'natural'",
+      'Adequar a embalagem para refletir a composição real do produto',
+      'Adicionar asterisco com informação complementar',
     ],
     idealIndex: 2,
-    impacts: { trust: 22, risk: -30, reputation: 20 },
-    explanation: 'Reconhecimento facial coleta dados biométricos sensíveis. Sem informação clara e base legal adequada, viola a LGPD. O DPO deve avaliar necessidade, proporcionalidade e implementar transparência.'
+    impacts: { trust: 25, risk: -30, reputation: 16 },
+    explanation: 'Informação enganosa na embalagem viola o CDC e regulamentações da ANVISA. A prioridade é adequar a comunicação à realidade do produto, não buscar brechas legais.'
   },
   {
     id: 'case-72',
-    report: 'Funcionário descobre que a empresa está fazendo doações a partidos políticos usando conta de pessoa jurídica, prática proibida desde 2015.',
+    report: 'Ao investigar uma denúncia, o investigador descobre informações que implicam um segundo caso, não relacionado ao original, envolvendo outro departamento.',
     options: [
-      'Reportar ao Compliance e Jurídico como violação da legislação eleitoral',
-      'Verificar se são doações ou patrocínios de eventos',
-      'Informar ao departamento financeiro',
-      'Não se envolver em questões políticas'
+      'Registrar a descoberta como nova denúncia e abrir investigação separada com escopo próprio',
+      'Ignorar pois está fora do escopo da investigação',
+      'Expandir o escopo da investigação atual para cobrir ambos os casos',
+      'Informar verbalmente ao compliance officer sem documentar',
     ],
     idealIndex: 0,
-    impacts: { trust: 28, risk: -45, reputation: 28 },
-    explanation: 'Doações de pessoa jurídica a partidos são proibidas desde 2015 (ADI 4650/STF). É violação grave da legislação eleitoral que deve ser reportada ao Compliance e Jurídico imediatamente.'
+    impacts: { trust: 26, risk: -31, reputation: 17 },
+    explanation: 'Informações sobre irregularidades não podem ser ignoradas, mas misturar investigações compromete ambas. O correto é abrir caso separado, com escopo e investigador próprios, preservando a integridade de cada apuração.'
   },
   {
     id: 'case-73',
-    report: 'Colaborador percebe que termos de consentimento para tratamento médico estão sendo assinados por familiares sem procuração quando o paciente está consciente e capaz.',
+    report: 'Empresa descobre que ex-funcionário levou lista de clientes e base de prospects ao ingressar em concorrente direto.',
     options: [
-      'Aceitar pois é prática comum',
-      'Orientar equipe sobre consentimento informado',
-      'Reportar ao Compliance e Jurídico como violação da autonomia do paciente',
-      'Verificar se o paciente concordou verbalmente'
+      'Processar judicialmente por concorrência desleal e violação de segredo comercial',
+      'Comunicar aos clientes que suas informações foram comprometidas',
+      'Entrar em contato com o concorrente exigindo devolução',
+      'Avaliar se havia NDA/cláusula de não-competição vigente e se a informação configura segredo comercial antes de agir',
     ],
-    idealIndex: 2,
-    impacts: { trust: 20, risk: -28, reputation: 18 },
-    explanation: 'Consentimento informado deve ser do paciente quando capaz. Assinatura por terceiro sem procuração viola autonomia do paciente e pode invalidar o consentimento juridicamente.'
+    idealIndex: 3,
+    impacts: { trust: 27, risk: -32, reputation: 18 },
+    explanation: 'Nem toda informação de cliente é segredo comercial protegido judicialmente. Antes de litigar, é preciso verificar se há proteção contratual (NDA, não-competição) e se a informação atende requisitos legais de sigilo.'
   },
   {
     id: 'case-74',
-    report: 'Funcionário relata que a empresa está classificando incorretamente acidentes de trabalho como "mal súbito" para não emitir CAT.',
+    report: 'Funcionário do setor de investimentos comenta em almoço com amigos que a empresa está prestes a anunciar aquisição milionária. Um dos amigos compra ações da empresa-alvo no dia seguinte.',
     options: [
-      'Verificar classificação médica dos eventos',
-      'Reportar ao SESMT e Compliance como fraude documental com implicações legais e previdenciárias',
-      'Emitir CAT retroativamente',
-      'Orientar funcionários sobre seus direitos'
+      'Apurar o vazamento de informação privilegiada e avaliar se há insider trading, envolvendo CVM se necessário',
+      'O funcionário não é responsável pela ação do amigo',
+      'Advertir o funcionário sobre confidencialidade',
+      'Monitorar se o amigo vendeu as ações com lucro',
     ],
-    idealIndex: 1,
-    impacts: { trust: 28, risk: -42, reputation: 25 },
-    explanation: 'Classificar acidentes de trabalho como mal súbito para evitar CAT é fraude que priva trabalhadores de direitos previdenciários. SESMT e Compliance devem investigar e corrigir.'
+    idealIndex: 0,
+    impacts: { trust: 28, risk: -33, reputation: 19 },
+    explanation: 'Compartilhar informação material não pública que resulta em negociação de valores mobiliários configura insider trading para ambos (tipper e tippee). A CVM deve ser envolvida para investigação formal.'
   },
   {
     id: 'case-75',
-    report: 'Colaborador descobre que a empresa mantém contratos com cláusulas abusivas que proíbem fornecedores de prestar serviços a concorrentes.',
+    report: 'Empresa quer usar reconhecimento facial para controle de ponto dos funcionários. O sindicato se opõe alegando excesso de vigilância.',
     options: [
-      'Não reportar pois é cláusula contratual aceita',
-      'Sugerir revisão das cláusulas ao jurídico',
-      'Reportar ao Compliance e Jurídico como possível prática anticoncorrencial',
-      'Informar aos fornecedores sobre seus direitos'
+      'Realizar DPIA (avaliação de impacto), consultar o sindicato e avaliar alternativas menos invasivas',
+      'Implementar pois é tecnologia moderna e eficiente',
+      'Desistir do reconhecimento facial por causa da oposição',
+      'Implementar apenas para novos funcionários que aceitarem',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -25, reputation: 15 },
-    explanation: 'Cláusulas que restringem fornecedores podem configurar prática anticoncorrencial passível de sanção pelo CADE. Compliance e Jurídico devem avaliar e adequar os contratos.'
+    idealIndex: 0,
+    impacts: { trust: 29, risk: -34, reputation: 20 },
+    explanation: 'Biometria facial para controle de ponto requer DPIA sob LGPD, negociação sindical e análise de proporcionalidade. Pode haver alternativas menos invasivas (digital, PIN) que atendam o objetivo.'
   },
   {
     id: 'case-76',
-    report: 'Funcionário percebe que a empresa não possui programa de compliance efetivo, apenas um código de ética formal que ninguém conhece.',
+    report: "Auditor externo reporta informalmente ao CFO uma irregularidade contábil material. O CFO pede para 'resolver internamente' antes do relatório formal.",
     options: [
-      'Divulgar o código de ética na empresa',
-      'Não reportar pois existe código de ética',
-      'Reportar à alta administração e Conselho como deficiência no programa de integridade',
-      'Sugerir treinamentos sobre ética'
+      'Aceitar pois é melhor corrigir antes do relatório',
+      'O auditor deve manter a independência e reportar a irregularidade conforme normas de auditoria, sem acatar pedido de omissão',
+      'Negociar prazo para correção antes de incluir no relatório',
+      'Consultar o comitê de auditoria sobre como proceder',
     ],
-    idealIndex: 2,
-    impacts: { trust: 18, risk: -25, reputation: 15 },
-    explanation: 'Um código de ética sem programa de compliance efetivo não atende às exigências da Lei Anticorrupção. A alta administração deve ser alertada para implementar programa completo.'
+    idealIndex: 1,
+    impacts: { trust: 30, risk: -35, reputation: 21 },
+    explanation: 'O auditor tem dever de independência e não pode omitir ou postergar reporte de irregularidade material a pedido da gestão. Isso compromete a integridade da auditoria e pode configurar participação na irregularidade.'
   },
   {
     id: 'case-77',
-    report: 'Colaborador relata que dados de pesquisas clínicas estão sendo compartilhados com laboratório patrocinador sem anonimização dos pacientes.',
+    report: 'Empresa opera em país onde propina a autoridades é culturalmente aceita e praticamente necessária para operar. Concorrentes locais pagam abertamente.',
     options: [
-      'Anonimizar os dados antes do próximo envio',
-      'Verificar se há consentimento dos pacientes para compartilhamento',
-      'Reportar ao DPO, Comitê de Ética em Pesquisa e Compliance como violação ética e legal',
-      'Informar ao pesquisador principal'
+      'Adaptar-se à cultura local para manter competitividade',
+      'Manter posição anticorrupção, investir em relacionamento institucional transparente e aceitar possível perda de negócios',
+      "Operar através de parceiro local que 'resolva' questões burocráticas",
+      'Contribuir para fundos de desenvolvimento comunitário como alternativa',
     ],
-    idealIndex: 2,
-    impacts: { trust: 30, risk: -48, reputation: 30 },
-    explanation: 'Compartilhamento de dados de pesquisa sem anonimização viola Resolução CNS 466/12, LGPD e ética em pesquisa. Deve ser reportado a múltiplas instâncias pela gravidade.'
+    idealIndex: 1,
+    impacts: { trust: 31, risk: -36, reputation: 22 },
+    explanation: 'Legislações extraterritoriais (FCPA, UK Bribery Act, Lei Anticorrupção) proíbem propina mesmo onde é culturalmente aceita. A empresa deve competir com integridade, mesmo com desvantagem competitiva.'
   },
   {
     id: 'case-78',
-    report: 'Funcionário descobre que a empresa não realiza verificação de antecedentes criminais para funcionários que lidam com menores de idade.',
+    report: "Funcionário descobre que a empresa mantém dois conjuntos de livros contábeis: um oficial para autoridades e outro 'gerencial' com números reais diferentes.",
     options: [
-      'Solicitar que RH implemente verificação',
-      'Não reportar pois nunca houve incidente',
-      'Reportar ao Compliance como falha crítica de controle para proteção de menores',
-      'Verificar legislação aplicável'
+      "Verificar se o livro 'gerencial' é apenas relatório de gestão com metodologia diferente",
+      'Investigar as divergências entre os dois registros e, se houver manipulação intencional, reportar ao Comitê de Auditoria e avaliar comunicação ao MP',
+      'Destruir o livro gerencial para eliminar evidência',
+      'Contratar perito contábil para reconciliar os dois registros',
     ],
-    idealIndex: 2,
-    impacts: { trust: 25, risk: -40, reputation: 22 },
-    explanation: 'A ausência de verificação de antecedentes para quem lida com menores é falha grave de proteção. Compliance deve implementar controle obrigatório conforme ECA e normas setoriais.'
+    idealIndex: 1,
+    impacts: { trust: 32, risk: -37, reputation: 23 },
+    explanation: 'Dois conjuntos de livros com números divergentes pode ser legítimo (IFRS vs gerencial) ou fraude contábil. A investigação deve determinar se as diferenças são metodológicas ou manipulação intencional.'
   },
   {
     id: 'case-79',
-    report: 'Colaborador percebe que a empresa está usando dados de saúde de funcionários coletados em exames admissionais para fins de seguro empresarial sem consentimento.',
+    report: 'Empresa de seguros. Analista descobre que o modelo de precificação cobra prêmios mais altos para CEPs de bairros predominantemente negros, sem justificativa atuarial.',
     options: [
-      'Reportar ao DPO como desvio de finalidade e violação da LGPD em dados sensíveis',
-      'Verificar se há cláusula no contrato de trabalho',
-      'Aceitar pois beneficia os funcionários com seguro',
-      'Informar ao sindicato'
+      'Auditar o modelo para eliminar viés discriminatório e garantir que variáveis de precificação tenham justificativa atuarial legítima',
+      'É prática atuarial baseada em dados de sinistralidade',
+      'Proibir uso de CEP na precificação',
+      'Aplicar desconto compensatório para CEPs afetados',
     ],
     idealIndex: 0,
-    impacts: { trust: 22, risk: -32, reputation: 20 },
-    explanation: 'Usar dados de saúde de exames admissionais para seguro é desvio de finalidade. Dados sensíveis de saúde têm proteção reforçada na LGPD e requerem consentimento específico para cada finalidade.'
+    impacts: { trust: 33, risk: -38, reputation: 24 },
+    explanation: 'Precificação que resulta em discriminação racial sem justificativa atuarial legítima viola princípios de equidade e pode ser ilegal. O modelo deve ser auditado para eliminar proxies discriminatórios.'
   },
   {
     id: 'case-80',
-    report: 'Funcionário relata que a empresa incentiva denúncias através do canal, mas na prática retalia denunciantes com transferências e exclusão de projetos.',
+    report: 'Durante assembleia, acionista minoritário solicita acesso a documentos internos detalhados sobre remuneração individual de diretores e contratos com partes relacionadas.',
     options: [
-      'Não usar o canal de denúncias',
-      'Denunciar externamente ao Ministério Público',
-      'Reportar ao Comitê de Ética ou Conselho como falha grave no programa de integridade',
-      'Registrar evidências de retaliação'
+      'Fornecer informações agregadas e contratos resumidos conforme lei, protegendo dados pessoais e segredos comerciais',
+      'Fornecer todos os documentos pois é direito do acionista',
+      'Negar acesso pois são informações confidenciais',
+      'Consultar a CVM sobre o nível de disclosure obrigatório',
     ],
-    idealIndex: 2,
-    impacts: { trust: 30, risk: -40, reputation: 30 },
-    explanation: 'Retaliação contra denunciantes destrói a confiança no programa de compliance. Deve ser reportado ao nível mais alto de governança independente, pois a gestão pode estar envolvida na retaliação.'
-  }
+    idealIndex: 0,
+    impacts: { trust: 34, risk: -39, reputation: 25 },
+    explanation: 'Acionistas têm direito a informações, mas há limite entre transparência e proteção de dados pessoais/segredos comerciais. O equilíbrio legal exige disclosure adequado sem exposição indevida.'
+  },
 ];
 
 /**
- * Função para obter casos embaralhados para o jogo
- * @param count Número de casos a retornar (padrão: 8)
- * @returns Array de casos embaralhados com opções também embaralhadas
+ * Retorna N casos embaralhados para uma sessão de jogo
+ * Também embaralha as opções de cada caso, recalculando o índice correto
  */
-export function getShuffledWhistleblowerCases(count: number = 8): Array<WhistleblowerCase & { correctIndex: number }> {
-  // Embaralha todos os casos e pega os primeiros 'count'
-  const shuffledCases = shuffleArray([...expandedWhistleblowerCases]).slice(0, count);
-  
-  // Para cada caso, embaralha as opções e ajusta o índice correto
-  return shuffledCases.map(caseItem => {
-    const originalCorrectAnswer = caseItem.options[caseItem.idealIndex];
-    const shuffledOptions = shuffleArray([...caseItem.options]);
-    const newCorrectIndex = shuffledOptions.indexOf(originalCorrectAnswer);
-    
-    return {
-      ...caseItem,
-      options: shuffledOptions,
-      correctIndex: newCorrectIndex
-    };
+export const getShuffledWhistleblowerCases = (count: number = 10) => {
+  const shuffled = shuffleArray([...expandedWhistleblowerCases]);
+  const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+
+  return selected.map(c => {
+    const correctAnswer = c.options[c.idealIndex];
+    const shuffledOptions = shuffleArray([...c.options]);
+    const newCorrectIndex = shuffledOptions.indexOf(correctAnswer);
+    return { ...c, options: shuffledOptions, correctIndex: newCorrectIndex };
   });
-}
+};
