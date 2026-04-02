@@ -26,9 +26,9 @@ export const RankingPanel = ({ ranking, currentUserName }: RankingPanelProps) =>
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1; // 1-12
   
-  // Default to previous month
-  const defaultMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-  const defaultYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  // Default to current month/year
+  const defaultMonth = currentMonth;
+  const defaultYear = currentYear;
 
   const [viewMode, setViewMode] = useState<'mensal' | 'anual'>('mensal');
   const [selectedYear, setSelectedYear] = useState(defaultYear);

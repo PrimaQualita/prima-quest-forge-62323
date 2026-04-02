@@ -49,6 +49,9 @@ const PHASES = [
 export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const scoreRef = useRef(0);
+  const recordedScoreRef = useRef(0);
+  const usedQuestionsRef = useRef<Set<number>>(new Set());
   const [currentPhase, setCurrentPhase] = useState(0);
   const [score, setScore] = useState(0);
   const [tokensCollected, setTokensCollected] = useState(0);
@@ -57,8 +60,30 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
   const [lives, setLives] = useState(2);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [showQuestion, setShowQuestion] = useState(false);
-  const [usedQuestions, setUsedQuestions] = useState<Set<number>>(new Set());
   const { updateScore } = useGamificationStore();
+
+  const setExactScore = (nextScore: number) => {
+    const normalizedScore = Math.max(0, nextScore);
+    scoreRef.current = normalizedScore;
+    setScore(normalizedScore);
+  };
+
+  const addScore = (points: number) => {
+    setExactScore(scoreRef.current + points);
+  };
+
+  const removeScore = (points: number) => {
+    setExactScore(scoreRef.current - points);
+  };
+
+  const persistPendingScore = async () => {
+    const pendingPoints = scoreRef.current - recordedScoreRef.current;
+
+    if (pendingPoints <= 0) return;
+
+    recordedScoreRef.current = scoreRef.current;
+    await updateScore('compliance-runner', pendingPoints);
+  };
 
   useEffect(() => {
     if (!gameContainerRef.current) return;
@@ -77,6 +102,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       private tokensCollectedInScene = 0;
       private phaseCompleteTriggered = false;
       private invulnerable = false;
+      private gameOverTriggered = false;
 
       constructor() {
         super({ key: 'MainScene' });
@@ -313,7 +339,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
 
         this.tokensCollectedInScene++;
         setTokensCollected(this.tokensCollectedInScene);
-        setScore(prev => prev + 50);
+        addScore(50);
 
         const phase = PHASES[currentPhase];
         this.scoreText?.setText(`Tokens: ${this.tokensCollectedInScene}/${phase.tokensRequired}`);
@@ -330,7 +356,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         const powerUpSprite = powerUp as Phaser.Physics.Arcade.Sprite;
         powerUpSprite.disableBody(true, true);
 
-        setScore(prev => prev + 100);
+        addScore(100);
 
         (player as Phaser.Physics.Arcade.Sprite).setTint(0x3b82f6);
         this.time.delayedCall(5000, () => {
@@ -369,13 +395,16 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       }
 
       triggerGameOver() {
+        if (this.gameOverTriggered) return;
+
+        this.gameOverTriggered = true;
         this.isPaused = true;
         this.physics.pause();
         
         const gameOverText = this.add.text(
           this.cameras.main.scrollX + 640,
           this.cameras.main.scrollY + 300,
-          `GAME OVER\nPontuação Final: ${score}`,
+          `GAME OVER\nPontuação Final: ${scoreRef.current}`,
           {
             fontSize: '48px',
             color: '#fff',
@@ -386,7 +415,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         ).setOrigin(0.5);
 
         this.time.delayedCall(2000, async () => {
-          await updateScore('compliance-runner', score);
+          await persistPendingScore();
           setIsGameOver(true);
         });
       }
@@ -394,7 +423,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
       showRandomQuestion() {
         const availableIndices = regulamentosQuestions
           .map((_, idx) => idx)
-          .filter(idx => !usedQuestions.has(idx));
+          .filter(idx => !usedQuestionsRef.current.has(idx));
 
         if (availableIndices.length === 0) {
           this.resumeGame();
@@ -404,7 +433,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
         const question = regulamentosQuestions[randomIndex];
 
-        setUsedQuestions(prev => new Set([...prev, randomIndex]));
+        usedQuestionsRef.current = new Set([...usedQuestionsRef.current, randomIndex]);
         
         // Embaralhar as opções
         const correctAnswer = question.options[question.correctIndex];
@@ -429,7 +458,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
         if (!this.player || !this.cursors) return;
 
         // Verificar queda no buraco
-        if (this.player.y > 650) {
+        if (!this.gameOverTriggered && this.player.y > 650) {
           this.triggerGameOver();
           return;
         }
@@ -460,16 +489,17 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
           ).setOrigin(0.5);
 
           this.time.delayedCall(2000, async () => {
+            addScore(phase.xpReward);
+            await persistPendingScore();
+
             if (currentPhase < PHASES.length - 1) {
-              await updateScore('compliance-runner', phase.xpReward);
               toast.success(`Fase ${currentPhase + 1} completa! +${phase.xpReward} XP`);
               setCurrentPhase(prev => prev + 1);
               setTokensCollected(0);
               setLives(2);
-              setUsedQuestions(new Set());
+              usedQuestionsRef.current = new Set();
               this.scene.restart();
             } else {
-              await updateScore('compliance-runner', phase.xpReward);
               setIsGameComplete(true);
             }
           });
@@ -570,12 +600,12 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
     const isCorrect = selectedIndex === currentQuestion.correctIndex;
     
     if (isCorrect) {
-      setScore(prev => prev + 100);
+      addScore(100);
       toast.success('Correto! +100 pontos', {
         description: currentQuestion.explanation
       });
     } else {
-      setScore(prev => Math.max(0, prev - 50));
+      removeScore(50);
       toast.error('Resposta incorreta!', {
         description: currentQuestion.explanation
       });
@@ -593,8 +623,6 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
   };
 
   if (isGameComplete) {
-    const totalXP = PHASES.reduce((sum, phase) => sum + phase.xpReward, 0);
-    
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
         <motion.div
@@ -613,7 +641,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
                 Pontuação Final: {score}
               </p>
               <p className="text-lg">
-                XP Ganho: +{totalXP}
+                XP Ganho: +{score}
               </p>
             </div>
             <Button onClick={onExit} size="lg" className="w-full">
