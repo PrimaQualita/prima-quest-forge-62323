@@ -60,7 +60,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
   const [lives, setLives] = useState(2);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [showQuestion, setShowQuestion] = useState(false);
-  const { updateScore } = useGamificationStore();
+  const { updateScore, unlockBadge } = useGamificationStore();
 
   const setExactScore = (nextScore: number) => {
     const normalizedScore = Math.max(0, nextScore);
@@ -501,6 +501,7 @@ export const ComplianceRunnerGame = ({ onExit }: ComplianceRunnerGameProps) => {
               this.scene.restart();
             } else {
               setIsGameComplete(true);
+              unlockBadge('corredor_compliance');
             }
           });
           return;

@@ -76,7 +76,7 @@ export const IntegrityMissionGame = ({ onExit }: IntegrityMissionGameProps) => {
       
       // Desbloquear medalha se acertar >= 75%
       if (correctCount >= shuffledScenarios.length * 0.75) {
-        unlockBadge('mestre_integridade');
+        unlockBadge('heroi_integridade');
       }
       
       setGameCompleted(true);
