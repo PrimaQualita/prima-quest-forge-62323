@@ -24,7 +24,7 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
   const [answers, setAnswers] = useState<boolean[]>([]);
   const [timeLeft, setTimeLeft] = useState(30);
   const [gameCompleted, setGameCompleted] = useState(false);
-  const { updateScore } = useGamificationStore();
+  const { updateScore, unlockBadge } = useGamificationStore();
 
   // Embaralha perguntas ao iniciar o jogo
   useEffect(() => {
@@ -127,6 +127,11 @@ export const EthicsQuizGame = ({ onExit }: EthicsQuizGameProps) => {
   if (gameCompleted) {
     const correctAnswers = answers.filter(a => a).length;
     const percentage = (correctAnswers / shuffledQuestions.length) * 100;
+
+    // Desbloqueia badge se acertou 100%
+    if (percentage === 100) {
+      unlockBadge('mestre_quiz');
+    }
 
     return (
       <div className="min-h-screen bg-background p-4 md:p-8 flex items-center justify-center">
