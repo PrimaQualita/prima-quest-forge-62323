@@ -27,10 +27,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Iniciar investigação completa imediatamente',
       'Arquivar por falta de elementos mínimos para apuração',
-      'Registrar formalmente e buscar mais informações antes de abrir investigação',
       'Convocar reunião geral sobre assédio no departamento mencionado',
+      'Registrar formalmente e buscar mais informações antes de abrir investigação',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 16, risk: -21, reputation: 13 },
     explanation: 'Denúncias vagas não devem ser descartadas nem gerar investigação às cegas. O correto é registrar, preservar o sigilo e buscar elementos adicionais para decidir se há base para investigação formal.'
   },
@@ -52,11 +52,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Ao investigar uma denúncia de fraude em licitação, você descobre que o denunciante é também um dos envolvidos no esquema, mas fez a denúncia para prejudicar um rival interno.',
     options: [
       'Desconsiderar a denúncia por má-fé do denunciante',
-      'Apurar os fatos relatados independentemente da motivação do denunciante',
       'Punir o denunciante por participação no esquema e encerrar',
+      'Apurar os fatos relatados independentemente da motivação do denunciante',
       'Investigar apenas o denunciante por sua participação',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 18, risk: -23, reputation: 15 },
     explanation: 'A motivação do denunciante é irrelevante para a apuração dos fatos. Mesmo denúncias feitas por má-fé podem revelar irregularidades reais que devem ser investigadas no mérito.'
   },
@@ -65,11 +65,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Durante o processo de investigação de uma denúncia, o investigador percebe que a testemunha-chave é cônjuge do denunciado. O depoimento dela inocenta completamente o acusado.',
     options: [
       'Aceitar o depoimento como evidência válida',
-      'Descartar o depoimento por conflito de interesse evidente',
       'Considerar o depoimento com ressalvas, buscando corroboração em outras fontes',
+      'Descartar o depoimento por conflito de interesse evidente',
       'Convocar nova testemunha para substituir',
     ],
-    idealIndex: 2,
+    idealIndex: 1,
     impacts: { trust: 19, risk: -24, reputation: 16 },
     explanation: 'Depoimentos de pessoas com vínculo próximo não devem ser automaticamente descartados nem aceitos sem ressalvas. Devem ser considerados com cautela e corroborados por evidências independentes.'
   },
@@ -77,12 +77,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-6',
     report: "Um gestor pede acesso aos registros do canal de denúncias para 'melhorar o ambiente do seu departamento'. Ele não é membro do Comitê de Ética.",
     options: [
-      'Fornecer apenas estatísticas agregadas sem identificação de denúncias',
-      'Conceder acesso restrito aos casos do departamento dele',
       'Negar qualquer acesso, pois a confidencialidade é absoluta no canal',
+      'Conceder acesso restrito aos casos do departamento dele',
+      'Fornecer apenas estatísticas agregadas sem identificação de denúncias',
       'Encaminhar a solicitação ao Comitê de Ética para deliberação',
     ],
-    idealIndex: 0,
+    idealIndex: 2,
     impacts: { trust: 20, risk: -25, reputation: 17 },
     explanation: 'O gestor tem interesse legítimo em melhorar o ambiente, mas não pode acessar denúncias individuais. Estatísticas agregadas e sem identificação atendem a necessidade sem violar a confidencialidade.'
   },
@@ -103,12 +103,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-8',
     report: 'Um colaborador faz uma denúncia identificada contra seu próprio gestor por favorecimento em promoções. Durante a investigação, o gestor descobre quem é o denunciante.',
     options: [
-      'Investigar como o gestor descobriu e aplicar medidas de proteção ao denunciante',
-      'Encerrar a investigação por comprometimento do sigilo',
       'Transferir o denunciante para outro departamento preventivamente',
+      'Encerrar a investigação por comprometimento do sigilo',
+      'Investigar como o gestor descobriu e aplicar medidas de proteção ao denunciante',
       'Acelerar a conclusão da investigação antes que haja retaliação',
     ],
-    idealIndex: 0,
+    idealIndex: 2,
     impacts: { trust: 22, risk: -27, reputation: 19 },
     explanation: 'A quebra de sigilo é uma violação grave que deve ser investigada em paralelo. A prioridade é proteger o denunciante contra retaliação, não encerrar o processo nem punir antecipadamente.'
   },
@@ -130,11 +130,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Uma investigação de compliance revela que 3 funcionários participaram de um esquema de notas fiscais frias. Um deles colaborou voluntariamente com a investigação e forneceu provas decisivas.',
     options: [
       'Aplicar a mesma punição aos três, pois todos participaram',
-      'Isentar completamente o colaborador que ajudou',
       'Considerar atenuante para quem colaborou, mas manter responsabilização proporcional',
+      'Isentar completamente o colaborador que ajudou',
       'Demitir os três por justa causa imediatamente',
     ],
-    idealIndex: 2,
+    idealIndex: 1,
     impacts: { trust: 24, risk: -29, reputation: 21 },
     explanation: 'Programas de leniência premiam a colaboração com atenuantes, não com isenção total. O colaborador deve ser responsabilizado proporcionalmente, mas sua contribuição para a apuração deve ser considerada.'
   },
@@ -142,12 +142,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-11',
     report: 'Um gerente comercial oferece desconto de 40% a um cliente em troca de um contrato de exclusividade de 5 anos, sem aprovação da diretoria comercial.',
     options: [
-      'É prática comercial legítima se o contrato compensar financeiramente',
       'Analisar se o desconto está dentro da alçada do gerente e se há política para exclusividade',
+      'É prática comercial legítima se o contrato compensar financeiramente',
       'Cancelar o contrato imediatamente por irregularidade',
       'Aprovar retroativamente se o contrato for lucrativo',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 25, risk: -30, reputation: 22 },
     explanation: 'Antes de julgar a ação, é preciso verificar se há política de alçadas para descontos e exclusividade. Pode ser apenas descumprimento de processo ou pode indicar favorecimento — depende do contexto normativo.'
   },
@@ -156,11 +156,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'O Compliance recebe uma denúncia indicando que o próprio Diretor de Compliance está envolvido em conflito de interesse com um fornecedor de consultoria.',
     options: [
       'O Compliance investiga normalmente pois tem autonomia',
-      'Encaminhar ao Conselho de Administração ou Comitê de Auditoria para apuração independente',
-      'Contratar auditoria externa imediatamente',
       'Comunicar ao CEO para que ele investigue',
+      'Contratar auditoria externa imediatamente',
+      'Encaminhar ao Conselho de Administração ou Comitê de Auditoria para apuração independente',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 26, risk: -31, reputation: 23 },
     explanation: 'Quando o próprio Compliance é alvo, a apuração deve ser conduzida por instância superior e independente — o Conselho ou Comitê de Auditoria. O CEO pode estar conflitado se tiver proximidade com o diretor.'
   },
@@ -182,11 +182,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Um funcionário do financeiro relata que há duas versões do balanço patrimonial: uma para o banco e outra para a Receita Federal.',
     options: [
       'Comunicar imediatamente à Receita Federal',
-      'Verificar se as diferenças são explicáveis por critérios contábeis diferentes',
-      'Confrontar o diretor financeiro com as evidências',
       'Preservar ambos os documentos como evidência e reportar ao Comitê de Auditoria',
+      'Confrontar o diretor financeiro com as evidências',
+      'Verificar se as diferenças são explicáveis por critérios contábeis diferentes',
     ],
-    idealIndex: 3,
+    idealIndex: 1,
     impacts: { trust: 28, risk: -33, reputation: 25 },
     explanation: 'Duas versões de balanço podem indicar fraude contábil grave. As evidências devem ser preservadas antes de qualquer confrontação, e o reporte deve ir ao Comitê de Auditoria, não diretamente ao regulador sem apuração.'
   },
@@ -248,10 +248,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Não é violação pois não citou nomes',
       'Substituí-lo do Comitê de Ética por quebra de confidencialidade',
-      'Advertir formalmente sobre o dever de sigilo e avaliar se houve prejuízo à investigação',
       'Anular a investigação por comprometimento',
+      'Advertir formalmente sobre o dever de sigilo e avaliar se houve prejuízo à investigação',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 33, risk: -38, reputation: 30 },
     explanation: 'Mesmo sem citar nomes, compartilhar detalhes de investigação é quebra de confidencialidade. A resposta deve ser proporcional: advertência formal com avaliação de impacto real, não automaticamente a remoção.'
   },
@@ -259,12 +259,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-20',
     report: 'Um funcionário relata que o RH está usando algoritmo de IA para triagem de currículos, mas o algoritmo parece rejeitar sistematicamente candidatos acima de 50 anos.',
     options: [
-      'Suspender o uso do algoritmo imediatamente',
       'Solicitar auditoria de viés algorítmico e análise estatística dos resultados de triagem',
+      'Suspender o uso do algoritmo imediatamente',
       'Informar aos candidatos rejeitados sobre o possível viés',
       'Substituir o algoritmo por triagem manual',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 34, risk: -39, reputation: 31 },
     explanation: 'Viés algorítmico é questão complexa que exige evidência estatística. Antes de suspender ou substituir, é preciso auditar para confirmar se o viés existe e em que grau, para então decidir a ação corretiva adequada.'
   },
@@ -273,11 +273,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Empresa multinacional. O escritório do Brasil segue prática local de dar presentes em datas comemorativas a funcionários públicos. O valor individual é baixo (R$ 50), mas são 200 funcionários públicos beneficiados.',
     options: [
       'Permitir pois o valor individual é insignificante',
-      'Avaliar o valor agregado total e verificar conformidade com FCPA, UK Bribery Act e legislação anticorrupção local',
-      'Proibir qualquer presente a funcionário público',
       'Substituir presentes por doações a instituições de caridade',
+      'Proibir qualquer presente a funcionário público',
+      'Avaliar o valor agregado total e verificar conformidade com FCPA, UK Bribery Act e legislação anticorrupção local',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 15, risk: -40, reputation: 32 },
     explanation: 'Em multinacionais, o valor individual pode parecer baixo, mas o valor agregado (R$ 10.000) e a frequência podem configurar padrão de pagamentos facilitadores sob FCPA e UK Bribery Act.'
   },
@@ -286,11 +286,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Colaborador descobre que a empresa subcontrata serviço de limpeza de uma empresa que emprega imigrantes em situação irregular, com jornadas de 14h diárias.',
     options: [
       'Rescindir contrato imediatamente com a empresa de limpeza',
-      'Avaliar a responsabilidade solidária da empresa e notificar as autoridades trabalhistas',
       'Não é responsabilidade da empresa contratante',
+      'Avaliar a responsabilidade solidária da empresa e notificar as autoridades trabalhistas',
       'Exigir regularização documental dos trabalhadores pelo subcontratado',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 16, risk: -41, reputation: 33 },
     explanation: 'A empresa contratante pode ser responsável solidariamente por condições análogas a trabalho escravo na cadeia produtiva. A avaliação jurídica e notificação às autoridades são prioritárias.'
   },
@@ -298,12 +298,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-23',
     report: 'O setor de marketing quer publicar cases de sucesso usando dados reais de clientes que deram consentimento verbal durante reuniões, sem documento formal.',
     options: [
-      'Publicar pois houve consentimento verbal',
       'Obter consentimento formal por escrito especificando a finalidade antes da publicação',
+      'Publicar pois houve consentimento verbal',
       'Publicar anonimizando os dados dos clientes',
       'Solicitar aprovação apenas do departamento jurídico',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 17, risk: -42, reputation: 12 },
     explanation: 'Consentimento verbal não é verificável e pode ser insuficiente sob LGPD. O consentimento deve ser formal, específico e documentado, indicando exatamente como os dados serão utilizados.'
   },
@@ -312,11 +312,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Uma investigação interna revela que o CFO movimentou R$ 2 milhões da conta da empresa para uma offshore de sua propriedade. Ele alega que foi empréstimo temporário e já devolveu.',
     options: [
       'Aceitar a explicação pois o valor foi devolvido',
-      'Tratar como desvio financeiro independente da devolução e reportar ao Conselho e autoridades',
-      'Aplicar advertência formal e monitorar movimentações futuras',
       'Exigir apenas formalização retroativa do empréstimo',
+      'Aplicar advertência formal e monitorar movimentações futuras',
+      'Tratar como desvio financeiro independente da devolução e reportar ao Conselho e autoridades',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 18, risk: -43, reputation: 13 },
     explanation: 'Movimentação não autorizada de recursos da empresa para conta pessoal/offshore é desvio financeiro, independente de devolução. A devolução pode ser tentativa de acobertar após descoberta.'
   },
@@ -324,12 +324,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-25',
     report: "Você identifica que a área comercial mantém um 'caixa dois' informal para pagar comissões extras a vendedores de alta performance, fora da folha de pagamento.",
     options: [
-      'Regularizar as comissões incluindo-as na folha de pagamento',
       'Encerrar a prática e apurar responsabilidades, incluindo análise fiscal e trabalhista',
+      'Regularizar as comissões incluindo-as na folha de pagamento',
       'Tolerar temporariamente até o fim do trimestre para não impactar vendas',
       'Consultar o departamento fiscal sobre como regularizar',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 19, risk: -44, reputation: 14 },
     explanation: 'Caixa dois configura sonegação fiscal e fraude trabalhista. Não basta regularizar — é necessário apurar quem autorizou, quantificar o impacto fiscal e avaliar necessidade de denúncia espontânea.'
   },
@@ -338,11 +338,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Um colaborador é flagrado tirando fotos de documentos confidenciais na mesa de um colega com o celular pessoal.',
     options: [
       'Exigir que apague as fotos imediatamente',
-      'Apreender o celular como evidência',
       'Registrar o incidente, ouvir o colaborador e avaliar a natureza dos documentos fotografados',
+      'Apreender o celular como evidência',
       'Demitir por justa causa por violação de confidencialidade',
     ],
-    idealIndex: 2,
+    idealIndex: 1,
     impacts: { trust: 20, risk: -45, reputation: 15 },
     explanation: 'Antes de agir, é preciso entender o contexto: quais documentos foram fotografados, com qual finalidade e se houve dolo. A empresa não pode apreender celular pessoal, e a demissão sem apuração pode ser revertida.'
   },
@@ -351,11 +351,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'A diretoria decide reduzir o orçamento do programa de compliance em 60% alegando necessidade de corte de custos. Você é o Compliance Officer.',
     options: [
       'Aceitar o corte e priorizar atividades essenciais',
-      'Apresentar análise de risco-retorno mostrando o custo potencial de não-conformidade versus o investimento em compliance',
       'Recusar o corte e escalar ao Conselho de Administração',
+      'Apresentar análise de risco-retorno mostrando o custo potencial de não-conformidade versus o investimento em compliance',
       'Pedir demissão por impossibilidade de exercer a função',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 21, risk: -46, reputation: 16 },
     explanation: 'O Compliance Officer deve demonstrar objetivamente o valor do programa. Uma análise de risco-retorno com dados de multas, processos e reputação é mais eficaz que simplesmente recusar ou aceitar.'
   },
@@ -364,11 +364,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Funcionário descobre que o sistema de controle de acesso do prédio registra a biometria facial dos visitantes sem informá-los e sem política de retenção definida.',
     options: [
       'Desativar o sistema de reconhecimento facial imediatamente',
-      'Implementar aviso aos visitantes e criar política de retenção antes de qualquer ação drástica',
       'Comunicar diretamente à ANPD como incidente de segurança',
+      'Implementar aviso aos visitantes e criar política de retenção antes de qualquer ação drástica',
       'Substituir por crachás de visitante sem biometria',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 22, risk: -47, reputation: 17 },
     explanation: 'Dados biométricos são sensíveis sob LGPD e exigem consentimento específico. Porém, desativar abruptamente pode comprometer segurança. O correto é implementar transparência e controles, criando política adequada.'
   },
@@ -376,12 +376,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-29',
     report: 'Empresa farmacêutica. Um pesquisador altera dados de teste clínico para que um medicamento atinja o limiar de eficácia exigido pela ANVISA.',
     options: [
-      'Interromper o estudo clínico e notificar ANVISA, CEP e patrocinador simultaneamente',
       'Refazer os testes com supervisão adicional',
+      'Interromper o estudo clínico e notificar ANVISA, CEP e patrocinador simultaneamente',
       'Confrontar o pesquisador e solicitar correção dos dados',
       'Aguardar revisão por pares para confirmar a alteração',
     ],
-    idealIndex: 0,
+    idealIndex: 1,
     impacts: { trust: 23, risk: -48, reputation: 18 },
     explanation: 'Fraude em dados clínicos é gravíssima — pode colocar vidas em risco. O estudo deve ser interrompido imediatamente e todas as autoridades competentes notificadas sem esperar confirmação adicional.'
   },
@@ -391,10 +391,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Encerrar a prática e incluir cláusula anticorrupção no contrato de aquisição',
       'Manter temporariamente para não prejudicar operações',
-      'Avaliar exposição legal cumulativa, cessar imediatamente e considerar auto-denúncia às autoridades',
       'Renegociar o preço de aquisição para cobrir multas potenciais',
+      'Avaliar exposição legal cumulativa, cessar imediatamente e considerar auto-denúncia às autoridades',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 24, risk: -49, reputation: 19 },
     explanation: 'Pagamentos de facilitação são proibidos pela Lei Anticorrupção e FCPA. Como eram sistemáticos e documentados, há exposição legal significativa que pode exigir auto-denúncia para mitigação de penalidades.'
   },
@@ -415,12 +415,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-32',
     report: 'O board solicita que o Compliance assine um parecer favorável a uma operação que você não teve tempo de analisar adequadamente. A decisão é urgente.',
     options: [
-      'Assinar com ressalvas documentadas sobre a análise incompleta',
       'Recusar assinar e solicitar prazo mínimo para análise',
+      'Assinar com ressalvas documentadas sobre a análise incompleta',
       'Assinar pois o board assumirá a responsabilidade',
       'Delegar a assinatura a um subordinado',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 26, risk: -21, reputation: 21 },
     explanation: 'O Compliance Officer não pode validar o que não analisou. A pressão por urgência não justifica comprometer a integridade do parecer. Deve-se recusar e documentar a solicitação para proteção própria.'
   },
@@ -429,11 +429,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Você descobre que a empresa terceiriza call center em cidade do interior onde os operadores recebem por produtividade, sem salário fixo, sem registro CLT e sem benefícios.',
     options: [
       'Rescindir contrato com a empresa de call center',
-      'Mapear a extensão do problema, avaliar responsabilidade solidária e notificar autoridades',
-      'Exigir que a empresa terceirizada regularize os vínculos em 30 dias',
       'Não é responsabilidade da contratante como os terceirizados são remunerados',
+      'Exigir que a empresa terceirizada regularize os vínculos em 30 dias',
+      'Mapear a extensão do problema, avaliar responsabilidade solidária e notificar autoridades',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 27, risk: -22, reputation: 22 },
     explanation: 'Ausência de salário fixo e CLT pode configurar trabalho irregular e até análogo ao escravo. A contratante tem responsabilidade solidária na cadeia. Precisa mapear o problema para dimensionar o risco legal.'
   },
@@ -441,12 +441,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-34',
     report: 'Um funcionário é eleito vereador e pretende conciliar o mandato político com seu cargo na empresa. Ele é gerente do setor de relações governamentais.',
     options: [
-      'Permitir pois é direito constitucional exercer mandato político',
       'Avaliar conflito de interesse pela natureza do cargo e considerar licença ou mudança de função',
+      'Permitir pois é direito constitucional exercer mandato político',
       'Exigir que se licencie do cargo durante todo o mandato',
       'Demitir pois funcionário público não pode manter vínculo CLT',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 28, risk: -23, reputation: 23 },
     explanation: 'O direito ao mandato é constitucional, mas o cargo de relações governamentais gera conflito de interesse direto. A análise deve ser caso a caso, considerando mudança de função ou licença parcial.'
   },
@@ -454,12 +454,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-35',
     report: 'Investigação revela que um gerente contratou sua ex-esposa como consultora. Ela tem qualificação técnica comprovada e foi a melhor proposta técnica e financeira.',
     options: [
-      'Encerrar o contrato por conflito de interesse',
       'Manter o contrato, mas transferir a gestão para outro gerente sem vínculo pessoal',
+      'Encerrar o contrato por conflito de interesse',
       'Ignorar pois são ex-cônjuges e a contratação foi técnica',
       'Refazer a licitação excluindo a consultora',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 29, risk: -24, reputation: 24 },
     explanation: 'Mesmo com qualificação técnica, o vínculo pessoal gera conflito de interesse na gestão do contrato. A solução equilibrada é manter o contrato (foi a melhor proposta) mas transferir a supervisão.'
   },
@@ -481,11 +481,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Uma multinacional descobre que sua fábrica no Sudeste Asiático utiliza trabalho infantil na cadeia de suprimentos de terceiro nível (subfornecedor do subfornecedor).',
     options: [
       'Não é responsabilidade pois está muito distante na cadeia',
-      'Cortar relações com toda a cadeia de suprimentos da região',
       'Implementar due diligence aprofundada na cadeia, plano de remediação e monitoramento contínuo',
+      'Cortar relações com toda a cadeia de suprimentos da região',
       'Comunicar às autoridades locais e aguardar providências',
     ],
-    idealIndex: 2,
+    idealIndex: 1,
     impacts: { trust: 31, risk: -26, reputation: 26 },
     explanation: 'Sob os Princípios Orientadores da ONU e legislações como a alemã de cadeias de suprimentos, empresas têm dever de diligência em toda a cadeia. A resposta deve ser remediação progressiva, não corte abrupto.'
   },
@@ -494,11 +494,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Auditor interno descobre que a empresa está classificando incorretamente receitas entre trimestres para atingir metas de performance e liberar bônus à diretoria.',
     options: [
       'Corrigir os registros contábeis e recalcular os bônus',
-      'Reportar ao Comitê de Auditoria como potencial manipulação de resultados e avaliar implicações regulatórias',
       'Informar ao diretor financeiro para que corrija',
+      'Reportar ao Comitê de Auditoria como potencial manipulação de resultados e avaliar implicações regulatórias',
       'Consultar a empresa de auditoria externa sobre o tratamento contábil',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 32, risk: -27, reputation: 27 },
     explanation: 'Reclassificação intencional de receitas para atingir metas é manipulação contábil. O reporte deve ir ao Comitê de Auditoria, não ao CFO que pode estar envolvido, e as implicações regulatórias devem ser avaliadas.'
   },
@@ -519,12 +519,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-40',
     report: 'Empresa está implementando programa de ESG e o marketing quer divulgar metas ambientais ambiciosas que a operação admite internamente que são inatingíveis no prazo proposto.',
     options: [
-      'Publicar metas aspiracionais pois motivam a empresa',
       'Alinhar metas públicas com capacidade real de entrega, documentando riscos de greenwashing',
+      'Publicar metas aspiracionais pois motivam a empresa',
       'Não publicar nenhuma meta ambiental',
       'Publicar as metas mas com disclaimers legais',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 34, risk: -29, reputation: 29 },
     explanation: 'Divulgar metas sabidamente inatingíveis configura greenwashing, prática cada vez mais penalizada por reguladores e investidores. Metas devem ser ambiciosas mas factíveis, com transparência sobre metodologia.'
   },
@@ -532,12 +532,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-41',
     report: "Um concorrente entra em contato propondo que as duas empresas 'alinhem' reajustes de preços no próximo trimestre para 'estabilizar o mercado'.",
     options: [
-      'Recusar educadamente sem registrar',
       'Recusar, documentar o contato e reportar ao jurídico antitruste imediatamente',
+      'Recusar educadamente sem registrar',
       'Ouvir a proposta sem se comprometer para entender a intenção',
       'Consultar a associação do setor sobre práticas de mercado',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 15, risk: -30, reputation: 30 },
     explanation: 'Qualquer discussão sobre preços com concorrentes pode configurar cartel. Além de recusar, é crucial documentar o contato e reportar ao jurídico, pois a omissão pode ser interpretada como participação.'
   },
@@ -546,11 +546,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Colaborador descobre que a empresa utiliza software pirata em 30% das estações de trabalho, incluindo departamentos que lidam com dados sensíveis.',
     options: [
       'Comprar licenças imediatamente para regularizar',
-      'Avaliar risco jurídico e de segurança, planejar regularização e reforçar política de software autorizado',
-      'Formatar as máquinas irregulares',
       'Denunciar à BSA (Business Software Alliance)',
+      'Formatar as máquinas irregulares',
+      'Avaliar risco jurídico e de segurança, planejar regularização e reforçar política de software autorizado',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 16, risk: -31, reputation: 31 },
     explanation: 'Software pirata gera risco jurídico (multas), de segurança (sem patches) e reputacional. A resposta deve ser planejada: avaliar extensão, regularizar e prevenir reincidência com política e controles.'
   },
@@ -559,11 +559,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: "Durante entrevista de desligamento, ex-funcionário revela que lhe ofereciam 'por fora' 2% do valor de cada contrato que aprovasse. Ele diz que recusou todas as vezes.",
     options: [
       'Agradecer a informação e registrar',
-      'Investigar quem ofereceu, se outros aprovadores aceitaram e se há contratos comprometidos',
-      'Contratar o ex-funcionário como consultor para ajudar na investigação',
       'Pedir que formalize a denúncia por escrito antes de investigar',
+      'Contratar o ex-funcionário como consultor para ajudar na investigação',
+      'Investigar quem ofereceu, se outros aprovadores aceitaram e se há contratos comprometidos',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 17, risk: -32, reputation: 32 },
     explanation: 'A revelação indica esquema estruturado de corrupção. É urgente investigar quem oferecia, quantos aprovadores foram abordados e se contratos foram comprometidos — outros podem ter aceitado.'
   },
@@ -571,12 +571,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-44',
     report: 'O departamento de TI implementa monitoramento de e-mails corporativos sem comunicar aos funcionários. Compliance é informado após a implementação.',
     options: [
-      'Validar pois e-mail corporativo é propriedade da empresa',
       'Exigir que antes de continuar o monitoramento, seja publicada política clara e comunicação a todos os colaboradores',
+      'Validar pois e-mail corporativo é propriedade da empresa',
       'Desativar o monitoramento imediatamente',
       'Verificar apenas se está em conformidade com a LGPD',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 18, risk: -33, reputation: 33 },
     explanation: 'Mesmo em e-mail corporativo, o monitoramento sem comunicação prévia pode violar expectativa legítima de privacidade e LGPD. A solução não é desativar, mas implementar transparência com política clara.'
   },
@@ -585,11 +585,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Um fornecedor estratégico (único fornecedor de componente crítico) é flagrado com trabalho análogo ao escravo pelo Ministério do Trabalho.',
     options: [
       'Rescindir contrato imediatamente por violação de cláusula anticorrupção',
-      'Avaliar alternativas de fornecimento, estabelecer prazo para remediação e monitorar, com plano de contingência',
       'Manter o contrato pois não há alternativa',
+      'Avaliar alternativas de fornecimento, estabelecer prazo para remediação e monitorar, com plano de contingência',
       'Suspender compras até regularização completa',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 19, risk: -34, reputation: 12 },
     explanation: 'Com fornecedor único de componente crítico, rescisão imediata pode paralisar operações. A abordagem deve equilibrar ética e continuidade: exigir remediação com prazo, monitorar e buscar alternativas.'
   },
@@ -610,12 +610,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-47',
     report: 'Empresa de construção. Engenheiro sênior reporta que materiais utilizados na obra estão abaixo da especificação técnica, comprometendo a segurança estrutural do edifício.',
     options: [
-      'Interromper a obra imediatamente e realizar laudo técnico independente',
+      'Comunicar ao órgão regulador e aos compradores',
       'Substituir os materiais inadequados e continuar',
       'Verificar se o desvio é aceitável dentro das margens de tolerância',
-      'Comunicar ao órgão regulador e aos compradores',
+      'Interromper a obra imediatamente e realizar laudo técnico independente',
     ],
-    idealIndex: 0,
+    idealIndex: 3,
     impacts: { trust: 21, risk: -36, reputation: 14 },
     explanation: 'Risco à segurança estrutural exige interrupção imediata. Antes de substituir materiais ou comunicar externamente, é necessário laudo independente para dimensionar o risco e definir se há necessidade de demolição parcial.'
   },
@@ -624,11 +624,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Um consultor externo que presta serviços à empresa é também membro do conselho de uma ONG que recebe doações da mesma empresa. Ele vota a favor de aumentar essas doações.',
     options: [
       'Não há conflito pois são atividades independentes',
-      'Exigir que o consultor se abstenha de votar em matérias relacionadas à empresa doadora e divulgue o vínculo',
       'Cancelar a doação à ONG',
+      'Exigir que o consultor se abstenha de votar em matérias relacionadas à empresa doadora e divulgue o vínculo',
       'Encerrar o contrato de consultoria',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 22, risk: -37, reputation: 15 },
     explanation: 'Há conflito de interesse claro: o consultor se beneficia indiretamente das doações que a empresa faz à ONG onde ele tem voto. A solução é transparência e abstenção, não necessariamente o fim de nenhuma relação.'
   },
@@ -636,12 +636,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-49',
     report: 'Funcionário descobre que a empresa está armazenando dados de saúde de funcionários (resultados de exames periódicos) no mesmo servidor que dados comerciais, sem criptografia diferenciada.',
     options: [
-      'Exigir migração imediata para servidor segregado e criptografado',
       'Avaliar a criticidade, classificar os dados e implementar controles proporcionais ao risco',
+      'Exigir migração imediata para servidor segregado e criptografado',
       'Reportar à ANPD como incidente de segurança',
       'Comunicar aos funcionários sobre a exposição de seus dados',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 23, risk: -38, reputation: 16 },
     explanation: 'Dados de saúde são sensíveis e exigem proteção especial, mas a resposta deve ser proporcional. Antes de migrar ou notificar, avalie se houve acesso indevido, classifique os dados e implemente controles adequados.'
   },
@@ -662,12 +662,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-51',
     report: 'Empresa contrata influenciadores digitais para promover produto sem exigir que divulguem a relação comercial nas postagens.',
     options: [
-      'É prática comum no mercado e não há regulamentação',
       'Exigir disclosure transparente conforme normas do CONAR e CDC sobre publicidade identificada',
+      'É prática comum no mercado e não há regulamentação',
       'Publicar apenas em plataformas que identificam automaticamente conteúdo patrocinado',
       'Criar hashtag corporativa para diferenciar conteúdo orgânico',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 25, risk: -40, reputation: 18 },
     explanation: 'Publicidade disfarçada viola o CDC e normas do CONAR. Independente de prática de mercado, a empresa deve exigir transparência sobre a relação comercial para evitar riscos legais e reputacionais.'
   },
@@ -676,11 +676,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Funcionário pede para trabalhar remotamente de outro país por 6 meses. O gestor aprova, mas ninguém consulta as implicações fiscais, trabalhistas e de proteção de dados.',
     options: [
       'Aprovar pois trabalho remoto é flexível',
-      'Avaliar implicações de permanent establishment fiscal, legislação trabalhista local e transferência internacional de dados antes de autorizar',
       'Negar pois a empresa não tem estrutura para empregados no exterior',
+      'Avaliar implicações de permanent establishment fiscal, legislação trabalhista local e transferência internacional de dados antes de autorizar',
       'Consultar apenas o departamento de TI sobre segurança',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 26, risk: -41, reputation: 19 },
     explanation: 'Trabalho remoto internacional pode criar obrigação tributária no país de destino (establishment permanente), sujeitar a empresa à legislação trabalhista local e implicar em transferência internacional de dados sob LGPD.'
   },
@@ -689,11 +689,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'O compliance officer descobre que ele próprio cometeu um erro: aprovou uma transação sem perceber que envolvia empresa listada em sanções internacionais.',
     options: [
       'Corrigir silenciosamente e monitorar',
-      'Auto-reportar o erro ao Conselho, bloquear a transação e avaliar necessidade de comunicação ao regulador',
-      'Delegar a correção a um subordinado',
       'Consultar o jurídico sobre como minimizar sua responsabilidade pessoal',
+      'Delegar a correção a um subordinado',
+      'Auto-reportar o erro ao Conselho, bloquear a transação e avaliar necessidade de comunicação ao regulador',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 27, risk: -42, reputation: 20 },
     explanation: 'A integridade do compliance officer se demonstra na auto-responsabilização. O auto-reporte ao Conselho, o bloqueio da transação e a avaliação regulatória mostram que o programa funciona mesmo quando o próprio CO erra.'
   },
@@ -701,12 +701,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-54',
     report: 'Empresa do ramo alimentício. Funcionário do controle de qualidade relata que lotes com validade próxima ao vencimento estão sendo re-etiquetados com nova data para venda.',
     options: [
-      'Recolher os lotes re-etiquetados do mercado e notificar ANVISA e Procon imediatamente',
       'Verificar se os produtos ainda estão dentro do padrão de qualidade',
+      'Recolher os lotes re-etiquetados do mercado e notificar ANVISA e Procon imediatamente',
       'Advertir o responsável pela re-etiquetagem',
       'Implementar desconto para venda rápida dos lotes próximos ao vencimento',
     ],
-    idealIndex: 0,
+    idealIndex: 1,
     impacts: { trust: 28, risk: -43, reputation: 21 },
     explanation: 'Re-etiquetagem de validade é fraude ao consumidor e infração sanitária grave com risco à saúde pública. Os lotes devem ser recolhidos e as autoridades notificadas — verificar qualidade depois não protege o consumidor.'
   },
@@ -715,11 +715,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Funcionário do setor fiscal descobre que a empresa vem aplicando crédito tributário de forma agressiva, em interpretação que já foi derrubada pela jurisprudência majoritária dos tribunais.',
     options: [
       'Manter a posição tributária atual pois não é ilegal',
-      'Reavaliar a posição com parecer jurídico atualizado e provisionar contingência adequada nas demonstrações',
-      'Recolher a diferença tributária retroativamente',
       'Contratar consultoria tributária externa renomada para validar',
+      'Recolher a diferença tributária retroativamente',
+      'Reavaliar a posição com parecer jurídico atualizado e provisionar contingência adequada nas demonstrações',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 29, risk: -44, reputation: 22 },
     explanation: 'Posição tributária contra jurisprudência majoritária gera contingência fiscal alta. É necessário reavaliar com parecer atualizado, provisionar adequadamente e decidir se mantém o risco ou regulariza.'
   },
@@ -728,11 +728,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Ao revisar contratos antigos, compliance descobre que um contrato de patrocínio esportivo de R$ 5 milhões foi aprovado apenas pelo diretor comercial, sem due diligence no atleta patrocinado.',
     options: [
       'O contrato já foi executado, apenas registrar a falha processual',
-      'Realizar due diligence retroativa no atleta e revisar controles de aprovação para futuros patrocínios',
-      'Cancelar o patrocínio por irregularidade processual',
       'Comunicar ao Conselho sobre falha de governança',
+      'Cancelar o patrocínio por irregularidade processual',
+      'Realizar due diligence retroativa no atleta e revisar controles de aprovação para futuros patrocínios',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 30, risk: -45, reputation: 23 },
     explanation: 'Due diligence retroativa pode revelar problemas no patrocinado que ainda geram risco. Além disso, a revisão dos controles evita recorrência. Cancelar contrato executado pode gerar litígio desnecessário.'
   },
@@ -767,11 +767,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Banco descobre que clientes de alta renda estão usando contas da instituição para estruturar depósitos abaixo do limite de comunicação ao COAF.',
     options: [
       'Comunicar ao COAF apenas as operações acima do limite legal',
-      'Comunicar ao COAF como operação suspeita de structuring, independente dos valores individuais',
       'Encerrar as contas dos clientes envolvidos',
+      'Comunicar ao COAF como operação suspeita de structuring, independente dos valores individuais',
       'Alertar os clientes que a prática é monitorada',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 33, risk: -48, reputation: 26 },
     explanation: 'Structuring (fracionamento para evitar limites de comunicação) é técnica clássica de lavagem de dinheiro. Deve ser comunicada ao COAF como operação suspeita, independente dos valores individuais.'
   },
@@ -780,11 +780,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Uma startup de saúde digital quer compartilhar dados anonimizados de pacientes com parceiro de pesquisa farmacêutica. A anonimização utiliza apenas remoção de nomes.',
     options: [
       'Autorizar pois os dados estão anonimizados',
-      'Avaliar se a anonimização é efetiva (se não é possível re-identificação) e se há base legal adequada',
       'Exigir consentimento individual de cada paciente',
+      'Avaliar se a anonimização é efetiva (se não é possível re-identificação) e se há base legal adequada',
       'Solicitar aprovação do comitê de ética em pesquisa',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 34, risk: -49, reputation: 27 },
     explanation: 'Remoção de nomes não garante anonimização efetiva — dados podem ser re-identificados por combinação de atributos. É necessário avaliar técnicas de anonimização adequadas e base legal específica.'
   },
@@ -793,11 +793,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: "Gestor pressiona equipe para não registrar horas extras no sistema de ponto, argumentando que 'todos fazem isso' e que 'faz parte da cultura da empresa'.",
     options: [
       'Acatar pois é prática comum',
-      'Documentar a orientação do gestor e reportar como possível fraude trabalhista e risco de passivo',
       'Registrar horas extras silenciosamente contra a orientação',
+      'Documentar a orientação do gestor e reportar como possível fraude trabalhista e risco de passivo',
       'Discutir com colegas para fazer uma queixa coletiva',
     ],
-    idealIndex: 1,
+    idealIndex: 2,
     impacts: { trust: 15, risk: -20, reputation: 28 },
     explanation: 'Não registrar horas extras é fraude trabalhista que gera passivo. A documentação da orientação do gestor é fundamental como evidência, e o reporte formal protege tanto o funcionário quanto a empresa.'
   },
@@ -805,12 +805,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-62',
     report: 'Empresa recebe intimação judicial para preservar todos os e-mails de determinado departamento dos últimos 5 anos. O departamento de TI diz que a política de retenção apaga e-mails após 3 anos.',
     options: [
-      'Informar ao juízo que os e-mails foram apagados conforme política',
       'Suspender imediatamente qualquer exclusão (litigation hold), recuperar o que for possível e comunicar ao juízo sobre a situação',
+      'Informar ao juízo que os e-mails foram apagados conforme política',
       'Produzir apenas os e-mails disponíveis sem informar sobre os apagados',
       'Alterar a política de retenção para 5 anos retroativamente',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 16, risk: -21, reputation: 29 },
     explanation: 'Litigation hold é obrigação imediata. Destruir evidências após intimação é spoliation. Deve-se preservar o que existe, tentar recuperar o que foi apagado e ser transparente com o juízo sobre a situação.'
   },
@@ -820,10 +820,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Recusar e registrar como tentativa de suborno',
       'Avaliar se o valor é compatível com consultoria real',
-      'Recusar, documentar detalhadamente a proposta e reportar para investigação de possível padrão com outros compradores',
       'Denunciar o fornecedor à polícia',
+      'Recusar, documentar detalhadamente a proposta e reportar para investigação de possível padrão com outros compradores',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 17, risk: -22, reputation: 30 },
     explanation: 'Além de recusar, é crucial documentar e investigar se outros compradores receberam propostas similares. Um caso isolado pode ser ponta de esquema maior. A documentação detalhada é evidência fundamental.'
   },
@@ -833,10 +833,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Ajustar metas de entrega para serem compatíveis com limites legais de jornada',
       'Contratar mais motoristas para distribuir a demanda',
-      'Investigar se a situação é sistêmica, recalibrar rotas e metas, e garantir mecanismos de registro que não possam ser burlados',
       'Instalar rastreadores nos caminhões para monitorar jornada',
+      'Investigar se a situação é sistêmica, recalibrar rotas e metas, e garantir mecanismos de registro que não possam ser burlados',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 18, risk: -23, reputation: 31 },
     explanation: 'O problema pode ser sistêmico — metas irreais, pressão de gestores, registros fraudados. Instalar rastreadores sem mudar metas apenas documenta a irregularidade. É preciso atacar a causa raiz.'
   },
@@ -844,12 +844,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-65',
     report: 'Ao revisar contratos com governo, compliance descobre que a empresa usa intermediários (brokers) em licitações públicas sem due diligence ou justificativa documentada.',
     options: [
-      'Realizar due diligence retroativa em todos os intermediários e suspender novas contratações de brokers até implementação de controles',
+      'Consultar o governo sobre a legalidade dos intermediários',
       'Encerrar todos os contratos com intermediários imediatamente',
       'Aceitar pois intermediários são prática comum em licitações',
-      'Consultar o governo sobre a legalidade dos intermediários',
+      'Realizar due diligence retroativa em todos os intermediários e suspender novas contratações de brokers até implementação de controles',
     ],
-    idealIndex: 0,
+    idealIndex: 3,
     impacts: { trust: 19, risk: -24, reputation: 32 },
     explanation: 'Intermediários em licitações públicas são red flag clássico de corrupção. A due diligence retroativa pode revelar problemas existentes, e a suspensão de novas contratações previne riscos até que controles sejam implementados.'
   },
@@ -885,10 +885,10 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     options: [
       'Recusar a abertura por ser PEP',
       'Aceitar normalmente pois a documentação está regular',
-      'Aceitar com monitoramento reforçado (enhanced due diligence) conforme regulamentação de PLD',
       'Consultar o Banco Central antes de aceitar',
+      'Aceitar com monitoramento reforçado (enhanced due diligence) conforme regulamentação de PLD',
     ],
-    idealIndex: 2,
+    idealIndex: 3,
     impacts: { trust: 22, risk: -27, reputation: 13 },
     explanation: 'PEPs não podem ser automaticamente recusados, mas exigem enhanced due diligence e monitoramento contínuo reforçado. A regulamentação de PLD requer tratamento diferenciado, não proibitivo.'
   },
@@ -897,11 +897,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Empresa quer doar R$ 500 mil para campanha política de candidato que prometeu destravar licença ambiental de projeto da empresa.',
     options: [
       'Doar pois é direito de expressão política da empresa',
-      'Recusar a doação pois pode configurar quid pro quo e violação da Lei Anticorrupção',
-      'Doar através de fundação da empresa para não vincular diretamente',
       'Doar valor menor para reduzir risco',
+      'Doar através de fundação da empresa para não vincular diretamente',
+      'Recusar a doação pois pode configurar quid pro quo e violação da Lei Anticorrupção',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 23, risk: -28, reputation: 14 },
     explanation: 'Doação empresarial com expectativa de contraprestação governamental configura corrupção. Após 2015, doações corporativas a campanhas são proibidas no Brasil, e mesmo onde permitidas, o quid pro quo é crime.'
   },
@@ -909,12 +909,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-70',
     report: 'Funcionário relata que há câmeras de vigilância dentro dos banheiros do escritório. A empresa alega que é por segurança após furtos.',
     options: [
-      'Aceitar a justificativa de segurança e manter as câmeras',
       'Remover imediatamente as câmeras pois violam dignidade e privacidade, independente da justificativa',
+      'Aceitar a justificativa de segurança e manter as câmeras',
       'Manter câmeras apenas nas áreas comuns do banheiro (lavatórios)',
       'Consultar os funcionários sobre preferência',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 24, risk: -29, reputation: 15 },
     explanation: 'Câmeras em banheiros violam a dignidade humana e são ilegais independente de justificativa. A segurança pode ser garantida por outros meios (controle de acesso, câmeras em corredores externos).'
   },
@@ -922,12 +922,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-71',
     report: "Empresa de alimentos usa embalagem com selo 'natural' e '100% integral' em produto que contém 40% de ingredientes refinados.",
     options: [
-      'Adequar a embalagem para refletir a composição real do produto',
-      "Manter pois não há definição legal precisa de 'natural'",
       'Reformular o produto para corresponder à embalagem',
+      "Manter pois não há definição legal precisa de 'natural'",
+      'Adequar a embalagem para refletir a composição real do produto',
       'Adicionar asterisco com informação complementar',
     ],
-    idealIndex: 0,
+    idealIndex: 2,
     impacts: { trust: 25, risk: -30, reputation: 16 },
     explanation: 'Informação enganosa na embalagem viola o CDC e regulamentações da ANVISA. A prioridade é adequar a comunicação à realidade do produto, não buscar brechas legais.'
   },
@@ -935,12 +935,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-72',
     report: 'Ao investigar uma denúncia, o investigador descobre informações que implicam um segundo caso, não relacionado ao original, envolvendo outro departamento.',
     options: [
-      'Ignorar pois está fora do escopo da investigação',
       'Registrar a descoberta como nova denúncia e abrir investigação separada com escopo próprio',
+      'Ignorar pois está fora do escopo da investigação',
       'Expandir o escopo da investigação atual para cobrir ambos os casos',
       'Informar verbalmente ao compliance officer sem documentar',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 26, risk: -31, reputation: 17 },
     explanation: 'Informações sobre irregularidades não podem ser ignoradas, mas misturar investigações compromete ambas. O correto é abrir caso separado, com escopo e investigador próprios, preservando a integridade de cada apuração.'
   },
@@ -949,11 +949,11 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     report: 'Empresa descobre que ex-funcionário levou lista de clientes e base de prospects ao ingressar em concorrente direto.',
     options: [
       'Processar judicialmente por concorrência desleal e violação de segredo comercial',
-      'Avaliar se havia NDA/cláusula de não-competição vigente e se a informação configura segredo comercial antes de agir',
-      'Entrar em contato com o concorrente exigindo devolução',
       'Comunicar aos clientes que suas informações foram comprometidas',
+      'Entrar em contato com o concorrente exigindo devolução',
+      'Avaliar se havia NDA/cláusula de não-competição vigente e se a informação configura segredo comercial antes de agir',
     ],
-    idealIndex: 1,
+    idealIndex: 3,
     impacts: { trust: 27, risk: -32, reputation: 18 },
     explanation: 'Nem toda informação de cliente é segredo comercial protegido judicialmente. Antes de litigar, é preciso verificar se há proteção contratual (NDA, não-competição) e se a informação atende requisitos legais de sigilo.'
   },
@@ -961,12 +961,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-74',
     report: 'Funcionário do setor de investimentos comenta em almoço com amigos que a empresa está prestes a anunciar aquisição milionária. Um dos amigos compra ações da empresa-alvo no dia seguinte.',
     options: [
-      'O funcionário não é responsável pela ação do amigo',
       'Apurar o vazamento de informação privilegiada e avaliar se há insider trading, envolvendo CVM se necessário',
+      'O funcionário não é responsável pela ação do amigo',
       'Advertir o funcionário sobre confidencialidade',
       'Monitorar se o amigo vendeu as ações com lucro',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 28, risk: -33, reputation: 19 },
     explanation: 'Compartilhar informação material não pública que resulta em negociação de valores mobiliários configura insider trading para ambos (tipper e tippee). A CVM deve ser envolvida para investigação formal.'
   },
@@ -974,12 +974,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-75',
     report: 'Empresa quer usar reconhecimento facial para controle de ponto dos funcionários. O sindicato se opõe alegando excesso de vigilância.',
     options: [
-      'Implementar pois é tecnologia moderna e eficiente',
       'Realizar DPIA (avaliação de impacto), consultar o sindicato e avaliar alternativas menos invasivas',
+      'Implementar pois é tecnologia moderna e eficiente',
       'Desistir do reconhecimento facial por causa da oposição',
       'Implementar apenas para novos funcionários que aceitarem',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 29, risk: -34, reputation: 20 },
     explanation: 'Biometria facial para controle de ponto requer DPIA sob LGPD, negociação sindical e análise de proporcionalidade. Pode haver alternativas menos invasivas (digital, PIN) que atendam o objetivo.'
   },
@@ -1026,12 +1026,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-79',
     report: 'Empresa de seguros. Analista descobre que o modelo de precificação cobra prêmios mais altos para CEPs de bairros predominantemente negros, sem justificativa atuarial.',
     options: [
-      'É prática atuarial baseada em dados de sinistralidade',
       'Auditar o modelo para eliminar viés discriminatório e garantir que variáveis de precificação tenham justificativa atuarial legítima',
+      'É prática atuarial baseada em dados de sinistralidade',
       'Proibir uso de CEP na precificação',
       'Aplicar desconto compensatório para CEPs afetados',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 33, risk: -38, reputation: 24 },
     explanation: 'Precificação que resulta em discriminação racial sem justificativa atuarial legítima viola princípios de equidade e pode ser ilegal. O modelo deve ser auditado para eliminar proxies discriminatórios.'
   },
@@ -1039,12 +1039,12 @@ export const expandedWhistleblowerCases: WhistleblowerCase[] = [
     id: 'case-80',
     report: 'Durante assembleia, acionista minoritário solicita acesso a documentos internos detalhados sobre remuneração individual de diretores e contratos com partes relacionadas.',
     options: [
-      'Fornecer todos os documentos pois é direito do acionista',
       'Fornecer informações agregadas e contratos resumidos conforme lei, protegendo dados pessoais e segredos comerciais',
+      'Fornecer todos os documentos pois é direito do acionista',
       'Negar acesso pois são informações confidenciais',
       'Consultar a CVM sobre o nível de disclosure obrigatório',
     ],
-    idealIndex: 1,
+    idealIndex: 0,
     impacts: { trust: 34, risk: -39, reputation: 25 },
     explanation: 'Acionistas têm direito a informações, mas há limite entre transparência e proteção de dados pessoais/segredos comerciais. O equilíbrio legal exige disclosure adequado sem exposição indevida.'
   },
